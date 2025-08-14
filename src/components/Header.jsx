@@ -1,8 +1,14 @@
+
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/global.css";
 import logo from "../assets/logo.jpg";
 
 const Header = () => {
+  const navigate = useNavigate();
+  const handleLoginClick = () => {
+    navigate("/dangnhap");
+  };
   return (
     <header style={{
       display: "flex",
@@ -67,17 +73,20 @@ const Header = () => {
           <span style={{ fontWeight: 700 }}>VN</span>
           <span style={{ fontSize: 12, marginLeft: 2 }}>▼</span>
         </div>
-        <button style={{
-          background: "#00cfff",
-          color: "#fff",
-          fontWeight: 700,
-          border: "none",
-          borderRadius: 24,
-          padding: "10px 32px",
-          fontSize: 20,
-          cursor: "pointer"
-        }}>
-          Tham gia
+        <button
+          style={{
+            background: "#00cfff",
+            color: "#fff",
+            fontWeight: 700,
+            border: "none",
+            borderRadius: 24,
+            padding: "10px 32px",
+            fontSize: 20,
+            cursor: "pointer"
+          }}
+          onClick={handleLoginClick}
+        >
+          Đăng Nhập
         </button>
       </div>
     </header>

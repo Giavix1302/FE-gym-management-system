@@ -3,20 +3,20 @@ import { Outlet, Link } from "react-router-dom";
 export default function AuthLayout() {
   return (
     <div>
-      <header>
+      {/* <header>
         <nav>
           <Link to="/">Gói tập</Link> |{" "}
           <Link to="/booking">Đặt lịch PT</Link>
         </nav>
-      </header>
+      </header> */}
 
       <main>
         <Outlet /> {/* Nơi render các page con */}
       </main>
 
-      <footer>
+      {/* <footer>
         <h1>footer</h1>
-      </footer>
+      </footer> */}
     </div>
   );
 }
