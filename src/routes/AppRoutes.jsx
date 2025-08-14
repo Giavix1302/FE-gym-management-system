@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import UserLayout from '../layouts/UserLayout'
 
 // pages
-import Home from '../modules/users/pages/Home'
+import Home from '../modules/home/pages/Home'
 
 
 export default function AppRoutes() {
