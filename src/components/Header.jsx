@@ -1,11 +1,13 @@
 import React from "react"
 import { AppBar, Toolbar, Typography, Button, Box, IconButton } from "@mui/material"
 import MenuIcon from "@mui/icons-material/Menu"
-import { Image } from "@mui/icons-material"
 import logo from "~/assets/logo.png"
+
+import { useNavigate } from "react-router-dom"
 
 export default function Header() {
   const navItems = ["Về THE GYM", "Hệ thống phòng tập", "Gói thuê PT", "Lớp tập nhóm", "Liên hệ"]
+  const navigate = useNavigate()
 
   return (
     <AppBar position="fixed" sx={{ backgroundColor: "#16697A", pt: 1 }}>
@@ -36,6 +38,7 @@ export default function Header() {
 
         {/* Nút Login */}
         <Button
+          onClick={() => navigate("/login")}
           variant="contained"
           sx={{
             backgroundColor: "#FFA62B",

@@ -1,7 +1,16 @@
+// react
 import React from "react"
+// mui
 import { Box, Container, Typography, Button, Grid, Card, CardContent } from "@mui/material"
-import banner from "~/assets/banner1.jpg"
 import MembershipCard from "./MembershipCard"
+// icon
+// src
+import banner from "~/assets/banner1.jpg"
+import intro1 from "~/assets/intro1.jpg"
+import intro2 from "~/assets/intro2.jpg"
+import intro3 from "~/assets/intro3.jpg"
+import intro4 from "~/assets/intro4.jpg"
+import SplitLayout from "./SplitLayout"
 
 function Home() {
   return (
@@ -90,116 +99,63 @@ function Home() {
         </Box>
       </Container>
 
-      {/* Dịch vụ */}
-      <Container disableGutters sx={{ py: 8, bgcolor: "primary.main" }}>
-        <Typography variant="h4" align="center" color="primary" fontWeight="bold" gutterBottom>
-          Dịch vụ nổi bật
-        </Typography>
-        <Grid container spacing={4} sx={{ mt: 2 }}>
-          {[
-            {
-              title: "Gói thuê PT",
-              desc: "Huấn luyện viên cá nhân đồng hành cùng bạn.",
-            },
-            {
-              title: "Lớp tập nhóm",
-              desc: "Không khí sôi động, đầy năng lượng.",
-            },
-            {
-              title: "Gói tập Gym",
-              desc: "Linh hoạt theo nhu cầu, giá cả hợp lý.",
-            },
-          ].map((service, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Card
-                sx={{
-                  bgcolor: "background.paper",
-                  boxShadow: 3,
-                  borderRadius: 3,
-                  textAlign: "center",
-                  p: 2,
-                }}
-              >
-                <CardContent>
-                  <Typography variant="h6" color="secondary" fontWeight="bold">
-                    {service.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {service.desc}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+      {/* Hướng dẫn tập luyện miễn phí */}
+      <Container maxWidth="xl" disableGutters sx={{ py: 8, bgcolor: "info.main" }}>
+        <SplitLayout
+          content={{
+            heading: "Hướng dẫn tập luyện miễn phí",
+            descriptions: [
+              "The Gym khuyến khích bạn nên tham gia các lớp học hướng dẫn cơ bản để dễ dàng hơn trong việc sử dụng các thiết bị tập luyện, khu vực chức năng và tận hưởng tất cả tiện ích của The Gym. Đội ngũ The Gym thân thiện và chuyên nghiệp luôn sẵn sàng giúp đỡ các bạn.",
+            ],
+            img: intro2,
+          }}
+        />
       </Container>
 
-      {/* Đội ngũ PT */}
-      <Box sx={{ bgcolor: "info.main", py: 8 }}>
-        <Container>
-          <Typography variant="h4" align="center" fontWeight="bold" gutterBottom>
-            Đội ngũ Huấn luyện viên
-          </Typography>
-          <Typography align="center" color="text.secondary" sx={{ mb: 4 }}>
-            Những chuyên gia thể hình giàu kinh nghiệm và tận tâm.
-          </Typography>
-          <Grid container spacing={4}>
-            {["Nguyễn Văn A", "Trần Thị B", "Lê Văn C"].map((name, i) => (
-              <Grid item xs={12} md={4} key={i}>
-                <Card sx={{ textAlign: "center", borderRadius: 3, p: 2 }}>
-                  <CardContent>
-                    <Box
-                      sx={{
-                        width: 120,
-                        height: 120,
-                        borderRadius: "50%",
-                        bgcolor: "secondary.main",
-                        mx: "auto",
-                        mb: 2,
-                      }}
-                    />
-                    <Typography variant="h6" color="primary">
-                      {name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Chuyên môn: Fitness & Dinh dưỡng
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Container>
+      {/* THÊM BẠN THÊM VUI */}
+      <Box sx={{ bgcolor: "", py: 8 }}>
+        <SplitLayout
+          content={{
+            heading: "THÊM BẠN THÊM VUI",
+            descriptions: [
+              "Bạn của bạn là bạn của The Gym.",
+              "Thêm một người bạn tập luyện sẽ tạo ra niềm vui và động lực không ngừng. Hội viên khi giới thiệu bạn mới đăng ký gói tập ở tất cả chi nhánh, cả hai bạn sẽ nhận được 2 tuần tập luyện miễn phí. Thêm bạn thêm vui!",
+              "Truy cập ứng dụng The Gym và cùng mang bạn bè đến tập luyện thôi nào!",
+            ],
+            img: intro4,
+          }}
+          reverse={true}
+        />
       </Box>
 
-      {/* Testimonials */}
-      <Container sx={{ py: 8 }}>
-        <Typography variant="h4" align="center" color="primary" fontWeight="bold" gutterBottom>
-          Học viên nói gì về chúng tôi
-        </Typography>
-        <Grid container spacing={4} sx={{ mt: 2 }}>
-          {[
-            "Mình đã thay đổi vóc dáng sau 3 tháng tập tại THE GYM!",
-            "PT rất nhiệt tình và chuyên nghiệp.",
-            "Không gian tập thoải mái, máy móc hiện đại.",
-          ].map((review, i) => (
-            <Grid item xs={12} md={4} key={i}>
-              <Card
-                sx={{
-                  p: 3,
-                  borderRadius: 3,
-                  bgcolor: "background.paper",
-                  boxShadow: 2,
-                }}
-              >
-                <Typography variant="body1" color="text.secondary">
-                  "{review}"
-                </Typography>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+      {/* THAM QUAN PHÒNG TẬP MỞ CỬA 24/7 */}
+      <Container maxWidth="xl" disableGutters sx={{ py: 8, bgcolor: "info.main" }}>
+        <SplitLayout
+          content={{
+            heading: "THAM QUAN PHÒNG TẬP MỞ CỬA 24/7",
+            descriptions: [
+              "Dù bạn đang tìm kiếm điều gì ở một phòng gym, The Gym đều có lựa chọn phù hợp dành cho bạn.",
+              "Cùng The Gym tham quan không gian thân thiện, chào đón phù hợp với tất cả mọi người. Bạn sẽ tìm hiểu tất cả về các khu vực khác nhau của câu lạc bộ và Nick sẽ chỉ cho bạn cách tận dụng tối đa thẻ hội viên của mình. Đây sẽ là nơi bạn có thể bắt đầu hành trình rèn luyện sức khỏe của mình.",
+            ],
+            img: intro3,
+          }}
+        />
       </Container>
+
+      {/* MỚI ! HƯỚNG DẪN TẬP LUYỆN TRONG APP */}
+      <Box sx={{ bgcolor: "", py: 8 }}>
+        <SplitLayout
+          content={{
+            heading: "MỚI ! HƯỚNG DẪN TẬP LUYỆN TRONG APP",
+            descriptions: [
+              "The New Gym luôn muốn chia sẻ đến quý hội viên nguồn cảm hứng bất tận cho các buổi tập hiệu quả, những bí quyết sống khỏe, và những lời khuyên tập luyện hữu ích.",
+              "Để đảm bảo cho hành trình sức khỏe của bạn tại The New Gym được đảm bảo chất lượng tốt nhất, đừng quên tham khảo những thông tin hữu ích được cập nhật thường xuyên tại đây nhé!",
+            ],
+            img: intro1,
+          }}
+          reverse={true}
+        />
+      </Box>
     </Box>
   )
 }
