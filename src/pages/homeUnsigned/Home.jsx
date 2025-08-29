@@ -12,7 +12,10 @@ import intro3 from "~/assets/intro3.jpg"
 import intro4 from "~/assets/intro4.jpg"
 import SplitLayout from "./SplitLayout"
 
+import { API_ROOT } from "~/utils/constants"
+
 function Home() {
+  console.log(API_ROOT)
   return (
     <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
       {/* Hero Section */}
@@ -50,7 +53,7 @@ function Home() {
             color: "white",
           }}
         >
-          <Typography variant="h2" fontWeight="bold" gutterBottom>
+          <Typography variant="h2" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: "2rem", sm: "3.75rem" } }}>
             CHÀO MỪNG ĐẾN VỚI THE GYM
           </Typography>
           <Typography variant="h6" sx={{ mb: 4 }}>
@@ -76,7 +79,16 @@ function Home() {
           , nơi mọi người cảm thấy được chào đón từ khi bước vào.
         </Typography>
 
-        <Box sx={{ mt: 4, display: "flex", gap: 4, justifyContent: "center" }}>
+        <Box
+          sx={{
+            mt: 4,
+            display: "flex",
+            gap: 4,
+            justifyContent: "center",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: "center",
+          }}
+        >
           <MembershipCard
             content={{
               duration: "1 Tháng",

@@ -8,8 +8,8 @@ function SplitLayout({ content, reverse = false }) {
       sx={{
         display: "flex",
         justifyContent: "center",
-        flexDirection: reverse ? "row" : "row-reverse",
-        gap: 5,
+        flexDirection: { xs: "column", sm: reverse ? "row" : "row-reverse" },
+        gap: { xs: 2, sm: 2, md: 4 },
         alignItems: "center",
       }}
     >

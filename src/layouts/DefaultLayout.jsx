@@ -8,7 +8,7 @@ export default function DefaultLayout() {
     <div>
       <Header />
 
-      <Box sx={{ pt: "72px" }}>
+      <Box sx={{ pt: { xs: "64px", sm: "72px" } }}>
         <Outlet /> {/* Nơi render các page con */}
       </Box>
 

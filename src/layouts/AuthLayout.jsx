@@ -38,20 +38,21 @@ function AuthLayout() {
           transform: "translate(-50%, -50%)",
           textAlign: "center",
           // bgcolor: "rgba(255, 255, 255, 0.6)",
-          height: "80vh",
-          width: "80vw",
+          height: { xs: "85vh", sm: "80vh" },
+          width: { xs: "90%", sm: "70%", md: "80vw" },
           borderRadius: 4,
           display: "flex",
           boxShadow: 3,
           overflow: "hidden",
         }}
       >
-        <Box sx={{ width: "40%", zIndex: 3 }}>
+        <Box sx={{ width: { xs: "100%", sm: "100%", md: "40%" }, zIndex: 3 }}>
           <Outlet />
         </Box>
         <Box
           sx={{
             width: "60%",
+            display: { xs: "none", sm: "none", md: "block" },
           }}
         >
           <Box component="img" src={backgroundLogin1} sx={{ height: "100%", width: "100%", objectFit: "cover" }} />

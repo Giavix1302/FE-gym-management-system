@@ -7,6 +7,7 @@ import Home from "~/pages/homeUnsigned/Home"
 import NotFoundPage from "~/pages/NotFoundPage"
 import Login from "~/pages/auth/Login"
 import Signup from "~/pages/auth/Signup"
+import HomeUserSigned from "~/pages/user/HomeUserSigned"
 
 export default function AppRoutes() {
   return (
@@ -18,16 +19,25 @@ export default function AppRoutes() {
           <Route path="/signup" element={<Signup />} />
         </Route>
 
-        {/* User Routes */}
+        {/* home unsigned */}
         <Route element={<DefaultLayout />}>
           <Route path="/" element={<Home />} />
         </Route>
 
-        {/* Admin Routes */}
-        {/* <Route element={<AdminLayout />}>
-          <Route path="/admin/users" element={<UserListPage />} />
-          <Route path="/admin/equipments" element={<EquipmentListPage />} />
-        </Route> */}
+        {/* User Private Routes */}
+        <Route element={<PrivateRoute roles={["user", "pt"]} />}>
+          <Route element={<DefaultLayout />}>
+            <Route path="/home" element={<HomeUserSigned />} />
+          </Route>
+        </Route>
+
+        {/* Admin Private Routes */}
+        <Route element={<PrivateRoute roles={["admin"]} />}>
+          {/* <Route element={<AdminLayout />}>
+            <Route path="/admin/users" element={<UserListPage />} />
+            <Route path="/admin/equipments" element={<EquipmentListPage />} />
+          </Route> */}
+        </Route>
 
         {/* 404 Not Found */}
         <Route path="*" element={<NotFoundPage />} />
