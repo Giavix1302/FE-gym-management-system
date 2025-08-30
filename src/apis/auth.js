@@ -5,23 +5,20 @@ import { API_ROOT } from "~/utils/constants"
 
 export const loginAPI = async (phone, password) => {
   try {
-    const data = await axios.post(API_ROOT + "/auths/login", {
+    const response = await axios.post(API_ROOT + "/auths/login", {
       phone,
       password,
     })
-    return data
+    return response.data
   } catch (err) {
     console.log("🚀 ~ loginAPI ~ err:", err.response.data)
     toast.error(err.response.data.message)
   }
 }
 
-export const signupAPI = async (phone, password) => {
+export const signupAPI = async (data) => {
   try {
-    const response = await axios.post(API_ROOT + "/auths/signup", {
-      phone,
-      password,
-    })
+    const response = await axios.post(API_ROOT + "/auths/signup", data)
     return response.data
   } catch (err) {
     toast.error(err.response.data.message)

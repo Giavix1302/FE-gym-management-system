@@ -1,6 +1,6 @@
 // src/routes/PrivateRoute.jsx
 import { Navigate, Outlet } from "react-router-dom"
-import jwtDecode from "jwt-decode"
+import { jwtDecode } from "jwt-decode"
 
 export default function PrivateRoute({ roles }) {
   const token = localStorage.getItem("token")
@@ -16,6 +16,7 @@ export default function PrivateRoute({ roles }) {
     }
 
     return <Outlet /> // Nếu hợp lệ thì render children
+    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     return <Navigate to="/login" replace />
   }

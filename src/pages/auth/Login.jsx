@@ -1,14 +1,19 @@
 import { Box, Button, Checkbox, Divider, FormControlLabel, TextField, Typography, Link } from "@mui/material"
 import { Google } from "@mui/icons-material"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
-import { loginAPI } from "~/apis/authAPI"
+import { loginAPI } from "~/apis/auth"
 
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
-import { formatPhoneNumber, isValidPhone } from "~/utils"
+import { formatPhoneNumber, isValidPhone, saveToLocalStorage } from "~/utils"
 import { toast } from "react-toastify"
+// store
+import useUserStore from "~/stores/useUserStore"
 
 function Login() {
+  // store
+  const { updateUser } = useUserStore()
+  //state
   const [phone, setPhone] = useState("")
   const [isPhoneError, setIsPhoneError] = useState(false)
   const [password, setPassword] = useState("")
@@ -39,8 +44,22 @@ function Login() {
       return
     }
     const formatPhone = formatPhoneNumber(phone)
-    const response = await loginAPI(formatPhone, password)
-    console.log("🚀 ~ handleLogin ~ response:", response)
+    const data = await loginAPI(formatPhone, password)
+    // kiem tra login thành cong
+    if (data.success) {
+      updateUser(data.data)
+      saveToLocalStorage("token", data.token)
+      if (data.data.role === "admin") {
+        navigate("/admin/dashboard")
+      } else if (data.data.role === "user") {
+        updateUser(data.data)
+        navigate("/user/home")
+      }
+      toast.success("đăng nhập thành công")
+    }
+
+    // saveToLocalStorage("token", )
+    console.log("🚀 ~ handleLogin ~ data:", data)
   }
 
   return (

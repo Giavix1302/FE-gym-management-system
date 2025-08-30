@@ -60,3 +60,34 @@ export const convertToISODateTime = ({ day, month, year, hour = 0, minute = 0, s
 
   return date.toISOString() // => "2004-02-13T14:30:45.000Z"
 }
+
+// Hàm lưu dữ liệu vào localStorage
+export function saveToLocalStorage(key, value) {
+  try {
+    // Chuyển object/array thành JSON string trước khi lưu
+    const jsonData = JSON.stringify(value)
+    localStorage.setItem(key, jsonData)
+  } catch (error) {
+    console.error("Lỗi khi lưu vào localStorage:", error)
+  }
+}
+
+// Hàm lấy dữ liệu từ localStorage
+export function getFromLocalStorage(key) {
+  try {
+    const data = localStorage.getItem(key)
+    return data ? JSON.parse(data) : null // Parse JSON string về object/array
+  } catch (error) {
+    console.error("Lỗi khi lấy dữ liệu từ localStorage:", error)
+    return null
+  }
+}
+
+// Hàm xóa 1 key trong localStorage
+export function removeFromLocalStorage(key) {
+  try {
+    localStorage.removeItem(key)
+  } catch (error) {
+    console.error("Lỗi khi xóa dữ liệu trong localStorage:", error)
+  }
+}

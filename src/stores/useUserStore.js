@@ -1,5 +1,6 @@
 // store/useUserStore.js
 import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 const defaultUser = {
   _id: "",
@@ -15,20 +16,22 @@ const defaultUser = {
   status: "",
 }
 
-const useUserStore = create((set) => ({
-  user: defaultUser,
-  isAuthenticated: false,
+const useUserStore = create(
+  persist(
+    (set) => ({
+      user: defaultUser,
 
-  // action cập nhật user
-  updateUser: (fields) =>
-    set((state) => ({
-      user: { ...state.user, ...fields },
-    })),
+      updateUser: (fields) =>
+        set((state) => ({
+          user: { ...state.user, ...fields },
+        })),
 
-  // cách dùng: updateUser({ status: "active" })
-
-  // reset về default
-  resetUser: () => set({ user: defaultUser, isAuthenticated: false }),
-}))
+      resetUser: () => set({ user: defaultUser }),
+    }),
+    {
+      name: "user-storage", // tên key lưu trong localStorage
+    },
+  ),
+)
 
 export default useUserStore

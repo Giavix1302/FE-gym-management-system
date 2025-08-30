@@ -1,8 +1,20 @@
 import { Box, Typography, Button } from "@mui/material"
 import { useNavigate } from "react-router-dom"
+import useUserStore from "~/stores/useUserStore"
 
 export default function NotFoundPage() {
+  const { user } = useUserStore()
   const navigate = useNavigate()
+
+  const handleBackHome = () => {
+    if (user.role === "user") {
+      navigate("/user/home")
+    } else if (user.role === "pt") {
+      navigate("/pt/home")
+    } else {
+      navigate("/")
+    }
+  }
 
   return (
     <Box
@@ -45,7 +57,7 @@ export default function NotFoundPage() {
       <Button
         variant="contained"
         color="primary" // dùng primary.main = "#16697A"
-        onClick={() => navigate("/")}
+        onClick={() => handleBackHome()}
         sx={{ borderRadius: "20px", px: 4, py: 1 }}
       >
         Quay về trang chủ
