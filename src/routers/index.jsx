@@ -20,7 +20,8 @@ import AdminClassPage from "~/pages/admin/AdminClassPage"
 import AdminEquipmentPage from "~/pages/admin/AdminEquipmentPage"
 import AdminPaymentPage from "~/pages/admin/AdminPaymentPage"
 import AdminReportMemberPage from "~/pages/admin/report/AdminReportUserPage"
-import AdminMembershipPage from "~/pages/admin/AdminMembershipPage"
+import AdminMembershipPage from "~/pages/admin/AdminMembership/AdminMembershipPage"
+import UserLayout from "~/layouts/UserLayout"
 
 export default function AppRoutes() {
   return (
@@ -39,7 +40,7 @@ export default function AppRoutes() {
 
         {/* User Private Routes */}
         <Route element={<PrivateRoute roles={["user", "pt"]} />}>
-          <Route element={<DefaultLayout />}>
+          <Route element={<UserLayout />}>
             <Route path="/user/home" element={<HomeUserSigned />} />
           </Route>
         </Route>

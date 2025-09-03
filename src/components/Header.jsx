@@ -34,7 +34,7 @@ import PaymentsIcon from "@mui/icons-material/Payments"
 // logo
 import logo from "~/assets/logo.png"
 // router
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 // utils
 import { navItemsUnsigned, navItemPTSigned, navItemUserSigned } from "~/utils/constants.js"
 //store
@@ -70,7 +70,9 @@ export default function Header() {
     }
   }, [user.role])
 
+  // router
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [open, setOpen] = useState(false)
 
@@ -88,6 +90,12 @@ export default function Header() {
     toast.success("Đăng xuất thành công")
     // điều hướng về trang chủ chưa login
     navigate("/")
+  }
+
+  // Kiểm tra xem nav item có đang active không
+  const isActiveNavItem = (itemLink) => {
+    console.log("🚀 ~ isActiveNavItem ~ location.pathname:", location.pathname)
+    return location.pathname === "/" + itemLink
   }
 
   return (
@@ -122,8 +130,28 @@ export default function Header() {
                 key={item.title}
                 sx={{
                   color: "#EDE7E3",
-                  fontWeight: "500",
-                  "&:hover": { color: "#FFA62B", backgroundColor: "transparent" },
+                  textTransform: "uppercase",
+                  fontSize: "1rem",
+                  position: "relative",
+                  "&:hover": {
+                    color: "#FFA62B",
+                    backgroundColor: "transparent",
+                  },
+                  // Active state styling
+                  ...(isActiveNavItem(item.link) && {
+                    color: "#FFA62B",
+                    fontWeight: "bold",
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      bottom: 2,
+                      left: 0,
+                      right: 0,
+                      height: "2px",
+                      backgroundColor: "#FFA62B",
+                      borderRadius: "1px",
+                    },
+                  }),
                 }}
               >
                 {item.title}

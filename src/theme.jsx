@@ -37,7 +37,7 @@ export const theme = createTheme({
             borderRadius: "8px",
           },
           "*::-webkit-scrollbar-thumb:hover": {
-            backgroundColor: "white",
+            backgroundColor: "#888",
           },
         },
       },
