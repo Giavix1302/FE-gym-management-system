@@ -33,7 +33,7 @@ import {
 import TaskAltIcon from "@mui/icons-material/TaskAlt"
 import { copyToClipboard, formatCurrencyVND } from "~/utils/common"
 import successGIF from "~/assets/gif/result_page_success.gif"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 
 const MyCardContent = ({ title, content, border, isCopy }) => {
@@ -85,6 +85,7 @@ const MyCardContent = ({ title, content, border, isCopy }) => {
 }
 
 const PaymentSuccessPage = () => {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const paymentData = {
@@ -430,7 +431,7 @@ const PaymentSuccessPage = () => {
                     variant="contained"
                     size="large"
                     startIcon={<Home />}
-                    onClick={() => (window.location.href = "/")}
+                    onClick={() => navigate("/user/home")}
                     sx={{
                       py: 1.5,
                       background: "linear-gradient(45deg, #FF9800, #F57C00)",
@@ -445,7 +446,7 @@ const PaymentSuccessPage = () => {
                     variant="outlined"
                     size="large"
                     endIcon={<ArrowForward />}
-                    onClick={() => (window.location.href = "/membership")}
+                    onClick={() => navigate("/user/membership")}
                     sx={{ py: 1.5, borderWidth: 2 }}
                   >
                     Xem gói thành viên

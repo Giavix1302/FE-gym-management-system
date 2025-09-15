@@ -65,7 +65,9 @@ function InfoBox({ icon, label, value }) {
 
 // ================= COMPONENT: MembershipCard =================
 function MembershipCard() {
-  const { myMembership } = useMyMembershipStore()
+  // store
+  const { user } = useUserStore()
+  const { updateMyMembership, resetMyMembership, myMembership } = useMyMembershipStore()
 
   const createAt = myMembership?.paymentInfo?.expireAt // ví dụ "2025-09-14T09:39:28.449Z"
   const ttlMs = 60 * 60 * 1000 // 1 giờ
@@ -73,10 +75,6 @@ function MembershipCard() {
 
   // ưu tiên dùng expireAt nếu có, nếu không thì dùng expireAtFromCreate
   const expireAt = myMembership?.paymentInfo?.expireAt || expireAtFromCreate
-
-  // store
-  const { user } = useUserStore()
-  const { updateMyMembership, resetMyMembership } = useMyMembershipStore()
 
   const { expired, formatted } = useCountdown(expireAt, {
     onExpire: () => {
@@ -208,7 +206,13 @@ function MembershipCard() {
           )}
           {myMembership.name !== "" && myMembership.paymentStatus === "unpaid" && (
             <Box>
-              <Button color="warning" variant="contained">
+              <Button
+                onClick={() => {
+                  window.open(myMembership?.paymentInfo?.paymentUrl, "_blank")
+                }}
+                color="warning"
+                variant="contained"
+              >
                 {expired ? (
                   <Typography>Đã hết hạn</Typography>
                 ) : (
