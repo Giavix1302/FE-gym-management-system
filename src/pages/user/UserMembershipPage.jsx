@@ -566,7 +566,7 @@ export default function UserMembershipPage() {
 
       {/* Danh sách gói tập */}
       <Grid container spacing={3}>
-        {listMembership.map((p) => (
+        {listMembership?.map((p) => (
           <Grid key={p.id} size={{ xs: 12, sm: 6, md: 4 }}>
             <PackageCard handleClickSub={handleClickSub} setPackageToPayment={setPackageToPayment} data={p} />
           </Grid>
