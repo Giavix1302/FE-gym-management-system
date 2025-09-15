@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
   Box,
   Card,
@@ -37,185 +37,107 @@ import {
   People as PeopleIcon,
   Image as ImageIcon,
   LocalOffer as OfferIcon,
+  CheckCircle,
 } from "@mui/icons-material"
 
-// Import modal component
-import AddMembershipModal from "./AddMembershipModal"
+// Import modal component với tên mới
+import AddEditMembershipModal from "./AddEditMembershipModal"
 
-import { formatCurrencyVND } from "~/utils"
+import { formatCurrencyVND } from "~/utils/common"
+import { deleteMembershipAPI, getListMembershipAPI } from "~/apis/membership"
 
-// Mock data with real structure
-const mockPackages = [
-  {
-    _id: "68a59a123125465f70fde8350",
-    name: "Trọn gói tập gym 1 tháng",
-    durationMonth: 1,
-    price: 300000,
-    discount: 0,
-    description: "Trọn gói tập gym 1 tháng",
-    type: "gym",
-    bannerURL:
-      "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135860/samples/landscapes/architecture-signs.jpg",
-    createdAt: 1755683355772,
-    updatedAt: null,
-    _destroy: false,
-    totalUsers: 1,
-  },
-  {
-    _id: "68a59a1bc25465f70fse8350",
-    name: "Trọn gói tập gym 1 tháng",
-    durationMonth: 1,
-    price: 300000,
-    discount: 0,
-    description: "Trọn gói tập gym 1 tháng",
-    type: "gym",
-    bannerURL:
-      "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135860/samples/landscapes/architecture-signs.jpg",
-    createdAt: 1755683355772,
-    updatedAt: null,
-    _destroy: false,
-    totalUsers: 1,
-  },
-  {
-    _id: "68a59a1bc25465f70fde8350",
-    name: "Trọn gói tập gym 1 tháng",
-    durationMonth: 1,
-    price: 300000,
-    discount: 0,
-    description: "Trọn gói tập gym 1 tháng",
-    type: "gym",
-    bannerURL:
-      "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135860/samples/landscapes/architecture-signs.jpg",
-    createdAt: 1755683355772,
-    updatedAt: null,
-    _destroy: false,
-    totalUsers: 1,
-  },
-  {
-    _id: "68a59a1bc25465f70fde8351",
-    name: "Gói tập gym 3 tháng Premium",
-    durationMonth: 3,
-    price: 800000,
-    discount: 50000,
-    description: "Gói tập gym 3 tháng bao gồm PT và lớp học nhóm",
-    type: "gym",
-    bannerURL:
-      "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135860/samples/landscapes/architecture-signs.jpg",
-    createdAt: 1755683355000,
-    updatedAt: 1755683400000,
-    _destroy: false,
-    totalUsers: 15,
-  },
-  {
-    _id: "68a59a1bc25465f70fde8352",
-    name: "Gói VIP 6 tháng",
-    durationMonth: 6,
-    price: 1500000,
-    discount: 150000,
-    description: "Gói VIP 6 tháng với đầy đủ tiện ích cao cấp",
-    type: "vip",
-    bannerURL: "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135860/samples/animals/three-dogs.jpg",
-    createdAt: 1755683300000,
-    updatedAt: null,
-    _destroy: false,
-    totalUsers: 8,
-  },
-  {
-    _id: "68a59a1bc25465f70fde8353",
-    name: "Gói sinh viên 1 tháng",
-    durationMonth: 1,
-    price: 200000,
-    discount: 30000,
-    description: "Gói ưu đãi dành cho sinh viên",
-    type: "student",
-    bannerURL: "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135861/samples/ecommerce/accessories-bag.jpg",
-    createdAt: 1755683200000,
-    updatedAt: null,
-    _destroy: true,
-    totalUsers: 5,
-  },
-  {
-    _id: "68a59a1bc25465f70fde8354",
-    name: "Gói tập gym 12 tháng",
-    durationMonth: 12,
-    price: 2500000,
-    discount: 500000,
-    description: "Gói tập gym cả năm với ưu đãi lớn",
-    type: "gym",
-    bannerURL: "https://res.cloudinary.com/djw2dyvbc/image/upload/v1741135861/samples/people/bicycle.jpg",
-    createdAt: 1755683100000,
-    updatedAt: 1755683450000,
-    _destroy: false,
-    totalUsers: 25,
-  },
-]
+import useMembershipStore from "~/stores/useMembershipStore"
+import ConfirmDialog from "~/utils/ConfirmDialog"
+import { toast } from "react-toastify"
 
 export default function AdminMembershipPage() {
-  const [packages, setPackages] = useState(mockPackages)
-  const [selectedPackage, setSelectedPackage] = useState(packages[0])
+  // store
+  const { listMembership, updatePackage, setPackages, removePackage } = useMembershipStore()
+
+  const [selectedPackage, setSelectedPackage] = useState(listMembership[0])
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
   const [priceFilter, setPriceFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
 
-  // Modal state
+  // const [isUpdatedSuccess, setIsUpdatedSuccess] = useState(false)
+
+  useEffect(() => {
+    const getList = async () => {
+      const data = await getListMembershipAPI()
+      setPackages(data.memberships)
+    }
+    getList()
+  }, []) // chỉ chạy 1 lần
+
+  // Modal state - cập nhật để xử lý cả add và edit
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingPackage, setEditingPackage] = useState(null) // Package đang được edit
 
-  // Snackbar state
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  })
+  const handleOpenAddModal = () => {
+    setEditingPackage(null) // Reset edit package
+    setIsModalOpen(true)
+  }
 
-  const handleOpenModal = () => {
+  const handleOpenEditModal = (pkg) => {
+    setEditingPackage(pkg) // Set package to edit
     setIsModalOpen(true)
   }
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
+    setEditingPackage(null) // Reset edit package
   }
 
-  const handleSavePackage = async (packageData) => {
+  const handleUpdateSuccess = (id, dataUpdated) => {
+    // Cập nhật selectedPackage trực tiếp từ object mới
+    setSelectedPackage(dataUpdated)
+
+    // Đồng bộ luôn store (nếu chưa làm trong modal)
+    updatePackage(id, dataUpdated)
+  }
+
+  const [openDialogConfirm, setOpenDialogConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  const handleOpenDialogConfirm = () => setOpenDialogConfirm(true)
+
+  const handleCloseDialogConfirm = () => {
+    if (!deleting) setOpenDialogConfirm(false)
+  }
+
+  const handleClickDelete = async () => {
     try {
-      // Generate new ID (in real app, this would be done by backend)
-      const newId = Date.now().toString()
-      const newPackage = {
-        ...packageData,
-        _id: newId,
+      setDeleting(true)
+      console.log("🚀 ~ handleClickDelete ~ id:", selectedPackage._id)
+
+      // call api
+      const result = await deleteMembershipAPI(selectedPackage._id)
+      console.log("🚀 ~ handleClickDelete ~ result:", result)
+
+      if (result.success) {
+        // hien thi thong bao xoa thanh cong
+        toast.success("Đã xóa thành công gói tập ")
+        // xóa trong store
+        removePackage(selectedPackage._id)
+        // đổi cái select
+        const updatedList = useMembershipStore.getState().listMembership
+        console.log("🚀 ~ handleClickDelete ~ listMembership:", listMembership)
+        setSelectedPackage(updatedList[0])
       }
-
-      // Add to packages list
-      setPackages((prev) => [newPackage, ...prev])
-
-      // Set as selected package
-      setSelectedPackage(newPackage)
-
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: "Thêm gói tập thành công!",
-        severity: "success",
-      })
-
-      console.log("New package added:", newPackage)
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: "Có lỗi xảy ra khi thêm gói tập!",
-        severity: "error",
-      })
-      console.error("Error adding package:", error)
-      throw error
+      // eslint-disable-next-line no-unused-vars
+    } catch (e) {
+      toast.error("Xóa thất bại")
+    } finally {
+      setDeleting(false)
+      setOpenDialogConfirm(false)
     }
-  }
 
-  const handleCloseSnackbar = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }))
+    // xác nhận xóa
   }
 
   // Filter packages based on search and filters
-  const filteredPackages = packages.filter((pkg) => {
+  const filteredPackages = listMembership.filter((pkg) => {
     const matchesSearch =
       pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pkg.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -249,10 +171,12 @@ export default function AdminMembershipPage() {
     switch (type) {
       case "gym":
         return "primary"
-      case "vip":
+      case "boxing":
         return "warning"
       case "student":
         return "info"
+      case "vip":
+        return "secondary"
       default:
         return "default"
     }
@@ -262,10 +186,12 @@ export default function AdminMembershipPage() {
     switch (type) {
       case "gym":
         return "Gym"
-      case "vip":
-        return "VIP"
+      case "boxing":
+        return "Boxing"
       case "student":
         return "Sinh viên"
+      case "vip":
+        return "VIP"
       default:
         return type
     }
@@ -277,7 +203,7 @@ export default function AdminMembershipPage() {
   }
 
   const calculateFinalPrice = (price, discount) => {
-    return price - (discount || 0)
+    return price - (price * discount) / 100
   }
 
   return (
@@ -340,6 +266,7 @@ export default function AdminMembershipPage() {
                     <MenuItem value="gym">Gym</MenuItem>
                     <MenuItem value="vip">VIP</MenuItem>
                     <MenuItem value="student">Sinh viên</MenuItem>
+                    <MenuItem value="boxing">Boxing</MenuItem>
                   </Select>
                 </FormControl>
 
@@ -366,7 +293,7 @@ export default function AdminMembershipPage() {
                   <Button
                     variant="contained"
                     startIcon={<AddIcon />}
-                    onClick={handleOpenModal}
+                    onClick={handleOpenAddModal}
                     sx={{ textTransform: "none", fontWeight: "bold" }}
                   >
                     Thêm gói tập
@@ -511,11 +438,11 @@ export default function AdminMembershipPage() {
                         Banner:
                       </Typography>
                       <img
-                        src={selectedPackage.bannerURL}
+                        src={`${selectedPackage.bannerURL}`}
                         alt={selectedPackage.name}
                         style={{
                           width: "100%",
-                          height: "150px",
+                          height: "180px",
                           objectFit: "cover",
                           borderRadius: "8px",
                           border: "1px solid #e0e0e0",
@@ -566,7 +493,7 @@ export default function AdminMembershipPage() {
                             Giảm giá
                           </Typography>
                           <Typography variant="body1" fontWeight="medium" color="error.main">
-                            -{formatCurrencyVND(selectedPackage.discount)}
+                            -{selectedPackage.discount}%
                           </Typography>
                         </Box>
                       </Box>
@@ -599,6 +526,23 @@ export default function AdminMembershipPage() {
 
                   <Divider sx={{ my: 2 }} />
 
+                  {/* Features */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                      Các quyền lợi người dùng:
+                    </Typography>
+                    {selectedPackage?.features.map((text) => (
+                      <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+                        <CheckCircle fontSize="small" color="success" />
+                        <Typography variant="body2" color="text.secondary">
+                          {text}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  <Divider sx={{ my: 2 }} />
+
                   {/* Timestamps */}
                   <Box sx={{ mb: 3 }}>
                     <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
@@ -616,10 +560,17 @@ export default function AdminMembershipPage() {
 
                   {/* Action Buttons */}
                   <Box sx={{ display: "flex", gap: 1 }}>
-                    <Button variant="contained" startIcon={<EditIcon />} fullWidth sx={{ textTransform: "none" }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<EditIcon />}
+                      fullWidth
+                      sx={{ textTransform: "none" }}
+                      onClick={() => handleOpenEditModal(selectedPackage)}
+                    >
                       Chỉnh sửa
                     </Button>
                     <Button
+                      onClick={() => handleOpenDialogConfirm()}
                       variant="outlined"
                       color="error"
                       startIcon={<DeleteIcon />}
@@ -640,7 +591,24 @@ export default function AdminMembershipPage() {
           </Card>
         </Grid>
       </Grid>
-      <AddMembershipModal open={isModalOpen} onClose={handleCloseModal} onSave={handleSavePackage} />
+
+      {/* Modal với chức năng Add/Edit */}
+      <AddEditMembershipModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        editPackage={editingPackage} // null cho add mode, object cho edit mode
+        handleUpdateSuccess={handleUpdateSuccess}
+      />
+      <ConfirmDialog
+        open={openDialogConfirm}
+        title="Xác nhận xóa"
+        description={`Bạn có chắc muốn xóa gói "${selectedPackage?.name}"? Hành động này không thể hoàn tác.`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+        loading={deleting}
+        onCancel={handleCloseDialogConfirm}
+        onConfirm={handleClickDelete}
+      />
     </Box>
   )
 }

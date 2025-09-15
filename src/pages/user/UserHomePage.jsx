@@ -146,7 +146,7 @@ const mockCheckins = [
   { date: "24/08/2025", time: "20:00", location: "Gym Quận 1" },
 ]
 
-function HomeUserSigned() {
+function UserHomePage() {
   const progressPercentage = (mockMembership.sessionsUsed / mockMembership.totalSessions) * 100
 
   const [events, setEvents] = useState([
@@ -420,4 +420,4 @@ function HomeUserSigned() {
   )
 }
 
-export default HomeUserSigned
+export default UserHomePage

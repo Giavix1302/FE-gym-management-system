@@ -1,5 +1,4 @@
 import { createTheme } from "@mui/material/styles"
-import {} from "@mui/material/colors"
 
 export const theme = createTheme({
   palette: {
@@ -22,6 +21,15 @@ export const theme = createTheme({
     text: {
       primary: "#212121", // chữ chính
       secondary: "#555555", // chữ phụ
+    },
+    success: {
+      main: "#2e7d32",
+      secondary: "#4caf50",
+      text: "#166534",
+      background: "#e8ffe8ff",
+    },
+    error: {
+      main: "#f44336",
     },
   },
   components: {

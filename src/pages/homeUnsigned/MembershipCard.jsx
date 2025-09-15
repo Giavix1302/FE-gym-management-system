@@ -1,5 +1,5 @@
 import { Card, CardContent, Typography, Box, Divider, Button } from "@mui/material"
-import { formatCurrencyVND } from "~/utils"
+import { formatCurrencyVND } from "~/utils/common"
 
 export default function MembershipCard({ content, contrast = false }) {
   console.log("🚀 ~ MembershipCard ~ content:", content)

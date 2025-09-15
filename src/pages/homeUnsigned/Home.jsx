@@ -12,10 +12,7 @@ import intro3 from "~/assets/intro3.jpg"
 import intro4 from "~/assets/intro4.jpg"
 import SplitLayout from "./SplitLayout"
 
-import { API_ROOT } from "~/utils/constants"
-
 function Home() {
-  console.log(API_ROOT)
   return (
     <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
       {/* Hero Section */}

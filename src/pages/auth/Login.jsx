@@ -5,14 +5,16 @@ import { loginAPI } from "~/apis/auth"
 
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
-import { formatPhoneNumber, isValidPhone, saveToLocalStorage } from "~/utils"
+import { formatPhoneNumber, isValidPhone, saveToLocalStorage } from "~/utils/common"
 import { toast } from "react-toastify"
 // store
 import useUserStore from "~/stores/useUserStore"
+import useMyMembershipStore from "~/stores/useMyMembershipStore"
 
 function Login() {
   // store
   const { updateUser } = useUserStore()
+  const { updateMyMembership } = useMyMembershipStore()
   //state
   const [phone, setPhone] = useState("")
   const [isPhoneError, setIsPhoneError] = useState(false)
@@ -45,20 +47,22 @@ function Login() {
     }
     const formatPhone = formatPhoneNumber(phone)
     const data = await loginAPI(formatPhone, password)
+    console.log("🚀 ~ handleLogin ~ data:", data)
     // kiem tra login thành cong
     if (data.success) {
-      updateUser(data.data)
-      saveToLocalStorage("token", data.token)
-      if (data.data.role === "admin") {
+      // lưu token
+      saveToLocalStorage("accessToken", data.accessToken)
+      if (data.user.role === "admin") {
         navigate("/admin/dashboard")
-      } else if (data.data.role === "user") {
-        updateUser(data.data)
+      } else if (data.user.role === "user") {
+        updateUser(data.user)
+        updateMyMembership(data.myMembership)
         navigate("/user/home")
       }
       toast.success("đăng nhập thành công")
     }
 
-    // saveToLocalStorage("token", )
+    // saveToLocalStorage("accessToken", )
     console.log("🚀 ~ handleLogin ~ data:", data)
   }
 

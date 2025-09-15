@@ -1,38 +1,44 @@
-import axios from "axios"
+// src/apis/authAPI.js
 import { toast } from "react-toastify"
-import { formatPhoneNumber } from "~/utils"
-import { API_ROOT } from "~/utils/constants"
+import { axiosPublic } from "./axiosConfig"
+import { formatPhoneNumber } from "~/utils/common"
 
+// Login (dùng axiosPublic vì chưa có token)
 export const loginAPI = async (phone, password) => {
   try {
-    const response = await axios.post(API_ROOT + "/auths/login", {
-      phone,
-      password,
-    })
-    return response.data
+    const rep = await axiosPublic.post("/auths/login", { phone, password })
+    return rep.data
   } catch (err) {
-    console.log("🚀 ~ loginAPI ~ err:", err.response.data)
-    toast.error(err.response.data.message)
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
   }
 }
 
 export const signupAPI = async (data) => {
   try {
-    const response = await axios.post(API_ROOT + "/auths/signup", data)
+    const response = await axiosPublic.post("/auths/signup", data)
     return response.data
   } catch (err) {
-    toast.error(err.response.data.message)
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
   }
 }
 
+// Verify OTP (dùng axiosPublic vì chưa có token)
 export const verifyOtpAPI = async (phone, code) => {
+  const rep = await axiosPublic.post("/auths/verify", {
+    phone: formatPhoneNumber(phone),
+    code,
+  })
+  return rep.data
+}
+
+export const logoutAPI = async () => {
   try {
-    const response = await axios.post(API_ROOT + "/auths/verify", {
-      phone: formatPhoneNumber(phone),
-      code,
-    })
-    return response.data
+    await axiosPublic.post("/auths/logout", {}, { withCredentials: true })
   } catch (err) {
-    toast.error(err.response.data.message)
+    console.error("Logout failed", err)
   }
 }

@@ -23,7 +23,7 @@ import { useState, Fragment } from "react"
 
 import OtpModal from "./OtpModal"
 import { toast } from "react-toastify"
-import { formatPhoneNumber, isValidPhone } from "~/utils"
+import { formatPhoneNumber, isValidPhone, removeFromLocalStorage, saveToLocalStorage } from "~/utils/common"
 import { signupAPI, verifyOtpAPI } from "~/apis/auth"
 
 //store
@@ -121,6 +121,10 @@ function Signup() {
     if (data.success) {
       // thông báo thành công
       toast.success(data.message)
+      // trả ra accesstoken và lưu refreshtoken vào cookie
+      removeFromLocalStorage("accessToken")
+      saveToLocalStorage("accessToken", data.accessToken)
+
       // điều hướng về trang chủ
       if (data.user.role === "user") {
         navigate("/user/home")

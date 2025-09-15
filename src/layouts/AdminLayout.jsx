@@ -25,9 +25,11 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@mui/material"
 
 import { ToolbarActions } from "@toolpad/core/DashboardLayout"
-import { removeFromLocalStorage } from "~/utils"
+import { removeFromLocalStorage } from "~/utils/common"
 // store
 import useUserStore from "~/stores/useUserStore"
+import { logoutAPI } from "~/apis/auth"
+import { useLogout } from "~/hooks/useLogout"
 
 const NAVIGATION = [
   {
@@ -125,8 +127,7 @@ const adminTheme = createTheme({
 })
 
 function CustomToolbarActions() {
-  const { resetUser } = useUserStore()
-  const navigate = useNavigate()
+  const logout = useLogout()
 
   return (
     <>
@@ -136,9 +137,7 @@ function CustomToolbarActions() {
         variant="outlined"
         sx={{ ml: 2 }}
         onClick={() => {
-          removeFromLocalStorage("token")
-          resetUser()
-          navigate("/login")
+          logout()
         }}
       >
         Đăng xuất

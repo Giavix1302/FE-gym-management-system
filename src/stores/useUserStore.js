@@ -1,4 +1,3 @@
-// store/useUserStore.js
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
@@ -29,7 +28,7 @@ const useUserStore = create(
       resetUser: () => set({ user: defaultUser }),
     }),
     {
-      name: "user-storage", // tên key lưu trong localStorage
+      name: "user-storage", // key trong localStorage
     },
   ),
 )

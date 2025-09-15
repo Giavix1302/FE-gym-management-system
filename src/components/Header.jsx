@@ -39,15 +39,17 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { navItemsUnsigned, navItemPTSigned, navItemUserSigned } from "~/utils/constants.js"
 //store
 import useUserStore from "~/stores/useUserStore"
-import { removeFromLocalStorage } from "~/utils"
 import { toast } from "react-toastify"
+import { useLogout } from "~/hooks/useLogout"
 
 export default function Header() {
+  // custom hooks
+  const logout = useLogout()
   useUserStore.subscribe((state) => {
     console.log("Store changed:", state)
   })
   // store
-  const { user, resetUser } = useUserStore()
+  const { user } = useUserStore()
 
   // menu
   const [anchorEl, setAnchorEl] = React.useState(null)
@@ -82,14 +84,8 @@ export default function Header() {
 
   // handle logout
   const handleLogout = () => {
-    // xóa token
-    removeFromLocalStorage("token")
-    // xóa store
-    resetUser()
-    // thông báo đăng xuất thành công
     toast.success("Đăng xuất thành công")
-    // điều hướng về trang chủ chưa login
-    navigate("/")
+    logout()
   }
 
   // Kiểm tra xem nav item có đang active không
