@@ -6,7 +6,7 @@ import { Routes, Route, useNavigate } from "react-router-dom"
 import PrivateRoute from "./PrivateRoute"
 import NotFoundPage from "~/pages/NotFoundPage"
 
-import DefaultLayout from "~/layouts/defaultLayout"
+import DefaultLayout from "~/layouts/DefaultLayout"
 import Home from "~/pages/homeUnsigned/Home"
 
 // auth layout
