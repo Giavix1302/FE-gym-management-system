@@ -35,6 +35,8 @@ import UserMembershipPage from "~/pages/user/UserMembershipPage"
 //
 import { useLogout } from "~/hooks/useLogout"
 import ResultPaymentPage from "~/pages/ResultPaymentPage"
+import PtHomePage from "~/pages/pt/ptHomePage"
+import PtProfilePage from "~/pages/pt/PtProfilePage"
 
 export default function AppRoutes() {
   const logout = useLogout()
@@ -101,11 +103,18 @@ export default function AppRoutes() {
       </Route>
 
       {/* User Private Routes */}
-      <Route element={<PrivateRoute roles={["user", "pt"]} />}>
+      <Route element={<PrivateRoute roles={["user"]} />}>
         <Route element={<UserLayout />}>
           <Route path="/user/home" element={<UserHomePage />} />
           <Route path="/user/membership" element={<UserMembershipPage />} />
           <Route path="/user/payment/success" element={<ResultPaymentPage />} />
+        </Route>
+      </Route>
+
+      <Route element={<PrivateRoute roles={["pt"]} />}>
+        <Route element={<UserLayout />}>
+          <Route path="/pt/home" element={<PtHomePage />} />
+          <Route path="/pt/profile" element={<PtProfilePage />} />
         </Route>
       </Route>
 

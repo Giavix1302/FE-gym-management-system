@@ -49,24 +49,10 @@ export const navItemUserSigned = [
 ]
 
 export const navItemPTSigned = [
-  {
-    title: "Trang chủ",
-    link: "pt/home",
-  },
-  {
-    title: "Lịch dạy PT",
-    link: "pt/booking",
-  },
-  {
-    title: "Lớp học",
-    link: "pt/class",
-  },
-  {
-    title: "Tin tức",
-    link: "pt/news",
-  },
-  {
-    title: "Trợ lí AI",
-    link: "pt/chat-bot",
-  },
+  { title: "Trang chủ", link: "pt/home" },
+  { title: "Lịch dạy PT", link: "pt/booking" },
+  { title: "Lớp học", link: "pt/class" },
+  { title: "Khách hàng", link: "pt/clients" },
+  { title: "Tin tức", link: "pt/news" },
+  { title: "Trợ lí AI", link: "pt/chat-bot" },
 ]

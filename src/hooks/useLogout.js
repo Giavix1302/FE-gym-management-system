@@ -4,11 +4,13 @@ import useMembershipStore from "~/stores/useMembershipStore"
 import { removeFromLocalStorage } from "~/utils/common"
 import { logoutAPI } from "~/apis/auth"
 import useMyMembershipStore from "~/stores/useMyMembershipStore"
+import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 
 export function useLogout() {
   const { resetPackages } = useMembershipStore()
   const { resetMyMembership } = useMyMembershipStore()
   const { resetUser } = useUserStore()
+  const { resetTrainerInfo } = useTrainerInfoStore()
   const navigate = useNavigate()
 
   const logout = async () => {
@@ -18,6 +20,7 @@ export function useLogout() {
       // xóa store
       resetUser()
       resetMyMembership()
+      resetTrainerInfo()
       resetPackages()
       // call API xóa refreshToken
       await logoutAPI() // gọi API logout nếu cần

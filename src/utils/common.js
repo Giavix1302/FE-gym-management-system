@@ -29,6 +29,35 @@ export function formatPhoneNumber(phone) {
   return cleaned
 }
 
+export function formatToLeadingZero(input) {
+  if (input == null) return null
+  // chuyển thành chuỗi, loại bỏ khoảng trắng 2 đầu
+  let s = String(input).trim()
+
+  // loại bỏ mọi ký tự không phải số (như +, -, spaces, parens, ...)
+  s = s.replace(/\D/g, "")
+
+  if (!s) return null
+
+  // trường hợp bắt đầu bằng 0084 (thường thấy khi có tiền tố 00)
+  if (s.startsWith("0084")) {
+    return "0" + s.slice(4)
+  }
+
+  // trường hợp bắt đầu bằng 84 (ví dụ 84987654321 hoặc +84987654321 sau khi remove non-digits)
+  if (s.startsWith("84") && s.length > 2) {
+    return "0" + s.slice(2)
+  }
+
+  // nếu đã bắt đầu bằng 0 thì giữ nguyên
+  if (s.startsWith("0")) {
+    return s
+  }
+
+  // fallback: nếu là chuỗi số khác (ví dụ thiếu mã) — trả về nguyên vẹn (hoặc null tuỳ ý)
+  return s
+}
+
 export const isValidPhone = (phone) => /^0\d{9}$/.test(phone)
 
 export function isValidEmail(email) {
@@ -61,6 +90,33 @@ export const convertToISODateTime = ({ day, month, year, hour = 0, minute = 0, s
   const date = new Date(year, month - 1, day, hour, minute, second)
 
   return date.toISOString() // => "2004-02-13T14:30:45.000Z"
+}
+
+// "2004-02-13T00:00:00.000Z" -> 13/02/2004
+export function formatISODateToVNDate(isoString) {
+  if (!isoString) return ""
+
+  const date = new Date(isoString)
+
+  const day = String(date.getUTCDate()).padStart(2, "0")
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0") // tháng bắt đầu từ 0
+  const year = date.getUTCFullYear()
+
+  return `${day}/${month}/${year}`
+}
+
+// 13/02/2004 -> "2004-02-13T00:00:00.000Z"
+export const toISODate = (dateStr) => {
+  if (!dateStr) return null
+
+  // Tách ngày/tháng/năm
+  const [day, month, year] = dateStr.split("/")
+
+  // Tạo đối tượng Date (JS month bắt đầu từ 0)
+  const date = new Date(Date.UTC(year, month - 1, day))
+
+  // Trả về định dạng ISO 8601
+  return date.toISOString()
 }
 
 // Hàm lưu dữ liệu vào localStorage
@@ -118,18 +174,6 @@ export function calculateDiscountedPrice(originalPrice, discountPercent) {
     discountAmount,
     finalPrice,
   }
-}
-
-export function formatISODateToVNDate(isoString) {
-  if (!isoString) return ""
-
-  const date = new Date(isoString)
-
-  const day = String(date.getUTCDate()).padStart(2, "0")
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0") // tháng bắt đầu từ 0
-  const year = date.getUTCFullYear()
-
-  return `${day}/${month}/${year}`
 }
 
 export function calculateProgressPercent(startDateISO, endDateISO) {
@@ -192,4 +236,42 @@ export const computeRemaining = (expireAtInput) => {
     remainingSeconds,
     formatted: `${mm}:${ss}`,
   }
+}
+
+const userKeys = ["email", "gender", "dateOfBirth", "address", "age", "phone", "avatar", "fullName"]
+const trainerKeys = ["bio", "education", "experience", "specialization", "isApproved"]
+
+export function splitUserTrainerData(data) {
+  const userData = {}
+  const trainerData = {}
+
+  for (const key in data) {
+    if (userKeys.includes(key)) {
+      userData[key] = data[key]
+    }
+    if (trainerKeys.includes(key)) {
+      trainerData[key] = data[key]
+    }
+  }
+
+  return { userData, trainerData }
+}
+
+export function buildFormData(data) {
+  const formData = new FormData()
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (value == null || value === "") return // bỏ qua field null/empty
+
+    // Nếu là array file (ví dụ images)
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        formData.append(key, item)
+      })
+    } else {
+      formData.append(key, value)
+    }
+  })
+
+  return formData
 }

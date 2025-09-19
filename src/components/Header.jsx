@@ -31,6 +31,8 @@ import PasswordIcon from "@mui/icons-material/Password"
 import LogoutIcon from "@mui/icons-material/Logout"
 import DirectionsRunIcon from "@mui/icons-material/DirectionsRun"
 import PaymentsIcon from "@mui/icons-material/Payments"
+import PersonIcon from "@mui/icons-material/Person"
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
 // logo
 import logo from "~/assets/logo.png"
 // router
@@ -200,6 +202,25 @@ export default function Header() {
                   </ListItemIcon>
                   <ListItemText>Đổi mật khẩu</ListItemText>
                 </MenuItem>
+
+                {user.role === "pt" && (
+                  <Box>
+                    <Divider />
+                    <MenuItem onClick={() => navigate("pt/profile")}>
+                      <ListItemIcon>
+                        <PersonIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Hồ sơ cá nhân</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={() => navigate("pt/payments")}>
+                      <ListItemIcon>
+                        <AttachMoneyIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Doanh thu</ListItemText>
+                    </MenuItem>
+                  </Box>
+                )}
+
                 <Divider />
                 <MenuItem onClick={() => handleLogout()}>
                   <ListItemIcon>

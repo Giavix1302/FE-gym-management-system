@@ -116,6 +116,8 @@ function Signup() {
     console.log("🚀 ~ handleVerify ~ data:", data)
     if (data === undefined) {
       setOpenModalOTP(false)
+      console.log("🚀 ~ handleVerify ~ data kkk:", data)
+
       return
     }
     if (data.success) {

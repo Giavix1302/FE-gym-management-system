@@ -10,11 +10,13 @@ import { toast } from "react-toastify"
 // store
 import useUserStore from "~/stores/useUserStore"
 import useMyMembershipStore from "~/stores/useMyMembershipStore"
+import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 
 function Login() {
   // store
   const { updateUser } = useUserStore()
   const { updateMyMembership } = useMyMembershipStore()
+  const { updateTrainerInfo, resetTrainerInfo } = useTrainerInfoStore()
   //state
   const [phone, setPhone] = useState("")
   const [isPhoneError, setIsPhoneError] = useState(false)
@@ -58,6 +60,15 @@ function Login() {
         updateUser(data.user)
         updateMyMembership(data.myMembership)
         navigate("/user/home")
+      } else if (data.user.role === "pt") {
+        updateUser(data.user)
+        if (Object.keys(data.trainer).length > 0) {
+          console.log(" vô đây")
+          updateTrainerInfo(data.trainer)
+        } else {
+          resetTrainerInfo()
+        }
+        navigate("/pt/home")
       }
       toast.success("đăng nhập thành công")
     }
