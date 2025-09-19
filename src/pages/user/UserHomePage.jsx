@@ -319,7 +319,7 @@ function UserHomePage() {
               Đặt thêm
             </Button>
           </Box>
-          <GymCalendar events={events} />
+          <GymCalendar />
           {/* <Grid container spacing={2}>
             {mockBookings.map((booking) => (
               <Grid item xs={12} md={4} key={booking.id}>

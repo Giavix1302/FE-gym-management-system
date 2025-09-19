@@ -85,6 +85,7 @@ import {
 import { updateInfoTrainerByUserIdAPI } from "~/apis/trainer"
 import { updateInfoUserAPI } from "~/apis/user"
 import MyBackdrop from "~/components/MyBackdrop"
+import TimeField from "~/components/TimeField"
 
 // CustomTabPanel theo cách chính thức của MUI
 function CustomTabPanel(props) {
@@ -137,7 +138,10 @@ export default function PtProfilePage() {
   const [openImageDialog, setOpenImageDialog] = useState(false)
   const [selectedImage, setSelectedImage] = useState("")
   const [newPhysiqueImages, setNewPhysiqueImages] = useState([])
-  const [birthOfDate, setBirthOfDate] = useState({ day: "", month: "", year: "" })
+
+  const [startTimeValue, setStartTimeValue] = useState(null)
+  const [endTimeValue, setEndTimeValue] = useState(null)
+  console.log("🚀 ~ PtProfilePage ~ startTimeValue:", startTimeValue)
 
   // Stores - uncomment
   const { user, updateUser } = useUserStore()
@@ -1025,41 +1029,11 @@ export default function PtProfilePage() {
                     </Grid>
 
                     <Grid item size={{ xs: 12, sm: 4 }}>
-                      <TextField
-                        fullWidth
-                        label="Thời gian bắt đầu"
-                        type="time"
-                        value={getCurrentValue("startTime")}
-                        onChange={(e) => handleFieldChange("startTime", e.target.value)}
-                        disabled={!isEditing}
-                        InputLabelProps={{ shrink: true }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AccessTimeIcon color="action" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
+                      <TimeField label="Giờ bắt đầu" value={startTimeValue} setValue={setStartTimeValue} />
                     </Grid>
 
                     <Grid item size={{ xs: 12, sm: 4 }}>
-                      <TextField
-                        fullWidth
-                        label="Thời gian kết thúc"
-                        type="time"
-                        value={getCurrentValue("endTime")}
-                        onChange={(e) => handleFieldChange("endTime", e.target.value)}
-                        disabled={!isEditing}
-                        InputLabelProps={{ shrink: true }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <AccessTimeIcon color="action" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
+                      <TimeField label="Giờ kết thúc" value={endTimeValue} setValue={setEndTimeValue} />
                     </Grid>
                   </Grid>
 
