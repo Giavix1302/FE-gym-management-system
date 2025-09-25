@@ -37,6 +37,7 @@ import { useLogout } from "~/hooks/useLogout"
 import ResultPaymentPage from "~/pages/ResultPaymentPage"
 import PtHomePage from "~/pages/pt/ptHomePage"
 import PtProfilePage from "~/pages/pt/PtProfilePage"
+import UserBookingPage from "~/pages/user/UserBookingPage"
 
 export default function AppRoutes() {
   const logout = useLogout()
@@ -107,6 +108,7 @@ export default function AppRoutes() {
         <Route element={<UserLayout />}>
           <Route path="/user/home" element={<UserHomePage />} />
           <Route path="/user/membership" element={<UserMembershipPage />} />
+          <Route path="/user/booking" element={<UserBookingPage />} />
           <Route path="/user/payment/success" element={<ResultPaymentPage />} />
         </Route>
       </Route>

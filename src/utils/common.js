@@ -93,16 +93,26 @@ export const convertToISODateTime = ({ day, month, year, hour = 0, minute = 0, s
 }
 
 // "2004-02-13T00:00:00.000Z" -> 13/02/2004
-export function formatISODateToVNDate(isoString) {
+export function convertISOToVNTime(isoString, withTime = false) {
   if (!isoString) return ""
 
   const date = new Date(isoString)
 
-  const day = String(date.getUTCDate()).padStart(2, "0")
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0") // tháng bắt đầu từ 0
-  const year = date.getUTCFullYear()
+  const options = {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }
 
-  return `${day}/${month}/${year}`
+  if (withTime) {
+    options.hour = "2-digit"
+    options.minute = "2-digit"
+    options.second = "2-digit"
+    options.hour12 = false
+  }
+
+  return new Intl.DateTimeFormat("en-GB", options).format(date)
 }
 
 // 13/02/2004 -> "2004-02-13T00:00:00.000Z"
@@ -117,6 +127,63 @@ export const toISODate = (dateStr) => {
 
   // Trả về định dạng ISO 8601
   return date.toISOString()
+}
+
+// --- Ví dụ sử dụng ---
+//   const result = convertToISODateRange(
+//     { day: 24, month: 9, year: 2025 },
+//     { hour: 9, minute: 0 },
+//     { hour: 11, minute: 0 }
+//   )
+//console.log(result) { startISO: "2025-09-24T02:00:00.000Z", endISO: "2025-09-24T04:00:00.000Z" }
+export function convertToISODateRange(dateObj, startTime, endTime) {
+  const { day, month, year } = dateObj
+
+  const startDate = new Date(year, month - 1, day, startTime.hour, startTime.minute)
+  const endDate = new Date(year, month - 1, day, endTime.hour, endTime.minute)
+
+  // Validation
+  if (startDate >= endDate) {
+    toast.error("Giờ bắt đầu phải trước giờ kết thúc")
+  }
+
+  const diffMs = endDate - startDate
+  const diffHours = diffMs / (1000 * 60 * 60)
+
+  if (diffHours < 1) {
+    toast.error("Khoảng cách tối thiểu phải 1 giờ")
+  }
+
+  if (diffHours > 4) {
+    toast.error("Khoảng cách không được vượt quá 4 giờ")
+  }
+
+  // Luôn trả về ISO UTC string để gửi backend
+  return {
+    startISO: startDate.toISOString(),
+    endISO: endDate.toISOString(),
+  }
+}
+
+export const convertEvents = (events) => {
+  return events.map((event) => {
+    const parseISO = (iso) => {
+      if (!iso) return null
+      const isoString = typeof iso === "string" ? iso : iso.toISOString()
+
+      const [datePart, timePartWithMs] = isoString.split("T")
+      const [year, month, day] = datePart.split("-").map(Number)
+      const [hour, minute] = timePartWithMs.split(":").map(Number)
+
+      return new Date(year, month - 1, day, hour, minute)
+    }
+
+    return {
+      ...event,
+      startTime: parseISO(event.startTime),
+      endTime: parseISO(event.endTime),
+    }
+  })
 }
 
 // Hàm lưu dữ liệu vào localStorage

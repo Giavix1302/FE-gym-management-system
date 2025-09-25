@@ -20,12 +20,7 @@ import {
   CardMembership,
   Close,
 } from "@mui/icons-material"
-import {
-  calculateMonthlyPrice,
-  calculateProgressPercent,
-  formatCurrencyVND,
-  formatISODateToVNDate,
-} from "~/utils/common"
+import { calculateMonthlyPrice, calculateProgressPercent, convertISOToVNTime, formatCurrencyVND } from "~/utils/common"
 import { getListMembershipAPI } from "~/apis/membership"
 import useMembershipStore from "~/stores/useMembershipStore"
 import useUserStore from "~/stores/useUserStore"
@@ -315,14 +310,14 @@ function MembershipCard() {
                   <InfoBox
                     icon={<CalendarToday />}
                     label="Bắt đầu"
-                    value={formatISODateToVNDate(myMembership.startDate) || "Chưa có"}
+                    value={convertISOToVNTime(myMembership.startDate) || "Chưa có"}
                   />
                 </Grid>
                 <Grid item xs={6}>
                   <InfoBox
                     icon={<CalendarMonth />}
                     label="Kết thúc"
-                    value={formatISODateToVNDate(myMembership.endDate) || "Chưa có"}
+                    value={convertISOToVNTime(myMembership.endDate) || "Chưa có"}
                   />
                 </Grid>
               </Grid>

@@ -5,10 +5,6 @@ import {
   Button,
   ButtonGroup,
   Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Card,
   CardContent,
   Chip,
@@ -20,7 +16,6 @@ import {
   Divider,
 } from "@mui/material"
 import {
-  Close as CloseIcon,
   Today as TodayIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
@@ -30,10 +25,33 @@ import {
   Description as DescriptionIcon,
   FitnessCenter as FitnessCenterIcon,
 } from "@mui/icons-material"
+import SportsKabaddiIcon from "@mui/icons-material/SportsKabaddi"
+
+// Helper functions for date conversion
+const convertToVietnamTime = (isoString) => {
+  if (!isoString) return new Date()
+
+  // Create date from ISO string and convert to Vietnam timezone
+  const date = new Date(isoString)
+
+  // Vietnam is UTC+7, so we adjust accordingly
+  // Note: This is a simple approach. For production, consider using a proper timezone library
+  return new Date(date.getTime())
+}
+
+const convertToISOString = (date) => {
+  if (!date) return new Date().toISOString()
+
+  // Ensure we have a Date object
+  const dateObj = date instanceof Date ? date : new Date(date)
+  return dateObj.toISOString()
+}
 
 // Tự định nghĩa các functions cần thiết thay cho date-fns
 const format = (date, formatStr) => {
-  const d = new Date(date)
+  // Convert to Vietnam time if it's an ISO string
+  const d = typeof date === "string" ? convertToVietnamTime(date) : new Date(date)
+
   switch (formatStr) {
     case "dd":
       return d.getDate().toString().padStart(2, "0")
@@ -69,13 +87,16 @@ const parse = (str, formatStr, baseDate) => {
 }
 
 const startOfWeek = (date, options = {}) => {
-  const d = new Date(date)
+  const d = typeof date === "string" ? convertToVietnamTime(date) : new Date(date)
   const day = d.getDay()
   const diff = d.getDate() - day + (options.weekStartsOn === 1 ? (day === 0 ? -6 : 1) : 0)
   return new Date(d.setDate(diff))
 }
 
-const getDay = (date) => new Date(date).getDay()
+const getDay = (date) => {
+  const d = typeof date === "string" ? convertToVietnamTime(date) : new Date(date)
+  return d.getDay()
+}
 
 // Component CustomEvent với MUI
 function CustomEvent({ event, onClick }) {
@@ -114,12 +135,14 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
   const today = new Date()
   const currentHour = today.getHours()
 
-  // Hàm format thời gian
-  const formatTime = (date) => {
+  // Hàm format thời gian với Vietnam timezone
+  const formatTime = (dateInput) => {
+    const date = typeof dateInput === "string" ? convertToVietnamTime(dateInput) : new Date(dateInput)
     return date.toLocaleTimeString("vi-VN", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
+      timeZone: "Asia/Ho_Chi_Minh",
     })
   }
 
@@ -150,8 +173,9 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
 
     // Hàm tính toán vị trí và chiều cao của event
     const calculateEventStyle = (event, timeSlot) => {
-      const eventStart = new Date(event.start)
-      const eventEnd = new Date(event.end)
+      // Convert ISO strings to Vietnam time
+      const eventStart = convertToVietnamTime(event.startTime)
+      const eventEnd = convertToVietnamTime(event.endTime)
 
       const eventStartHour = eventStart.getHours()
       const eventStartMinute = eventStart.getMinutes()
@@ -178,7 +202,7 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
 
     // Hàm kiểm tra event có trong buổi không
     const isEventInTimeSlot = (event, timeSlot) => {
-      const eventStart = new Date(event.start)
+      const eventStart = convertToVietnamTime(event.startTime)
       const eventHour = eventStart.getHours()
       return eventHour >= timeSlot.startHour && eventHour < timeSlot.endHour
     }
@@ -188,7 +212,7 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
         {/* Header */}
         <Paper elevation={1}>
           <Box sx={{ display: "flex", borderBottom: "1px solid", borderColor: "divider" }}>
-            <Box sx={{ width: 120, p: 1, borderRight: "1px solid", borderColor: "divider", bgcolor: "grey.50" }}>
+            <Box sx={{ width: 120, p: 1, borderRight: "1px solid", borderColor: "divider" }}>
               <Typography variant="caption" sx={{ fontWeight: "bold" }}>
                 Thời gian
               </Typography>
@@ -202,7 +226,6 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
                   borderRight: index < 6 ? "1px solid" : "none",
                   borderColor: "divider",
                   textAlign: "center",
-                  bgcolor: "grey.50",
                 }}
               >
                 <Typography variant="caption" sx={{ fontWeight: "bold" }}>
@@ -232,7 +255,6 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
                   p: 2,
                   borderRight: "1px solid",
                   borderColor: "divider",
-                  bgcolor: "grey.50",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
@@ -250,10 +272,10 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
                 // Lấy tất cả events trong buổi này của ngày này và sắp xếp theo thời gian
                 const dayEvents = events
                   .filter((event) => {
-                    const eventDate = new Date(event.start)
+                    const eventDate = convertToVietnamTime(event.startTime)
                     return eventDate.toDateString() === day.toDateString() && isEventInTimeSlot(event, timeSlot)
                   })
-                  .sort((a, b) => new Date(a.start) - new Date(b.start)) // Sắp xếp theo thời gian
+                  .sort((a, b) => convertToVietnamTime(a.startTime) - convertToVietnamTime(b.startTime)) // Sắp xếp theo thời gian
 
                 return (
                   <Box
@@ -262,7 +284,6 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
                       flex: 1,
                       borderRight: dayIndex < 6 ? "1px solid" : "none",
                       borderColor: "divider",
-                      "&:hover": { bgcolor: "grey.50" },
                       position: "relative",
                       overflow: "hidden",
                     }}
@@ -278,7 +299,7 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
                         }}
                       >
                         <Tooltip
-                          title={`${event.title} - ${formatTime(event.start)} đến ${formatTime(event.end)}`}
+                          title={`${event.title} - ${formatTime(event.startTime)} đến ${formatTime(event.endTime)}`}
                           arrow
                           placement="top"
                         >
@@ -342,7 +363,7 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
   const renderDayView = () => {
     const hours = Array.from({ length: 12 }, (_, i) => i + 8)
     const dayEvents = events.filter((event) => {
-      const eventDate = new Date(event.start)
+      const eventDate = convertToVietnamTime(event.startTime)
       return eventDate.toDateString() === date.toDateString()
     })
 
@@ -356,7 +377,7 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
         <Box sx={{ flex: 1, overflow: "auto" }}>
           {hours.map((hour) => {
             const hourEvents = dayEvents.filter((event) => {
-              const eventDate = new Date(event.start)
+              const eventDate = convertToVietnamTime(event.startTime)
               return eventDate.getHours() === hour
             })
 
@@ -456,7 +477,7 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
           {days.slice(0, 42).map((day, index) => {
             const isCurrentMonth = day.getMonth() === month
             const dayEvents = events.filter((event) => {
-              const eventDate = new Date(event.start)
+              const eventDate = convertToVietnamTime(event.startTime)
               return eventDate.toDateString() === day.toDateString()
             })
 
@@ -503,62 +524,16 @@ function SimpleCalendar({ events, view, onView, date, onNavigate, onEventClick }
   )
 }
 
-export default function GymCalendar() {
+export default function GymCalendar({ events = [], onEventClick }) {
   const [currentView, setCurrentView] = useState("week")
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedEvent, setSelectedEvent] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const events = [
-    {
-      title: "Yoga Class",
-      start: new Date(2025, 8, 22, 9, 0),
-      end: new Date(2025, 8, 22, 10, 30), // Kéo dài 1.5 tiếng
-      coach: "Nguyễn Thị A",
-      room: "Phòng 101",
-      description: "Lớp yoga cho người mới bắt đầu, tập trung vào các tư thế cơ bản và hơi thở",
-    },
-    {
-      title: "Gym Training",
-      start: new Date(2025, 8, 23, 14, 0),
-      end: new Date(2025, 8, 23, 15, 30), // 1.5 tiếng
-      coach: "Trần Văn B",
-      room: "Phòng tập",
-      description: "Luyện tập gym cơ bản với trọng lượng, phù hợp cho người mới",
-    },
-    {
-      title: "Aerobic",
-      start: new Date(2025, 8, 24, 18, 0),
-      end: new Date(2025, 8, 24, 19, 0), // 1 tiếng
-      coach: "Lê Thị C",
-      room: "Phòng nhảy",
-      description: "Lớp aerobic giảm cân, tăng cường sức khỏe tim mạch",
-    },
-    {
-      title: "Swimming",
-      start: new Date(2025, 8, 19, 16, 0),
-      end: new Date(2025, 8, 19, 17, 0), // 1 tiếng
-      coach: "Phạm Văn D",
-      room: "Hồ bơi",
-      description: "Lớp bơi cơ bản, dạy các kỹ thuật bơi lội cho người mới",
-    },
-    {
-      title: "Cardio",
-      start: new Date(2025, 8, 22, 8, 30),
-      end: new Date(2025, 8, 22, 9, 15), // 45 phút, trước Yoga
-      coach: "Hoàng Văn E",
-      room: "Phòng cardio",
-      description: "Luyện tập cardio cường độ cao",
-    },
-    {
-      title: "Pilates",
-      start: new Date(2025, 8, 22, 11, 0),
-      end: new Date(2025, 8, 22, 12, 15), // 1 tiếng 15 phút
-      coach: "Mai Thị F",
-      room: "Phòng 102",
-      description: "Lớp pilates tăng cường sức mạnh cốt lõi",
-    },
-  ]
+  // Process events to ensure proper date handling
+  const processedEvents = events.map((event) => ({
+    ...event,
+    startTime: typeof event.startTime === "string" ? event.startTime : convertToISOString(event.startTime),
+    endTime: typeof event.endTime === "string" ? event.endTime : convertToISOString(event.endTime),
+  }))
 
   const handleNavigate = (action) => {
     const newDate = new Date(currentDate)
@@ -582,37 +557,10 @@ export default function GymCalendar() {
     setCurrentDate(new Date())
   }
 
-  const handleEventClick = (event) => {
-    setSelectedEvent(event)
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setSelectedEvent(null)
-  }
-
-  const formatTime = (date) => {
-    return date.toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    })
-  }
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString("vi-VN", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
-
   return (
     <Box sx={{ height: 800, p: 3 }}>
       {/* Navigation */}
-      <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: "grey.50" }}>
+      <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Box sx={{ display: "flex", gap: 1 }}>
             <IconButton onClick={() => handleNavigate("prev")} color="primary" sx={{ bgcolor: "background.paper" }}>
@@ -648,139 +596,14 @@ export default function GymCalendar() {
       {/* Calendar */}
       <Box sx={{ height: "calc(100% - 120px)" }}>
         <SimpleCalendar
-          events={events}
+          events={processedEvents}
           view={currentView}
           onView={setCurrentView}
           date={currentDate}
           onNavigate={setCurrentDate}
-          onEventClick={handleEventClick}
+          onEventClick={onEventClick}
         />
       </Box>
-
-      {/* Modal with MUI Dialog */}
-      <Dialog
-        open={isModalOpen}
-        onClose={closeModal}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <Box>
-              <Typography variant="h5" component="div" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                {selectedEvent?.title}
-              </Typography>
-              <Typography variant="subtitle2" color="text.secondary">
-                {selectedEvent && formatDate(selectedEvent.start)}
-              </Typography>
-            </Box>
-            <IconButton onClick={closeModal} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-
-        <Divider />
-
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedEvent && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {/* Time */}
-              <Card variant="outlined">
-                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                  <Avatar sx={{ bgcolor: "primary.light" }}>
-                    <ScheduleIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                      Thời gian
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatTime(selectedEvent.start)} - {formatTime(selectedEvent.end)}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Coach */}
-              <Card variant="outlined">
-                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                  <Avatar sx={{ bgcolor: "success.light" }}>
-                    <PersonIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                      Huấn luyện viên
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedEvent.coach}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Room */}
-              <Card variant="outlined">
-                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                  <Avatar sx={{ bgcolor: "warning.light" }}>
-                    <LocationIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                      Địa điểm
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedEvent.room}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Description */}
-              <Card variant="outlined">
-                <CardContent sx={{ "&:last-child": { pb: 2 } }}>
-                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                    <Avatar sx={{ bgcolor: "info.light", mt: 0.5 }}>
-                      <DescriptionIcon />
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
-                        Mô tả
-                      </Typography>
-                      <Paper
-                        variant="outlined"
-                        sx={{
-                          p: 2,
-                          bgcolor: "grey.50",
-                          borderStyle: "dashed",
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                          {selectedEvent.description}
-                        </Typography>
-                      </Paper>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          )}
-        </DialogContent>
-
-        <Divider />
-
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button onClick={closeModal} variant="outlined" color="inherit">
-            Đóng
-          </Button>
-          <Button variant="contained" startIcon={<FitnessCenterIcon />} sx={{ ml: 1 }}>
-            Tham gia lớp học
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useState, useCallback, useMemo, useEffect } from "react"
 import PropTypes from "prop-types"
 import {
   Box,
@@ -67,9 +67,11 @@ import {
   Visibility as VisibilityIcon,
   AccessTime as AccessTimeIcon,
   EventAvailable as EventAvailableIcon,
+  Description as DescriptionIcon,
 } from "@mui/icons-material"
 import AddIcon from "@mui/icons-material/Add"
 import CloseIcon from "@mui/icons-material/Close"
+import SportsKabaddiIcon from "@mui/icons-material/SportsKabaddi"
 // Import stores - uncommented
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import useUserStore from "~/stores/useUserStore"
@@ -77,7 +79,8 @@ import GymCalendar from "~/utils/Calendar"
 import { toast } from "react-toastify"
 import {
   buildFormData,
-  formatISODateToVNDate,
+  convertISOToVNTime,
+  convertToISODateRange,
   formatToLeadingZero,
   splitUserTrainerData,
   toISODate,
@@ -86,6 +89,9 @@ import { updateInfoTrainerByUserIdAPI } from "~/apis/trainer"
 import { updateInfoUserAPI } from "~/apis/user"
 import MyBackdrop from "~/components/MyBackdrop"
 import TimeField from "~/components/TimeField"
+import DateField from "~/components/DateField"
+import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
+import { createScheduleForPtAPI, deleteScheduleForPtAPI, getListScheduleByTrainerIdAPI } from "~/apis/schedule"
 
 // CustomTabPanel theo cách chính thức của MUI
 function CustomTabPanel(props) {
@@ -117,6 +123,26 @@ function a11yProps(index) {
   }
 }
 
+const events = [
+  {
+    // _id: "68d29ba0679e3799beb19d7d",
+    startTime: "2025-09-23T19:00:00.000Z",
+    endTime: "2025-09-23T21:00:00.000Z",
+    location: "The gym Nguyễn Kiệm",
+    member: "Nguyễn Hoàng Gia Vĩ",
+    note: "",
+    title: "Lịch đã được đặt bởi Nguyễn Hoàng Gia Vĩ",
+  },
+  {
+    title: "Gym Training",
+    startTime: new Date(2025, 8, 23, 14, 0),
+    endTime: new Date(2025, 8, 23, 15, 30),
+    coach: "Trần Văn B",
+    room: "Phòng tập",
+    description: "Luyện tập gym cơ bản với trọng lượng, phù hợp cho người mới",
+  },
+]
+
 // Component chính
 export default function PtProfilePage() {
   const theme = useTheme()
@@ -139,13 +165,22 @@ export default function PtProfilePage() {
   const [selectedImage, setSelectedImage] = useState("")
   const [newPhysiqueImages, setNewPhysiqueImages] = useState([])
 
-  const [startTimeValue, setStartTimeValue] = useState(null)
-  const [endTimeValue, setEndTimeValue] = useState(null)
+  // Event Modal States
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [deleteScheduleLoading, setDeleteScheduleLoading] = useState(false)
+
+  const [scheduleDateValue, setScheduleDateValue] = useState({ day: 0, month: 0, year: 0 })
+  console.log("🚀 ~ PtProfilePage ~ scheduleDateValue:", scheduleDateValue)
+  const [startTimeValue, setStartTimeValue] = useState({ hour: 0, minute: 0 })
+  const [endTimeValue, setEndTimeValue] = useState({ hour: 0, minute: 0 })
+  console.log("🚀 ~ PtProfilePage ~ endTimeValue:", endTimeValue)
   console.log("🚀 ~ PtProfilePage ~ startTimeValue:", startTimeValue)
 
   // Stores - uncomment
   const { user, updateUser } = useUserStore()
   const { trainerInfo, updateTrainerInfo } = useTrainerInfoStore()
+  const { listSchedule, setListSchedule } = useListScheduleForPTStore()
 
   // Dữ liệu PT - với stores thực
   const ptData = useMemo(
@@ -156,7 +191,7 @@ export default function PtProfilePage() {
       phone: formatToLeadingZero(user.phone) || "",
       avatar: user.avatar || "",
       gender: user.gender || "",
-      dateOfBirth: user.dateOfBirth ? formatISODateToVNDate(user.dateOfBirth) : "",
+      dateOfBirth: user.dateOfBirth ? convertISOToVNTime(user.dateOfBirth) : "",
       address: user.address || "",
       status: trainerInfo.isApproved || "",
       joinDate: "",
@@ -179,6 +214,64 @@ export default function PtProfilePage() {
     }),
     [user, trainerInfo],
   )
+
+  useEffect(() => {
+    const init = async () => {
+      const data = await getListScheduleByTrainerIdAPI(trainerInfo._id)
+      setListSchedule(data.listSchedule)
+    }
+    init()
+  }, [])
+
+  // Event Modal Functions
+  const handleEventClick = (event) => {
+    setSelectedEvent(event)
+    setIsEventModalOpen(true)
+  }
+
+  const closeEventModal = () => {
+    setIsEventModalOpen(false)
+    setSelectedEvent(null)
+  }
+
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+  }
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("vi-VN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  const handleDeleteSchedule = async () => {
+    if (!selectedEvent) return
+
+    setDeleteScheduleLoading(true)
+    try {
+      // Call delete API here
+      await deleteScheduleForPtAPI(selectedEvent._id)
+
+      // Remove from local state
+      const updatedSchedule = listSchedule.filter((schedule) => schedule._id !== selectedEvent._id)
+      setListSchedule(updatedSchedule)
+
+      showSnackbar("Đã xóa lịch thành công!", "success")
+      closeEventModal()
+    } catch (error) {
+      console.error("Error deleting schedule:", error)
+      showSnackbar("Có lỗi xảy ra khi xóa lịch!", "error")
+    } finally {
+      setDeleteScheduleLoading(false)
+    }
+  }
 
   // Stable functions
   const getCurrentValue = useCallback(
@@ -238,7 +331,6 @@ export default function PtProfilePage() {
       // Xóa ảnh cũ
       const currentImages = editData.physiqueImages || ptData.physiqueImages
       const newImages = currentImages.filter((_, index) => index !== imageIndex)
-      console.log("🚀 ~ handleDeleteImage ~ currentImages:", currentImages)
       setEditData((prev) => ({
         ...prev,
         physiqueImages: newImages,
@@ -353,20 +445,17 @@ export default function PtProfilePage() {
 
     try {
       const { userData, trainerData } = splitUserTrainerData(editData)
-      console.log("🚀 ~ handleSave ~ editData:", editData)
-      console.log("🚀 ~ handleSave ~ trainerData:", trainerData)
-      console.log("🚀 ~ handleSave ~ userData:", userData)
 
       // Cập nhật user info (nếu cần)
-      // let dataUserToUpdate = {}
-      // if ("dateOfBirth" in userData) {
-      //   dataUserToUpdate = {
-      //     ...userData,
-      //     dateOfBirth: toISODate(userData.dateOfBirth),
-      //   }
-      // }
-      // const updatedUser = await updateInfoUserAPI(user._id, dataUserToUpdate)
-      // updateUser(updatedUser.user)
+      let dataUserToUpdate = {}
+      if ("dateOfBirth" in userData) {
+        dataUserToUpdate = {
+          ...userData,
+          dateOfBirth: toISODate(userData.dateOfBirth),
+        }
+      }
+      const updatedUser = await updateInfoUserAPI(user._id, dataUserToUpdate)
+      updateUser(updatedUser.user)
 
       // Chuẩn bị FormData cho trainer info
       let formData = buildFormData(trainerData)
@@ -377,16 +466,15 @@ export default function PtProfilePage() {
 
         // Lấy danh sách ảnh cũ muốn giữ lại (loại bỏ blob URLs)
         const physiqueImagesToKeep = removeBlobUrls(editData.physiqueImages)
-        console.log("🚀 ~ handleSave ~ physiqueImagesToKeep:", physiqueImagesToKeep)
 
         // Gửi danh sách ảnh cũ muốn giữ lại qua FormData
         physiqueImagesToKeep.forEach((imageUrl) => {
           formData.append("physiqueImages", imageUrl)
         })
 
-        console.log("Đã thêm vào FormData - physiqueImages:", physiqueImagesToKeep)
+        // console.log("Đã thêm vào FormData - physiqueImages:", physiqueImagesToKeep)
       } else {
-        console.log("User không thay đổi hình ảnh - gửi tất cả ảnh hiện tại để giữ nguyên")
+        // console.log("User không thay đổi hình ảnh - gửi tất cả ảnh hiện tại để giữ nguyên")
 
         // Gửi tất cả ảnh hiện tại để đảm bảo BE hiểu là "giữ nguyên"
         const currentImages = ptData.physiqueImages || []
@@ -394,7 +482,7 @@ export default function PtProfilePage() {
           formData.append("physiqueImages", imageUrl)
         })
 
-        console.log("Đã thêm vào FormData - physiqueImages (giữ nguyên):", currentImages)
+        // console.log("Đã thêm vào FormData - physiqueImages (giữ nguyên):", currentImages)
       }
 
       // Gửi các file ảnh mới (nếu có)
@@ -403,7 +491,7 @@ export default function PtProfilePage() {
         newPhysiqueImages.forEach((file) => {
           formData.append("physiqueImagesNew", file)
         })
-        console.log(`Đã thêm ${newPhysiqueImages.length} file mới vào FormData`)
+        // console.log(`Đã thêm ${newPhysiqueImages.length} file mới vào FormData`)
       }
 
       // Debug FormData content
@@ -418,7 +506,6 @@ export default function PtProfilePage() {
 
       // Gửi request lên BE
       const updatedTrainerInfo = await updateInfoTrainerByUserIdAPI(user._id, formData)
-      console.log("✅ Cập nhật thành công:", updatedTrainerInfo)
 
       // Cập nhật store
       updateTrainerInfo(updatedTrainerInfo.trainer)
@@ -449,6 +536,43 @@ export default function PtProfilePage() {
     setSnackbarMessage(message)
     setSnackbarSeverity(severity)
     setOpenSnackbar(true)
+  }
+
+  const handleAddSchedule = async () => {
+    // check empty
+    if (!scheduleDateValue.day || !scheduleDateValue.month || !scheduleDateValue.year) {
+      toast.error("Vui lòng chọn ngày")
+      return
+    }
+
+    if (startTimeValue.hour === 0 && startTimeValue.minute === 0) {
+      toast.error("Vui lòng chọn giờ bắt đầu và giờ bắt đầu từ 8:00")
+      return
+    }
+
+    if (endTimeValue.hour === 0 && endTimeValue.minute === 0) {
+      toast.error("Vui lòng chọn giờ kết thúc")
+      return
+    }
+
+    try {
+      // convert
+      const isoDate = convertToISODateRange(scheduleDateValue, startTimeValue, endTimeValue)
+
+      const dataToCreate = {
+        trainerId: trainerInfo._id,
+        startTime: isoDate.startISO,
+        endTime: isoDate.endISO,
+      }
+      const result = await createScheduleForPtAPI(dataToCreate)
+      setListSchedule(result.listSchedule)
+
+      // call api
+      console.log("API payload:", isoDate)
+
+      // notification
+      toast.success("Thêm lịch thành công")
+    } catch (err) {}
   }
 
   return (
@@ -1010,30 +1134,20 @@ export default function PtProfilePage() {
 
                   <Grid container spacing={2} sx={{ mt: 1 }}>
                     <Grid item size={{ xs: 12, sm: 4 }}>
-                      <TextField
-                        fullWidth
-                        label="Ngày làm việc"
-                        type="date"
-                        value={getCurrentValue("workingDay")}
-                        onChange={(e) => handleFieldChange("workingDay", e.target.value)}
-                        disabled={!isEditing}
-                        InputLabelProps={{ shrink: true }}
-                        InputProps={{
-                          startAdornment: (
-                            <InputAdornment position="start">
-                              <EventAvailableIcon color="action" />
-                            </InputAdornment>
-                          ),
-                        }}
-                      />
+                      <DateField label="Chọn ngày" setValue={setScheduleDateValue} />
                     </Grid>
 
-                    <Grid item size={{ xs: 12, sm: 4 }}>
-                      <TimeField label="Giờ bắt đầu" value={startTimeValue} setValue={setStartTimeValue} />
+                    <Grid item size={{ xs: 12, sm: 3 }}>
+                      <TimeField label="Giờ bắt đầu" setDetailValue={setStartTimeValue} />
                     </Grid>
 
-                    <Grid item size={{ xs: 12, sm: 4 }}>
-                      <TimeField label="Giờ kết thúc" value={endTimeValue} setValue={setEndTimeValue} />
+                    <Grid item size={{ xs: 12, sm: 3 }}>
+                      <TimeField label="Giờ kết thúc" setDetailValue={setEndTimeValue} />
+                    </Grid>
+                    <Grid item size={{ xs: 12, sm: 2 }}>
+                      <Button fullWidth variant="contained" onClick={() => handleAddSchedule()}>
+                        Tạo
+                      </Button>
                     </Grid>
                   </Grid>
 
@@ -1064,14 +1178,165 @@ export default function PtProfilePage() {
                     <CalendarIcon color="primary" />
                     Thời khóa biểu slot dạy
                   </Typography>
-
-                  <GymCalendar />
+                  <GymCalendar events={listSchedule} onEventClick={handleEventClick} />
                 </CardContent>
               </Card>
             </Grid>
           </Grid>
         </CustomTabPanel>
       </Paper>
+
+      {/* Event Detail Modal */}
+      <Dialog
+        open={isEventModalOpen}
+        onClose={closeEventModal}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2 },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box>
+              <Typography variant="h5" component="div" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                {selectedEvent?.title}
+              </Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                {selectedEvent && formatDate(selectedEvent.startTime)}
+              </Typography>
+            </Box>
+            <IconButton onClick={closeEventModal} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <Divider />
+
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedEvent && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {/* Time */}
+              <Card variant="outlined">
+                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                  <Avatar sx={{ bgcolor: "primary.light" }}>
+                    <ScheduleIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                      Thời gian
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatTime(selectedEvent.startTime)} - {formatTime(selectedEvent.endTime)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Coach */}
+              {selectedEvent.coach && (
+                <Card variant="outlined">
+                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                    <Avatar sx={{ bgcolor: "error.main" }}>
+                      <SportsKabaddiIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                        Huấn luyện viên
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedEvent.coach}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* member */}
+              {selectedEvent.member && (
+                <Card variant="outlined">
+                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                    <Avatar sx={{ bgcolor: "success.light" }}>
+                      <PersonIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                        Học viên
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedEvent.member}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Location */}
+              <Card variant="outlined">
+                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                  <Avatar sx={{ bgcolor: "warning.light" }}>
+                    <LocationIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                      Địa điểm
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedEvent.location}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Description */}
+              <Card variant="outlined">
+                <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                    <Avatar sx={{ bgcolor: "info.light", mt: 0.5 }}>
+                      <DescriptionIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
+                        Ghi chú
+                      </Typography>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderStyle: "dashed",
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                          {selectedEvent.note || "Không có ghi chú"}
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+
+        <Divider />
+
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button onClick={closeEventModal} variant="outlined" color="inherit">
+            Đóng
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleDeleteSchedule}
+            disabled={deleteScheduleLoading}
+            sx={{ ml: 1 }}
+          >
+            {deleteScheduleLoading ? "Đang xóa..." : "Xóa lịch"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Image Preview Dialog */}
       <Modal
