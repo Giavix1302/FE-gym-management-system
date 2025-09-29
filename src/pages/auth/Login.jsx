@@ -11,12 +11,15 @@ import { toast } from "react-toastify"
 import useUserStore from "~/stores/useUserStore"
 import useMyMembershipStore from "~/stores/useMyMembershipStore"
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
+import useLocationStore from "~/stores/useLocationStore"
+import { getListLocationAPI } from "~/apis/location"
 
 function Login() {
   // store
   const { updateUser } = useUserStore()
   const { updateMyMembership } = useMyMembershipStore()
   const { updateTrainerInfo, resetTrainerInfo } = useTrainerInfoStore()
+  const { setLocations } = useLocationStore()
   //state
   const [phone, setPhone] = useState("")
   const [isPhoneError, setIsPhoneError] = useState(false)
@@ -54,6 +57,9 @@ function Login() {
     if (data.success) {
       // lưu token
       saveToLocalStorage("accessToken", data.accessToken)
+      //
+      const locationData = await getListLocationAPI()
+      setLocations(locationData.locations)
       if (data.user.role === "admin") {
         navigate("/admin/dashboard")
       } else if (data.user.role === "user") {

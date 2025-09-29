@@ -72,6 +72,7 @@ import {
 import AddIcon from "@mui/icons-material/Add"
 import CloseIcon from "@mui/icons-material/Close"
 import SportsKabaddiIcon from "@mui/icons-material/SportsKabaddi"
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
 // Import stores - uncommented
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import useUserStore from "~/stores/useUserStore"
@@ -122,26 +123,6 @@ function a11yProps(index) {
     "aria-controls": `simple-tabpanel-${index}`,
   }
 }
-
-const events = [
-  {
-    // _id: "68d29ba0679e3799beb19d7d",
-    startTime: "2025-09-23T19:00:00.000Z",
-    endTime: "2025-09-23T21:00:00.000Z",
-    location: "The gym Nguyễn Kiệm",
-    member: "Nguyễn Hoàng Gia Vĩ",
-    note: "",
-    title: "Lịch đã được đặt bởi Nguyễn Hoàng Gia Vĩ",
-  },
-  {
-    title: "Gym Training",
-    startTime: new Date(2025, 8, 23, 14, 0),
-    endTime: new Date(2025, 8, 23, 15, 30),
-    coach: "Trần Văn B",
-    room: "Phòng tập",
-    description: "Luyện tập gym cơ bản với trọng lượng, phù hợp cho người mới",
-  },
-]
 
 // Component chính
 export default function PtProfilePage() {
@@ -195,6 +176,7 @@ export default function PtProfilePage() {
       address: user.address || "",
       status: trainerInfo.isApproved || "",
       joinDate: "",
+      pricePerSession: trainerInfo.pricePerSession || 0,
 
       // Thông tin chuyên môn
       specialization: trainerInfo.specialization || "",
@@ -382,6 +364,14 @@ export default function PtProfilePage() {
     document.getElementById("physique-image-upload")?.click()
   }
 
+  // Handle price input change
+  const handlePriceChange = (value) => {
+    // Remove all non-digit characters
+    const numericValue = value.replace(/\D/g, "")
+    // Update the field with numeric value only
+    handleFieldChange("pricePerSession", numericValue)
+  }
+
   // Validation
   const validateForm = () => {
     const newErrors = {}
@@ -393,6 +383,8 @@ export default function PtProfilePage() {
     const currentDateOfBirth = editData.dateOfBirth !== undefined ? editData.dateOfBirth : ptData.dateOfBirth
     const currentExperience = editData.experience !== undefined ? editData.experience : ptData.experience
     const currentEducation = editData.education !== undefined ? editData.education : ptData.education
+    const currentPricePerSession =
+      editData.pricePerSession !== undefined ? editData.pricePerSession : ptData.pricePerSession
 
     if (!currentName || currentName === "") newErrors.fullName = "Vui lòng nhập họ tên"
     if (!currentEmail) newErrors.email = "Vui lòng nhập email"
@@ -404,6 +396,11 @@ export default function PtProfilePage() {
     else if (!/^[0-9]{10}$/.test(currentPhone)) newErrors.phone = "Số điện thoại không hợp lệ"
     if (!currentExperience) newErrors.experience = "Vui lòng nhập kinh nghiệm"
     if (!currentEducation) newErrors.education = "Vui lòng nhập học vấn"
+    if (!currentPricePerSession) newErrors.pricePerSession = "Vui lòng nhập giá tiền mỗi buổi"
+    else if (isNaN(currentPricePerSession) || parseInt(currentPricePerSession) <= 0)
+      newErrors.pricePerSession = "Giá tiền phải là số dương"
+    else if (parseInt(currentPricePerSession) < 50000) newErrors.pricePerSession = "Giá tiền tối thiểu là 50,000 VNĐ"
+    else if (parseInt(currentPricePerSession) > 5000000) newErrors.pricePerSession = "Giá tiền tối đa là 5,000,000 VNĐ"
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -873,6 +870,25 @@ export default function PtProfilePage() {
                   startAdornment: (
                     <InputAdornment position="start">
                       <BadgeIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Giá mỗi buổi tập"
+                value={getCurrentValue("pricePerSession")}
+                onChange={(e) => handleFieldChange("pricePerSession", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.pricePerSession}
+                helperText={errors.pricePerSession}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <AttachMoneyIcon color="action" />
                     </InputAdornment>
                   ),
                 }}

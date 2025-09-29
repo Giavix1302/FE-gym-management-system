@@ -37,7 +37,7 @@ import { useLogout } from "~/hooks/useLogout"
 import ResultPaymentPage from "~/pages/ResultPaymentPage"
 import PtHomePage from "~/pages/pt/ptHomePage"
 import PtProfilePage from "~/pages/pt/PtProfilePage"
-import UserBookingPage from "~/pages/user/UserBookingPage"
+import UserBookingPage from "~/pages/user/UserBooking/UserBookingPage"
 
 export default function AppRoutes() {
   const logout = useLogout()
