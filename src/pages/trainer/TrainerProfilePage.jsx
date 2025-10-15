@@ -76,7 +76,7 @@ import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
 // Import stores - uncommented
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import useUserStore from "~/stores/useUserStore"
-import GymCalendar from "~/utils/Calendar"
+import GymCalendar from "~/components/Calendar"
 import { toast } from "react-toastify"
 import {
   buildFormData,
@@ -93,6 +93,7 @@ import TimeField from "~/components/TimeField"
 import DateField from "~/components/DateField"
 import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
 import { createScheduleForPtAPI, deleteScheduleForPtAPI, getListScheduleByTrainerIdAPI } from "~/apis/schedule"
+import dayjs from "dayjs"
 
 // CustomTabPanel theo cách chính thức của MUI
 function CustomTabPanel(props) {
@@ -125,7 +126,7 @@ function a11yProps(index) {
 }
 
 // Component chính
-export default function PtProfilePage() {
+export default function TrainerProfilePage() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
@@ -153,8 +154,14 @@ export default function PtProfilePage() {
 
   const [scheduleDateValue, setScheduleDateValue] = useState({ day: 0, month: 0, year: 0 })
   console.log("🚀 ~ PtProfilePage ~ scheduleDateValue:", scheduleDateValue)
-  const [startTimeValue, setStartTimeValue] = useState({ hour: 0, minute: 0 })
-  const [endTimeValue, setEndTimeValue] = useState({ hour: 0, minute: 0 })
+  const [startTimeValue, setStartTimeValue] = useState({
+    hour: 0,
+    minute: 0,
+  })
+  const [endTimeValue, setEndTimeValue] = useState({
+    hour: 0,
+    minute: 0,
+  })
   console.log("🚀 ~ PtProfilePage ~ endTimeValue:", endTimeValue)
   console.log("🚀 ~ PtProfilePage ~ startTimeValue:", startTimeValue)
 
@@ -564,8 +571,15 @@ export default function PtProfilePage() {
       const result = await createScheduleForPtAPI(dataToCreate)
       setListSchedule(result.listSchedule)
 
-      // call api
-      console.log("API payload:", isoDate)
+      setStartTimeValue({
+        hour: 0,
+        minute: 0,
+      })
+
+      setEndTimeValue({
+        hour: 0,
+        minute: 0,
+      })
 
       // notification
       toast.success("Thêm lịch thành công")
@@ -1154,11 +1168,19 @@ export default function PtProfilePage() {
                     </Grid>
 
                     <Grid item size={{ xs: 12, sm: 3 }}>
-                      <TimeField label="Giờ bắt đầu" setDetailValue={setStartTimeValue} />
+                      <TimeField
+                        label="Giờ bắt đầu"
+                        value={dayjs(`${startTimeValue.hour}:${startTimeValue.minute}`, "HH:mm")}
+                        setDetailValue={setStartTimeValue}
+                      />
                     </Grid>
 
                     <Grid item size={{ xs: 12, sm: 3 }}>
-                      <TimeField label="Giờ kết thúc" setDetailValue={setEndTimeValue} />
+                      <TimeField
+                        label="Giờ kết thúc"
+                        value={dayjs(`${endTimeValue.hour}:${endTimeValue.minute}`, "HH:mm")}
+                        setDetailValue={setEndTimeValue}
+                      />
                     </Grid>
                     <Grid item size={{ xs: 12, sm: 2 }}>
                       <Button fullWidth variant="contained" onClick={() => handleAddSchedule()}>

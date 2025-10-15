@@ -39,7 +39,7 @@ import useMyMembershipStore from "~/stores/useMyMembershipStore"
 import MyBackdrop from "~/components/MyBackdrop"
 import { useCountdown } from "~/hooks/useCountdown"
 import { toast } from "react-toastify"
-import ConfirmDialog from "~/utils/ConfirmDialog"
+import ConfirmDialog from "~/components/ConfirmDialog"
 import { useNavigate } from "react-router-dom"
 
 // ================= COMPONENT: InfoBox =================

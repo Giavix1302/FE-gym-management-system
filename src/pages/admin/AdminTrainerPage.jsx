@@ -55,194 +55,8 @@ import {
   Star as StarIcon,
   TrendingUp as RevenueIcon,
 } from "@mui/icons-material"
-import GymCalendar from "~/utils/Calendar"
-
-// Mock data
-const mockTrainers = [
-  {
-    _id: "trainer1",
-    userId: "user1",
-    name: "Nguyễn Văn Minh",
-    specialization: "Fitness & Bodybuilding",
-    bio: "10 năm kinh nghiệm trong lĩnh vực tập luyện thể hình và fitness. Chuyên về xây dựng cơ bắp và giảm cân.",
-    physiqueImages: ["/api/placeholder/300/400", "/api/placeholder/300/400"],
-    isApproved: "approved",
-    approvedAt: "2024-01-15T10:30:00Z",
-    experience: "10 năm",
-    education: "Cử nhân Giáo dục Thể chất, Chứng chỉ PT quốc tế",
-    pricePerSession: 300000,
-    totalBookings: 156,
-    rating: 4.8,
-    totalReviews: 89,
-    revenue: 46800000,
-  },
-  {
-    _id: "trainer2",
-    userId: "user2",
-    name: "Trần Thị Hạnh",
-    specialization: "Yoga & Pilates",
-    bio: "Chuyên gia yoga với 8 năm kinh nghiệm, tập trung vào yoga trị liệu và pilates.",
-    physiqueImages: ["/api/placeholder/300/400"],
-    isApproved: "pending",
-    approvedAt: null,
-    experience: "8 năm",
-    education: "Chứng chỉ Yoga Alliance RYT-500",
-    pricePerSession: 250000,
-    totalBookings: 92,
-    rating: 4.9,
-    totalReviews: 67,
-    revenue: 23000000,
-  },
-  {
-    _id: "trainer3",
-    userId: "user3",
-    name: "Lê Hoàng Nam",
-    specialization: "Boxing & Martial Arts",
-    bio: "HLV boxing chuyên nghiệp, từng thi đấu cấp quốc gia.",
-    physiqueImages: ["/api/placeholder/300/400", "/api/placeholder/300/400"],
-    isApproved: "rejected",
-    approvedAt: null,
-    experience: "12 năm",
-    education: "Cử nhân Thể thao, Chứng chỉ HLV Boxing",
-    pricePerSession: 350000,
-    totalBookings: 203,
-    rating: 4.7,
-    totalReviews: 134,
-    revenue: 71050000,
-  },
-]
-
-const mockBookings = [
-  {
-    _id: "booking1",
-    userId: "user123",
-    userName: "Nguyễn Văn A",
-    scheduleId: "schedule1",
-    trainerId: "trainer1",
-    trainerName: "Nguyễn Văn Minh",
-    locationId: "location1",
-    status: "booked",
-    note: "Muốn tập trung vào giảm cân",
-    price: 300000,
-    sessionDate: "2024-09-25T09:00:00Z",
-    createdAt: "2024-09-20T14:30:00Z",
-  },
-  {
-    _id: "booking2",
-    userId: "user124",
-    userName: "Trần Thị B",
-    scheduleId: "schedule2",
-    trainerId: "trainer1",
-    trainerName: "Nguyễn Văn Minh",
-    locationId: "location1",
-    status: "completed",
-    note: "Yoga trị liệu cho đau lưng",
-    price: 300000,
-    sessionDate: "2024-09-20T16:00:00Z",
-    createdAt: "2024-09-18T10:15:00Z",
-  },
-  {
-    _id: "booking3",
-    userId: "user125",
-    userName: "Phạm Văn C",
-    scheduleId: "schedule3",
-    trainerId: "trainer3",
-    trainerName: "Lê Hoàng Nam",
-    locationId: "location2",
-    status: "pending",
-    note: "Muốn học boxing cơ bản",
-    price: 350000,
-    sessionDate: "2024-09-26T14:00:00Z",
-    createdAt: "2024-09-21T09:20:00Z",
-  },
-]
-
-const mockReviews = [
-  {
-    _id: "review1",
-    bookingId: "booking2",
-    userId: "user124",
-    userName: "Trần Thị B",
-    trainerId: "trainer1",
-    trainerName: "Nguyễn Văn Minh",
-    rating: 5,
-    comment: "Anh Minh rất chuyên nghiệp và tận tình. Các bài tập rất hiệu quả cho việc giảm cân.",
-    createdAt: "2024-09-21T18:00:00Z",
-  },
-  {
-    _id: "review2",
-    bookingId: "booking1",
-    userId: "user123",
-    userName: "Nguyễn Văn A",
-    trainerId: "trainer1",
-    trainerName: "Nguyễn Văn Minh",
-    rating: 4,
-    comment: "Anh Minh hướng dẫn rất chi tiết, tuy nhiên có thể strict hơn một chút.",
-    createdAt: "2024-09-22T20:30:00Z",
-  },
-  {
-    _id: "review3",
-    bookingId: "booking3",
-    userId: "user125",
-    userName: "Phạm Văn C",
-    trainerId: "trainer3",
-    trainerName: "Lê Hoàng Nam",
-    rating: 5,
-    comment: "Kỹ thuật boxing được hướng dẫn rất kỹ càng và dễ hiểu.",
-    createdAt: "2024-09-23T16:45:00Z",
-  },
-]
-
-const mockSchedules = [
-  {
-    _id: "schedule1",
-    trainerId: "trainer1",
-    startTime: "2024-09-25T09:00:00Z",
-    endTime: "2024-09-25T10:00:00Z",
-    isBooked: true,
-    createdAt: "2024-09-20T08:00:00Z",
-  },
-  {
-    _id: "schedule2",
-    trainerId: "trainer1",
-    startTime: "2024-09-25T10:30:00Z",
-    endTime: "2024-09-25T11:30:00Z",
-    isBooked: false,
-    createdAt: "2024-09-20T08:00:00Z",
-  },
-  {
-    _id: "schedule3",
-    trainerId: "trainer1",
-    startTime: "2024-09-26T09:00:00Z",
-    endTime: "2024-09-26T10:00:00Z",
-    isBooked: false,
-    createdAt: "2024-09-21T08:00:00Z",
-  },
-  {
-    _id: "schedule4",
-    trainerId: "trainer1",
-    startTime: "2024-09-26T14:00:00Z",
-    endTime: "2024-09-26T15:00:00Z",
-    isBooked: true,
-    createdAt: "2024-09-21T08:00:00Z",
-  },
-  {
-    _id: "schedule5",
-    trainerId: "trainer2",
-    startTime: "2024-09-25T16:00:00Z",
-    endTime: "2024-09-25T17:00:00Z",
-    isBooked: false,
-    createdAt: "2024-09-22T10:00:00Z",
-  },
-  {
-    _id: "schedule6",
-    trainerId: "trainer3",
-    startTime: "2024-09-27T10:00:00Z",
-    endTime: "2024-09-27T11:30:00Z",
-    isBooked: true,
-    createdAt: "2024-09-23T09:00:00Z",
-  },
-]
+import { getListTrainerForAdminAPI, updateIsApprovedAPI } from "~/apis/trainer"
+import useListTrainerInfoForAdmin from "~/stores/useListTrainerInfoForAdmin"
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -253,17 +67,52 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 // PT Detail Modal Component
-function PTDetailModal({ open, onClose, trainer }) {
+function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
   const [tabValue, setTabValue] = useState(0)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   if (!trainer) return null
 
-  const trainerBookings = mockBookings.filter((booking) => booking.trainerId === trainer._id)
-  const trainerReviews = mockReviews.filter((review) => review.trainerId === trainer._id)
-  const trainerSchedules = mockSchedules.filter((schedule) => schedule.trainerId === trainer._id)
+  const trainerBookings = trainer.booked || []
+  const trainerReviews = trainer.review || []
+  const trainerSchedules = trainer.schedule || []
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue)
+  }
+
+  const handleApprovalUpdate = async (approvalStatus) => {
+    try {
+      setIsUpdating(true)
+      const response = await updateIsApprovedAPI(trainer.trainerId, { isApproved: approvalStatus })
+
+      if (response.success) {
+        // Update the trainer status in the parent component
+        if (onTrainerUpdate) {
+          onTrainerUpdate(trainer.trainerId, approvalStatus)
+        }
+
+        // Close the modal after successful update
+        onClose()
+
+        // You might want to show a success message here
+        console.log(`Trainer ${approvalStatus === "approved" ? "approved" : "rejected"} successfully`)
+      } else {
+        console.error("Failed to update trainer approval status:", response.message)
+      }
+    } catch (error) {
+      console.error("Error updating trainer approval:", error)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleApprove = () => {
+    handleApprovalUpdate("approved")
+  }
+
+  const handleReject = () => {
+    handleApprovalUpdate("rejected")
   }
 
   const formatCurrencyVND = (amount) => {
@@ -313,6 +162,7 @@ function PTDetailModal({ open, onClose, trainer }) {
   const getBookingStatusColor = (status) => {
     switch (status) {
       case "booked":
+      case "booking":
         return "info"
       case "completed":
         return "success"
@@ -328,6 +178,7 @@ function PTDetailModal({ open, onClose, trainer }) {
   const getBookingStatusText = (status) => {
     switch (status) {
       case "booked":
+      case "booking":
         return "Đã đặt"
       case "completed":
         return "Hoàn thành"
@@ -353,26 +204,26 @@ function PTDetailModal({ open, onClose, trainer }) {
       <DialogTitle sx={{ pb: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar src={trainer.physiqueImages[0]} sx={{ width: 50, height: 50 }} />
+            <Avatar src={trainer.userInfo.avatar || "/api/placeholder/50/50"} sx={{ width: 50, height: 50 }} />
             <Box>
               <Typography variant="h5" fontWeight="bold" color="primary.main">
-                {trainer.name}
+                {trainer.userInfo.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {trainer.specialization}
+                {trainer.trainerInfo.specialization}
               </Typography>
             </Box>
           </Box>
           <Chip
-            label={getApprovalText(trainer.isApproved)}
-            color={getApprovalColor(trainer.isApproved)}
+            label={getApprovalText(trainer.trainerInfo.isApproved)}
+            color={getApprovalColor(trainer.trainerInfo.isApproved)}
             size="medium"
           />
         </Box>
       </DialogTitle>
 
       <DialogContent dividers sx={{ p: 0 }}>
-        {trainer.isApproved === "pending" ? (
+        {trainer.trainerInfo.isApproved === "pending" ? (
           // Only show details for pending trainers
           <Box sx={{ p: 3 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom color="warning.main">
@@ -385,7 +236,7 @@ function PTDetailModal({ open, onClose, trainer }) {
                 Giới thiệu:
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {trainer.bio}
+                {trainer.trainerInfo.bio}
               </Typography>
             </Box>
 
@@ -400,7 +251,7 @@ function PTDetailModal({ open, onClose, trainer }) {
                     Giá mỗi buổi
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" color="success.main">
-                    {formatCurrencyVND(trainer.pricePerSession)}
+                    {formatCurrencyVND(Number(trainer.trainerInfo.pricePerSession))}
                   </Typography>
                 </Box>
               </Box>
@@ -412,7 +263,7 @@ function PTDetailModal({ open, onClose, trainer }) {
                     Kinh nghiệm
                   </Typography>
                   <Typography variant="body1" fontWeight="medium">
-                    {trainer.experience}
+                    {trainer.trainerInfo.experience}
                   </Typography>
                 </Box>
               </Box>
@@ -426,12 +277,12 @@ function PTDetailModal({ open, onClose, trainer }) {
                 Học vấn & Chứng chỉ:
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {trainer.education}
+                {trainer.trainerInfo.education}
               </Typography>
             </Box>
 
             {/* Images */}
-            {trainer.physiqueImages.length > 0 && (
+            {trainer.trainerInfo.physiqueImages?.length > 0 && (
               <>
                 <Divider sx={{ my: 2 }} />
                 <Box sx={{ mb: 3 }}>
@@ -439,11 +290,11 @@ function PTDetailModal({ open, onClose, trainer }) {
                     Hình ảnh:
                   </Typography>
                   <Grid container spacing={2}>
-                    {trainer.physiqueImages.map((img, index) => (
-                      <Grid item xs={6} md={4} key={index}>
+                    {trainer.trainerInfo.physiqueImages.map((img, index) => (
+                      <Grid item size={{ xs: 6, md: 4 }} key={index}>
                         <img
                           src={img}
-                          alt={`${trainer.name} ${index + 1}`}
+                          alt={`${trainer.userInfo.name} ${index + 1}`}
                           style={{
                             width: "100%",
                             height: "200px",
@@ -473,7 +324,7 @@ function PTDetailModal({ open, onClose, trainer }) {
               <Box sx={{ p: 3 }}>
                 {/* Header Stats */}
                 <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={6} md={3}>
+                  <Grid item size={{ xs: 6, md: 3 }}>
                     <Card variant="outlined" sx={{ textAlign: "center", p: 2 }}>
                       <Rating value={trainer.rating} precision={0.1} size="small" readOnly />
                       <Typography variant="h6" fontWeight="bold">
@@ -484,7 +335,7 @@ function PTDetailModal({ open, onClose, trainer }) {
                       </Typography>
                     </Card>
                   </Grid>
-                  <Grid item xs={6} md={3}>
+                  <Grid item size={{ xs: 6, md: 3 }}>
                     <Card variant="outlined" sx={{ textAlign: "center", p: 2 }}>
                       <BookingIcon color="primary" />
                       <Typography variant="h6" fontWeight="bold">
@@ -495,18 +346,18 @@ function PTDetailModal({ open, onClose, trainer }) {
                       </Typography>
                     </Card>
                   </Grid>
-                  <Grid item xs={6} md={3}>
+                  <Grid item size={{ xs: 6, md: 3 }}>
                     <Card variant="outlined" sx={{ textAlign: "center", p: 2 }}>
                       <MoneyIcon color="success" />
                       <Typography variant="h6" fontWeight="bold" color="success.main">
-                        {formatCurrencyVND(trainer.pricePerSession)}
+                        {formatCurrencyVND(Number(trainer.trainerInfo.pricePerSession))}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Giá/buổi
                       </Typography>
                     </Card>
                   </Grid>
-                  <Grid item xs={6} md={3}>
+                  <Grid item size={{ xs: 6, md: 3 }}>
                     <Card variant="outlined" sx={{ textAlign: "center", p: 2 }}>
                       <RevenueIcon color="info" />
                       <Typography variant="h6" fontWeight="bold" color="info.main">
@@ -525,7 +376,7 @@ function PTDetailModal({ open, onClose, trainer }) {
                     Giới thiệu:
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {trainer.bio}
+                    {trainer.trainerInfo.bio}
                   </Typography>
                 </Box>
 
@@ -537,7 +388,7 @@ function PTDetailModal({ open, onClose, trainer }) {
                     Học vấn & Chứng chỉ:
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {trainer.education}
+                    {trainer.trainerInfo.education}
                   </Typography>
                 </Box>
 
@@ -549,12 +400,12 @@ function PTDetailModal({ open, onClose, trainer }) {
                     Kinh nghiệm:
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {trainer.experience}
+                    {trainer.trainerInfo.experience}
                   </Typography>
                 </Box>
 
                 {/* Images */}
-                {trainer.physiqueImages.length > 0 && (
+                {trainer.trainerInfo.physiqueImages?.length > 0 && (
                   <>
                     <Divider sx={{ my: 2 }} />
                     <Box sx={{ mb: 3 }}>
@@ -562,11 +413,11 @@ function PTDetailModal({ open, onClose, trainer }) {
                         Hình ảnh:
                       </Typography>
                       <Grid container spacing={2}>
-                        {trainer.physiqueImages.map((img, index) => (
-                          <Grid item xs={6} md={4} key={index}>
+                        {trainer.trainerInfo.physiqueImages.map((img, index) => (
+                          <Grid item size={{ xs: 6, md: 4 }} key={index}>
                             <img
                               src={img}
-                              alt={`${trainer.name} ${index + 1}`}
+                              alt={`${trainer.userInfo.name} ${index + 1}`}
                               style={{
                                 width: "100%",
                                 height: "200px",
@@ -593,24 +444,26 @@ function PTDetailModal({ open, onClose, trainer }) {
                   <Typography color="text.secondary">Chưa có lịch làm việc nào</Typography>
                 ) : (
                   <TableContainer>
-                    {/* <Table>
+                    <Table>
                       <TableHead>
                         <TableRow>
                           <TableCell sx={{ fontWeight: "bold" }}>Ngày</TableCell>
                           <TableCell sx={{ fontWeight: "bold" }}>Thời gian</TableCell>
                           <TableCell sx={{ fontWeight: "bold" }}>Thời lượng</TableCell>
                           <TableCell sx={{ fontWeight: "bold" }}>Trạng thái</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Tạo lúc</TableCell>
+                          <TableCell sx={{ fontWeight: "bold" }}>Khách hàng</TableCell>
+                          <TableCell sx={{ fontWeight: "bold" }}>Địa điểm</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {trainerSchedules.map((schedule) => {
+                        {trainerSchedules.map((schedule, index) => {
                           const startTime = new Date(schedule.startTime)
                           const endTime = new Date(schedule.endTime)
                           const duration = Math.round((endTime - startTime) / (1000 * 60)) // minutes
+                          const isBooked = schedule.title !== "Unbooked Schedule"
 
                           return (
-                            <TableRow key={schedule._id}>
+                            <TableRow key={index}>
                               <TableCell>
                                 <Typography fontWeight="medium">
                                   {startTime.toLocaleDateString("vi-VN", {
@@ -639,22 +492,22 @@ function PTDetailModal({ open, onClose, trainer }) {
                               </TableCell>
                               <TableCell>
                                 <Chip
-                                  label={schedule.isBooked ? "Đã đặt" : "Trống"}
-                                  color={schedule.isBooked ? "info" : "success"}
+                                  label={isBooked ? "Đã đặt" : "Trống"}
+                                  color={isBooked ? "info" : "success"}
                                   size="small"
                                 />
                               </TableCell>
                               <TableCell>
-                                <Typography variant="body2" color="text.secondary">
-                                  {formatDate(schedule.createdAt)}
-                                </Typography>
+                                <Typography variant="body2">{schedule.userName || "Chưa có"}</Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2">{schedule.locationName || "Chưa có"}</Typography>
                               </TableCell>
                             </TableRow>
                           )
                         })}
                       </TableBody>
-                    </Table> */}
-                    <GymCalendar />
+                    </Table>
                   </TableContainer>
                 )}
               </Box>
@@ -674,22 +527,40 @@ function PTDetailModal({ open, onClose, trainer }) {
                         <TableRow>
                           <TableCell sx={{ fontWeight: "bold" }}>Khách hàng</TableCell>
                           <TableCell sx={{ fontWeight: "bold" }}>Ngày tập</TableCell>
+                          <TableCell sx={{ fontWeight: "bold" }}>Thời gian</TableCell>
+                          <TableCell sx={{ fontWeight: "bold" }}>Địa điểm</TableCell>
                           <TableCell sx={{ fontWeight: "bold" }}>Giá</TableCell>
-                          <TableCell sx={{ fontWeight: "bold" }}>Ghi chú</TableCell>
                           <TableCell sx={{ fontWeight: "bold" }}>Trạng thái</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {trainerBookings.map((booking) => (
                           <TableRow key={booking._id}>
-                            <TableCell>{booking.userName}</TableCell>
-                            <TableCell>{formatDate(booking.sessionDate)}</TableCell>
+                            <TableCell>{booking.fullName}</TableCell>
+                            <TableCell>
+                              {new Date(booking.startTime).toLocaleDateString("vi-VN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(booking.startTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}{" "}
+                              -{" "}
+                              {new Date(booking.endTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </TableCell>
+                            <TableCell>{booking.locationName}</TableCell>
                             <TableCell>
                               <Typography color="success.main" fontWeight="medium">
                                 {formatCurrencyVND(booking.price)}
                               </Typography>
                             </TableCell>
-                            <TableCell>{booking.note || "Không có"}</TableCell>
                             <TableCell>
                               <Chip
                                 label={getBookingStatusText(booking.status)}
@@ -719,12 +590,20 @@ function PTDetailModal({ open, onClose, trainer }) {
                       <Paper key={review._id} sx={{ p: 2 }} variant="outlined">
                         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                           <Typography variant="subtitle1" fontWeight="medium">
-                            {review.userName}
+                            {review.fullName}
                           </Typography>
                           <Box sx={{ textAlign: "right" }}>
                             <Rating value={review.rating} precision={0.5} size="small" readOnly />
                             <Typography variant="caption" color="text.secondary" display="block">
-                              {formatDate(review.createdAt)}
+                              {review.createAt
+                                ? new Date(review.createAt).toLocaleDateString("vi-VN", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "N/A"}
                             </Typography>
                           </Box>
                         </Box>
@@ -740,17 +619,31 @@ function PTDetailModal({ open, onClose, trainer }) {
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        {trainer.isApproved === "pending" && (
+        {trainer.trainerInfo.isApproved === "pending" && (
           <>
-            <Button variant="contained" color="success" startIcon={<ApprovedIcon />} sx={{ minWidth: 100 }}>
-              Duyệt
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<ApprovedIcon />}
+              sx={{ minWidth: 100 }}
+              onClick={handleApprove}
+              disabled={isUpdating}
+            >
+              {isUpdating ? "Đang xử lý..." : "Duyệt"}
             </Button>
-            <Button variant="outlined" color="error" startIcon={<RejectedIcon />} sx={{ minWidth: 100 }}>
-              Từ chối
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<RejectedIcon />}
+              sx={{ minWidth: 100 }}
+              onClick={handleReject}
+              disabled={isUpdating}
+            >
+              {isUpdating ? "Đang xử lý..." : "Từ chối"}
             </Button>
           </>
         )}
-        {trainer.isApproved === "approved" && (
+        {trainer.trainerInfo.isApproved === "approved" && (
           <Button variant="contained" startIcon={<EditIcon />} sx={{ minWidth: 100 }}>
             Chỉnh sửa
           </Button>
@@ -764,7 +657,9 @@ function PTDetailModal({ open, onClose, trainer }) {
 }
 
 export default function PTManagementPage() {
-  const [trainers, setTrainers] = useState(mockTrainers)
+  const { listTrainerInfo } = useListTrainerInfoForAdmin()
+
+  const [loading, setLoading] = useState(true)
   const [selectedTrainer, setSelectedTrainer] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
 
@@ -774,14 +669,14 @@ export default function PTManagementPage() {
   const [specializationFilter, setSpecializationFilter] = useState("all")
 
   // Filter trainers
-  const filteredTrainers = trainers.filter((trainer) => {
+  const filteredTrainers = listTrainerInfo.filter((trainer) => {
     const matchesSearch =
-      trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trainer.specialization.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesApproval = approvalFilter === "all" || trainer.isApproved === approvalFilter
+      trainer.userInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trainer.trainerInfo.specialization.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesApproval = approvalFilter === "all" || trainer.trainerInfo.isApproved === approvalFilter
     const matchesSpecialization =
       specializationFilter === "all" ||
-      trainer.specialization.toLowerCase().includes(specializationFilter.toLowerCase())
+      trainer.trainerInfo.specialization.toLowerCase().includes(specializationFilter.toLowerCase())
 
     return matchesSearch && matchesApproval && matchesSpecialization
   })
@@ -794,6 +689,17 @@ export default function PTManagementPage() {
   const handleCloseModal = () => {
     setModalOpen(false)
     setSelectedTrainer(null)
+  }
+
+  const handleTrainerUpdate = (trainerId, newApprovalStatus) => {
+    const { updateTrainerInfo } = useListTrainerInfoForAdmin.getState()
+
+    updateTrainerInfo(trainerId, {
+      trainerInfo: {
+        isApproved: newApprovalStatus,
+        approvedAt: newApprovalStatus === "approved" ? new Date().toISOString() : "",
+      },
+    })
   }
 
   const formatCurrencyVND = (amount) => {
@@ -841,6 +747,25 @@ export default function PTManagementPage() {
         return <PersonIcon />
     }
   }
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setLoading(true)
+        const response = await getListTrainerForAdminAPI()
+        console.log("🚀 ~ init ~ response:", response)
+
+        if (response.success && response.listTrainerInfo) {
+          setTrainers(response.listTrainerInfo)
+        }
+      } catch (error) {
+        console.error("Error fetching trainers:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    init()
+  }, [])
 
   return (
     <Box sx={{ p: 1, height: "100vh" }}>
@@ -897,7 +822,7 @@ export default function PTManagementPage() {
                 label="Chuyên môn"
               >
                 <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="fitness">Fitness</MenuItem>
+                <MenuItem value="gym">Gym</MenuItem>
                 <MenuItem value="yoga">Yoga</MenuItem>
                 <MenuItem value="boxing">Boxing</MenuItem>
                 <MenuItem value="pilates">Pilates</MenuItem>
@@ -935,66 +860,83 @@ export default function PTManagementPage() {
               </TableHead>
 
               <TableBody>
-                {filteredTrainers.map((trainer) => (
-                  <TableRow
-                    key={trainer._id}
-                    hover
-                    onClick={() => handleRowClick(trainer)}
-                    sx={{
-                      cursor: "pointer",
-                    }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                        <Avatar src={trainer.physiqueImages[0]} sx={{ width: 40, height: 40 }} />
-                        <Box>
-                          <Typography fontWeight="medium">{trainer.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {trainer.experience} kinh nghiệm
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography variant="body2">{trainer.specialization}</Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography fontWeight="bold" color="success.main">
-                        {formatCurrencyVND(trainer.pricePerSession)}
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Rating value={trainer.rating} precision={0.1} size="small" readOnly />
-                        <Typography variant="body2">
-                          {trainer.rating} ({trainer.totalReviews})
-                        </Typography>
-                      </Box>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography fontWeight="medium">{trainer.totalBookings}</Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography fontWeight="bold" color="info.main">
-                        {formatCurrencyVND(trainer.revenue)}
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Chip
-                        label={getApprovalText(trainer.isApproved)}
-                        color={getApprovalColor(trainer.isApproved)}
-                        size="small"
-                        icon={getApprovalIcon(trainer.isApproved)}
-                      />
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} sx={{ textAlign: "center", py: 4 }}>
+                      <Typography color="text.secondary">Đang tải dữ liệu...</Typography>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filteredTrainers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} sx={{ textAlign: "center", py: 4 }}>
+                      <Typography color="text.secondary">Không tìm thấy PT nào</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredTrainers.map((trainer) => (
+                    <TableRow
+                      key={trainer._id}
+                      hover
+                      onClick={() => handleRowClick(trainer)}
+                      sx={{
+                        cursor: "pointer",
+                      }}
+                    >
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                          <Avatar
+                            src={trainer.userInfo.avatar || "/api/placeholder/40/40"}
+                            sx={{ width: 40, height: 40 }}
+                          />
+                          <Box>
+                            <Typography fontWeight="medium">{trainer.userInfo.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {trainer.trainerInfo.experience} kinh nghiệm
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+
+                      <TableCell>
+                        <Typography variant="body2">{trainer.trainerInfo.specialization}</Typography>
+                      </TableCell>
+
+                      <TableCell>
+                        <Typography fontWeight="bold" color="success.main">
+                          {formatCurrencyVND(Number(trainer.trainerInfo.pricePerSession))}
+                        </Typography>
+                      </TableCell>
+
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Rating value={trainer.rating} precision={0.1} size="small" readOnly />
+                          <Typography variant="body2">
+                            {trainer.rating} ({trainer.totalReviews})
+                          </Typography>
+                        </Box>
+                      </TableCell>
+
+                      <TableCell>
+                        <Typography fontWeight="medium">{trainer.totalBookings}</Typography>
+                      </TableCell>
+
+                      <TableCell>
+                        <Typography fontWeight="bold" color="info.main">
+                          {formatCurrencyVND(trainer.revenue)}
+                        </Typography>
+                      </TableCell>
+
+                      <TableCell>
+                        <Chip
+                          label={getApprovalText(trainer.trainerInfo.isApproved)}
+                          color={getApprovalColor(trainer.trainerInfo.isApproved)}
+                          size="small"
+                          icon={getApprovalIcon(trainer.trainerInfo.isApproved)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -1002,7 +944,12 @@ export default function PTManagementPage() {
       </Card>
 
       {/* PT Detail Modal */}
-      <PTDetailModal open={modalOpen} onClose={handleCloseModal} trainer={selectedTrainer} />
+      <PTDetailModal
+        open={modalOpen}
+        onClose={handleCloseModal}
+        trainer={selectedTrainer}
+        onTrainerUpdate={handleTrainerUpdate}
+      />
     </Box>
   )
 }

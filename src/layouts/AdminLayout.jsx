@@ -16,6 +16,7 @@ import CardMembershipIcon from "@mui/icons-material/CardMembership"
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter"
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant"
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
+import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"
 
 import { AppProvider } from "@toolpad/core/AppProvider"
 import { DashboardLayout } from "@toolpad/core/DashboardLayout"
@@ -65,8 +66,13 @@ const NAVIGATION = [
   },
   {
     segment: "admin/class",
-    title: "Phòng tập",
+    title: "Lớp học",
     icon: <FitnessCenterIcon />,
+  },
+  {
+    segment: "admin/room",
+    title: "Phòng tập",
+    icon: <MeetingRoomIcon />,
   },
   {
     segment: "admin/equipment",

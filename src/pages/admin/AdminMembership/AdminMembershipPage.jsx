@@ -47,7 +47,7 @@ import { formatCurrencyVND } from "~/utils/common"
 import { deleteMembershipAPI, getListMembershipAPI } from "~/apis/membership"
 
 import useMembershipStore from "~/stores/useMembershipStore"
-import ConfirmDialog from "~/utils/ConfirmDialog"
+import ConfirmDialog from "~/components/ConfirmDialog"
 import { toast } from "react-toastify"
 
 export default function AdminMembershipPage() {

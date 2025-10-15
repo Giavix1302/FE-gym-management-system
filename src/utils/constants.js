@@ -44,7 +44,7 @@ export const navItemUserSigned = [
   },
   {
     title: "Trợ lí AI",
-    link: "/chat-bot",
+    link: "user/chat-bot",
   },
 ]
 

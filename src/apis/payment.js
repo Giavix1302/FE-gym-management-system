@@ -11,3 +11,8 @@ export const createLinkVnpayBookingPaymentAPI = async (data) => {
   const rep = await axiosInstance.post("/payments/vnpay/booking", data)
   return rep.data
 }
+
+export const createLinkVnpayClassPaymentAPI = async (data) => {
+  const rep = await axiosInstance.post("/payments/vnpay/class", data)
+  return rep.data
+}

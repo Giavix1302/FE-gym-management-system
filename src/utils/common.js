@@ -342,3 +342,27 @@ export function buildFormData(data) {
 
   return formData
 }
+
+export function isValidTimeRange(startTime, endTime) {
+  const start = new Date(startTime)
+  const end = new Date(endTime)
+
+  // Nếu 1 trong 2 không phải thời gian hợp lệ
+  if (isNaN(start) || isNaN(end)) return false
+
+  // Chỉ hợp lệ nếu start < end (loại cả trường hợp trùng)
+  return start.getTime() < end.getTime()
+}
+
+export function getHoursBetween(startTime, endTime) {
+  const start = new Date(startTime)
+  const end = new Date(endTime)
+
+  // Tính khoảng cách mili-giây giữa 2 thời điểm
+  const diffMs = end - start
+
+  // Chuyển mili-giây → giờ
+  const diffHours = diffMs / (1000 * 60 * 60)
+
+  return diffHours
+}

@@ -13,6 +13,12 @@ import useMyMembershipStore from "~/stores/useMyMembershipStore"
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import useLocationStore from "~/stores/useLocationStore"
 import { getListLocationAPI } from "~/apis/location"
+import { getListRoomAPI } from "~/apis/room"
+import useRoomsStore from "~/stores/useRoomsStore"
+import { getListTrainerForAdminAPI } from "~/apis/trainer"
+import useListTrainerInfoForAdmin from "~/stores/useListTrainerInfoForAdmin"
+import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
+import { getListScheduleByTrainerIdAPI } from "~/apis/schedule"
 
 function Login() {
   // store
@@ -20,6 +26,10 @@ function Login() {
   const { updateMyMembership } = useMyMembershipStore()
   const { updateTrainerInfo, resetTrainerInfo } = useTrainerInfoStore()
   const { setLocations } = useLocationStore()
+  const { setRooms } = useRoomsStore()
+  const { setListTrainerInfo } = useListTrainerInfoForAdmin()
+  const { setListSchedule } = useListScheduleForPTStore()
+
   //state
   const [phone, setPhone] = useState("")
   const [isPhoneError, setIsPhoneError] = useState(false)
@@ -61,6 +71,15 @@ function Login() {
       const locationData = await getListLocationAPI()
       setLocations(locationData.locations)
       if (data.user.role === "admin") {
+        //get list room
+        const resultRoom = await getListRoomAPI()
+        if (resultRoom.success) setRooms(resultRoom.rooms)
+        // get list trainer info
+        const response = await getListTrainerForAdminAPI()
+        if (response.success && response.listTrainerInfo) {
+          setListTrainerInfo(response.listTrainerInfo)
+        }
+        // navigate
         navigate("/admin/dashboard")
       } else if (data.user.role === "user") {
         updateUser(data.user)
@@ -71,9 +90,12 @@ function Login() {
         if (Object.keys(data.trainer).length > 0) {
           console.log(" vô đây")
           updateTrainerInfo(data.trainer)
+          const result = await getListScheduleByTrainerIdAPI(data.trainer._id)
+          setListSchedule(result.listSchedule)
         } else {
           resetTrainerInfo()
         }
+
         navigate("/pt/home")
       }
       toast.success("đăng nhập thành công")

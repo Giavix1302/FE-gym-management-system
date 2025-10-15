@@ -19,7 +19,6 @@ import AdminLayout from "~/layouts/AdminLayout"
 import AdminHomePage from "~/pages/admin/AdminHomePage"
 import AdminUserPage from "~/pages/admin/AdminUserPage"
 import AdminTrainerPage from "~/pages/admin/AdminTrainerPage"
-import AdminClassPage from "~/pages/admin/AdminClassPage"
 import AdminEquipmentPage from "~/pages/admin/AdminEquipmentPage"
 import AdminPaymentPage from "~/pages/admin/AdminPaymentPage"
 import AdminReportMemberPage from "~/pages/admin/report/AdminReportUserPage"
@@ -35,9 +34,14 @@ import UserMembershipPage from "~/pages/user/UserMembershipPage"
 //
 import { useLogout } from "~/hooks/useLogout"
 import ResultPaymentPage from "~/pages/ResultPaymentPage"
-import PtHomePage from "~/pages/pt/ptHomePage"
-import PtProfilePage from "~/pages/pt/PtProfilePage"
 import UserBookingPage from "~/pages/user/UserBooking/UserBookingPage"
+import AdminRoomPage from "~/pages/admin/AdminRoomPage"
+import AdminClassPage from "~/pages/admin/AdminClass/AdminClassPage"
+import ClassEnrollmentPage from "~/pages/user/UserClass/UserClassPage"
+import TrainerHomePage from "~/pages/trainer/TrainerHomePage"
+import TrainerProfilePage from "~/pages/trainer/TrainerProfilePage"
+import TrainerBookingPage from "~/pages/trainer/TrainerBooking/TrainerBookingPage"
+import TrainerClassesPage from "~/pages/trainer/trainerClasses/TrainerClassesPage"
 
 export default function AppRoutes() {
   const logout = useLogout()
@@ -109,14 +113,17 @@ export default function AppRoutes() {
           <Route path="/user/home" element={<UserHomePage />} />
           <Route path="/user/membership" element={<UserMembershipPage />} />
           <Route path="/user/booking" element={<UserBookingPage />} />
+          <Route path="/user/class" element={<ClassEnrollmentPage />} />
           <Route path="/user/payment/success" element={<ResultPaymentPage />} />
         </Route>
       </Route>
 
       <Route element={<PrivateRoute roles={["pt"]} />}>
         <Route element={<UserLayout />}>
-          <Route path="/pt/home" element={<PtHomePage />} />
-          <Route path="/pt/profile" element={<PtProfilePage />} />
+          <Route path="/pt/home" element={<TrainerHomePage />} />
+          <Route path="/pt/profile" element={<TrainerProfilePage />} />
+          <Route path="/pt/booking" element={<TrainerBookingPage />} />
+          <Route path="/pt/class" element={<TrainerClassesPage />} />
         </Route>
       </Route>
 
@@ -132,6 +139,7 @@ export default function AppRoutes() {
           <Route path="/admin/pt" element={<AdminTrainerPage />} />
           <Route path="/admin/membership" element={<AdminMembershipPage />} />
           <Route path="/admin/class" element={<AdminClassPage />} />
+          <Route path="/admin/room" element={<AdminRoomPage />} />
           <Route path="/admin/equipment" element={<AdminEquipmentPage />} />
           <Route path="/admin/payment" element={<AdminPaymentPage />} />
           <Route path="/admin/report/user" element={<AdminReportMemberPage />} />

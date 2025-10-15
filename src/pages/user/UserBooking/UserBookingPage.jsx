@@ -31,6 +31,14 @@ import {
   Tab,
   Fab,
   Badge,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  Tooltip,
 } from "@mui/material"
 import {
   FilterList,
@@ -47,6 +55,16 @@ import {
   CheckCircleOutline,
   HourglassEmpty,
   CancelOutlined,
+  History,
+  RateReview,
+  Star,
+  Send,
+  ThumbUp,
+  Comment,
+  ArrowUpward,
+  ArrowDownward,
+  Sort,
+  DateRange,
 } from "@mui/icons-material"
 import { theme } from "~/theme"
 import BookingCartModal from "./BookingCartModal"
@@ -58,7 +76,11 @@ import useListTrainerInfoForUser from "~/stores/useListTrainerInfoForUser"
 import useLocationStore from "~/stores/useLocationStore"
 import useUserStore from "~/stores/useUserStore"
 import { createLinkVnpayBookingPaymentAPI } from "~/apis/payment"
-import { getUpcomingBookingsByUserIdAPI } from "~/apis/booking"
+import { cancelBookingAPI, getHistoryBookingsByUserIdAPI, getUpcomingBookingsByUserIdAPI } from "~/apis/booking"
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"
+import { createReviewAPI } from "~/apis/review"
+import { toast } from "react-toastify"
+import BookingHistoryModal from "./BookingHistoryModal"
 
 function UserBookingPage() {
   // store
@@ -86,12 +108,30 @@ function UserBookingPage() {
   // Existing bookings - now using real API data
   const [existingBookings, setExistingBookings] = useState([])
 
+  // Booking history states
+  const [bookingHistory, setBookingHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyFilter, setHistoryFilter] = useState("all") // all, reviewed, not_reviewed
+  const [sortOrder, setSortOrder] = useState("desc") // asc, desc
+  const [timeFilter, setTimeFilter] = useState("all") // all, last_week, last_month, last_3_months
+  const [customDateRange, setCustomDateRange] = useState({
+    startDate: "",
+    endDate: "",
+  })
+
   // Dialog states
   const [openCartDialog, setOpenCartDialog] = useState(false)
   const [openDetailDialog, setOpenDetailDialog] = useState(false)
   const [openCancelDialog, setOpenCancelDialog] = useState(false)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [cancelReason, setCancelReason] = useState("")
+
+  // Review dialog states
+  const [openReviewDialog, setOpenReviewDialog] = useState(false)
+  const [selectedSession, setSelectedSession] = useState(null)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState("")
+  const [reviewLoading, setReviewLoading] = useState(false)
 
   // Payment modal states
   const [openPaymentModal, setOpenPaymentModal] = useState(false)
@@ -174,11 +214,32 @@ function UserBookingPage() {
             status: session.status || "unknown",
             price: session.price || 0,
             note: session.note || "",
+            hasReview: session.hasReview || false, // Add review flag
           })) || [],
         paymentMethod: "VNPay", // Default payment method
         createdAt: new Date().toISOString(), // Default creation date
       }
     })
+  }
+
+  // Function to get booking history - replace with actual API call
+  const fetchBookingHistory = async () => {
+    setHistoryLoading(true)
+    try {
+      // This would be replaced with actual API call
+      const historyResponse = await getHistoryBookingsByUserIdAPI(user._id)
+
+      setBookingHistory(historyResponse.bookings)
+    } catch (error) {
+      console.error("Error fetching booking history:", error)
+      setSnackbar({
+        open: true,
+        message: "Lỗi khi tải lịch sử đặt lịch",
+        severity: "error",
+      })
+    } finally {
+      setHistoryLoading(false)
+    }
   }
 
   // Transform schedule data to match expected format
@@ -258,6 +319,13 @@ function UserBookingPage() {
 
     init()
   }, [setListTrainerInfo, user?._id])
+
+  // Fetch booking history when tab changes to history
+  useEffect(() => {
+    if (activeTab === 2 && user?._id && bookingHistory.length === 0) {
+      fetchBookingHistory()
+    }
+  }, [activeTab, user?._id])
 
   // Update schedules when date or trainer data changes
   useEffect(() => {
@@ -464,7 +532,8 @@ function UserBookingPage() {
     }
   }
 
-  const handleCancelBooking = () => {
+  // Updated handleCancelBooking function in UserBookingPage.jsx
+  const handleCancelBooking = async () => {
     if (!cancelReason.trim()) {
       setSnackbar({
         open: true,
@@ -474,22 +543,115 @@ function UserBookingPage() {
       return
     }
 
+    if (!selectedBooking) {
+      setSnackbar({
+        open: true,
+        message: "Không tìm thấy thông tin booking",
+        severity: "error",
+      })
+      return
+    }
+
     setLoading(true)
-    setTimeout(() => {
-      const updatedBookings = existingBookings.map((booking) =>
-        booking?._id === selectedBooking?._id ? { ...booking, status: "cancelled" } : booking,
-      )
-      setExistingBookings(updatedBookings)
+
+    try {
+      // If cancelling a specific session
+      if (selectedBooking.sessionToCancel) {
+        const sessionToCancel = selectedBooking.sessionToCancel
+        const bookingId = sessionToCancel.bookingId
+
+        if (!bookingId) {
+          throw new Error("Không tìm thấy ID booking của phiên tập")
+        }
+
+        // Call the real API for single session
+        const result = await cancelBookingAPI(bookingId)
+
+        if (result.success || result.status === "success") {
+          // Update local state - mark specific session as cancelled
+          const updatedBookings = existingBookings.map((booking) => {
+            // Find the booking that contains this session
+            const hasSession = booking.allSessions.some((session) => session.bookingId === bookingId)
+
+            if (hasSession) {
+              return {
+                ...booking,
+                allSessions: booking.allSessions.map((session) =>
+                  session.bookingId === bookingId ? { ...session, status: "cancelled" } : session,
+                ),
+              }
+            }
+            return booking
+          })
+
+          setExistingBookings(updatedBookings)
+
+          setSnackbar({
+            open: true,
+            message: result.message || "Hủy phiên tập thành công",
+            severity: "success",
+          })
+        } else {
+          throw new Error(result.message || "Không thể hủy phiên tập")
+        }
+      } else {
+        // Cancelling entire booking (all sessions)
+        const allBookingIds = selectedBooking.allSessions?.map((session) => session.bookingId) || []
+
+        if (allBookingIds.length === 0) {
+          throw new Error("Không tìm thấy ID của các phiên tập")
+        }
+
+        // Cancel all sessions (you might need to call API for each session)
+        const cancelPromises = allBookingIds.map((bookingId) => cancelBookingAPI(bookingId))
+        const results = await Promise.allSettled(cancelPromises)
+
+        // Check if all cancellations were successful
+        const successfulCancellations = results.filter(
+          (result) => result.status === "fulfilled" && (result.value?.success || result.value?.status === "success"),
+        )
+
+        if (successfulCancellations.length === allBookingIds.length) {
+          // Update local state - mark all sessions as cancelled
+          const updatedBookings = existingBookings.map((booking) => {
+            if (booking._id === selectedBooking._id) {
+              return {
+                ...booking,
+                allSessions: booking.allSessions.map((session) => ({
+                  ...session,
+                  status: "cancelled",
+                })),
+              }
+            }
+            return booking
+          })
+
+          setExistingBookings(updatedBookings)
+
+          setSnackbar({
+            open: true,
+            message: "Hủy tất cả phiên tập thành công",
+            severity: "success",
+          })
+        } else {
+          throw new Error(`Chỉ hủy được ${successfulCancellations.length}/${allBookingIds.length} phiên tập`)
+        }
+      }
+
+      // Reset dialog state
       setOpenCancelDialog(false)
       setSelectedBooking(null)
       setCancelReason("")
-      setLoading(false)
+    } catch (error) {
+      console.error("Error cancelling booking:", error)
       setSnackbar({
         open: true,
-        message: "Hủy lịch thành công",
-        severity: "success",
+        message: error.message || "Lỗi khi hủy lịch. Vui lòng thử lại!",
+        severity: "error",
       })
-    }, 1500)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const canCancelBooking = (booking) => {
@@ -530,15 +692,235 @@ function UserBookingPage() {
     }
   }
 
+  // Updated handleCancelSession function for individual session cancellation
   const handleCancelSession = (session) => {
-    setSelectedBooking(session)
+    if (!session) {
+      setSnackbar({
+        open: true,
+        message: "Không tìm thấy thông tin phiên tập",
+        severity: "error",
+      })
+      return
+    }
+
+    // Set the selected booking with session reference for the cancel dialog
+    setSelectedBooking({
+      ...selectedBooking,
+      sessionToCancel: session, // Add reference to specific session being cancelled
+    })
+
     setOpenDetailDialog(false)
     setOpenCancelDialog(true)
+  }
+
+  // Alternative: Direct cancellation without dialog (if you prefer immediate action)
+  const handleCancelSessionDirect = async (session) => {
+    if (!session || !session.bookingId) {
+      setSnackbar({
+        open: true,
+        message: "Không tìm thấy thông tin phiên tập",
+        severity: "error",
+      })
+      return
+    }
+
+    const confirmed = window.confirm("Bạn có chắc chắn muốn hủy phiên tập này?")
+    if (!confirmed) return
+
+    setLoading(true)
+
+    try {
+      const result = await cancelBookingAPI(session.bookingId)
+
+      if (result.success || result.status === "success") {
+        // Update local state - mark specific session as cancelled
+        const updatedBookings = existingBookings.map((booking) => {
+          const hasSession = booking.allSessions.some((s) => s.bookingId === session.bookingId)
+
+          if (hasSession) {
+            return {
+              ...booking,
+              allSessions: booking.allSessions.map((s) =>
+                s.bookingId === session.bookingId ? { ...s, status: "cancelled" } : s,
+              ),
+            }
+          }
+          return booking
+        })
+
+        setExistingBookings(updatedBookings)
+
+        setSnackbar({
+          open: true,
+          message: result.message || "Hủy phiên tập thành công",
+          severity: "success",
+        })
+      } else {
+        throw new Error(result.message || "Không thể hủy phiên tập")
+      }
+    } catch (error) {
+      console.error("Error cancelling session:", error)
+      setSnackbar({
+        open: true,
+        message: error.message || "Lỗi khi hủy phiên tập. Vui lòng thử lại!",
+        severity: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Alternative approach if you need to cancel individual sessions
+  // You might need a separate API endpoint for this
+  const handleCancelIndividualSession = async (session) => {
+    if (!cancelReason.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Vui lòng nhập lý do hủy lịch",
+        severity: "error",
+      })
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const sessionId = session._id || session.bookingId
+
+      if (!sessionId) {
+        throw new Error("Không tìm thấy ID phiên tập")
+      }
+
+      // If you have a separate API for cancelling individual sessions
+      // const result = await cancelSessionAPI(sessionId)
+
+      // Otherwise, use the booking API
+      const result = await cancelBookingAPI(sessionId)
+
+      if (result.success || result.status === "success") {
+        // Update only the specific session in local state
+        const updatedBookings = existingBookings.map((booking) => {
+          if (booking._id === selectedBooking._id) {
+            return {
+              ...booking,
+              allSessions: booking.allSessions.map((s) =>
+                s._id === session._id || s.bookingId === session.bookingId ? { ...s, status: "cancelled" } : s,
+              ),
+            }
+          }
+          return booking
+        })
+
+        setExistingBookings(updatedBookings)
+
+        setOpenCancelDialog(false)
+        setSelectedBooking(null)
+        setCancelReason("")
+
+        setSnackbar({
+          open: true,
+          message: result.message || "Hủy phiên tập thành công",
+          severity: "success",
+        })
+      } else {
+        throw new Error(result.message || "Không thể hủy phiên tập")
+      }
+    } catch (error) {
+      console.error("Error cancelling session:", error)
+      setSnackbar({
+        open: true,
+        message: error.message || "Lỗi khi hủy phiên tập. Vui lòng thử lại!",
+        severity: "error",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleShowPTDetails = (trainer) => {
     setSelectedTrainer(trainer)
     setOpenPTDetailDialog(true)
+  }
+
+  // Review handling functions
+  const handleReviewSession = (historyItem) => {
+    setSelectedSession(historyItem)
+    setReviewRating(5)
+    setReviewComment("")
+    setOpenReviewDialog(true)
+  }
+
+  const handleSubmitReview = async () => {
+    if (!reviewComment.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Vui lòng nhập nhận xét",
+        severity: "error",
+      })
+      return
+    }
+
+    setReviewLoading(true)
+    try {
+      // Replace with actual API call
+      // await submitReviewAPI(selectedSession.bookingId, {
+      //   rating: reviewRating,
+      //   comment: reviewComment.trim(),
+      // })
+
+      selectedSession
+
+      const dataToCreateReview = {
+        bookingId: selectedSession.bookingId,
+        userId: user._id,
+        trainerId: selectedSession.trainer.trainerId,
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      }
+
+      const result = await createReviewAPI(dataToCreateReview)
+
+      if (!result.success) toast.error(result.message || " Lỗi đánh giá huấn luyện viên")
+
+      // Mock delay for demonstration
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Update local state to match your data structure
+      setBookingHistory((prev) =>
+        prev.map((item) =>
+          item._id === selectedSession._id
+            ? {
+                ...item,
+                review: {
+                  rating: reviewRating,
+                  comment: reviewComment.trim(),
+                  createdAt: new Date().toISOString(),
+                },
+              }
+            : item,
+        ),
+      )
+
+      setSnackbar({
+        open: true,
+        message: "Đánh giá đã được gửi thành công!",
+        severity: "success",
+      })
+
+      setOpenReviewDialog(false)
+      setSelectedSession(null)
+      setReviewRating(5)
+      setReviewComment("")
+    } catch (error) {
+      console.error("Error submitting review:", error)
+      setSnackbar({
+        open: true,
+        message: "Lỗi khi gửi đánh giá",
+        severity: "error",
+      })
+    } finally {
+      setReviewLoading(false)
+    }
   }
 
   const filteredTrainers = trainers.filter((trainer) => {
@@ -558,6 +940,83 @@ function UserBookingPage() {
 
     return matchSpecialization && matchSearch
   })
+
+  // Handle sorting
+  const handleSort = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+  }
+
+  // Filter booking history by time range
+  const getTimeFilteredHistory = (history) => {
+    if (timeFilter === "all") return history
+
+    const now = new Date()
+    let startDate = new Date()
+
+    switch (timeFilter) {
+      case "last_week":
+        startDate.setDate(now.getDate() - 7)
+        break
+      case "last_month":
+        startDate.setMonth(now.getMonth() - 1)
+        break
+      case "last_3_months":
+        startDate.setMonth(now.getMonth() - 3)
+        break
+      case "custom":
+        if (customDateRange.startDate && customDateRange.endDate) {
+          return history.filter((item) => {
+            const sessionDate = new Date(item.session?.startTime)
+            const start = new Date(customDateRange.startDate)
+            const end = new Date(customDateRange.endDate)
+            return sessionDate >= start && sessionDate <= end
+          })
+        }
+        return history
+      default:
+        return history
+    }
+
+    return history.filter((item) => {
+      const sessionDate = new Date(item.session?.startTime)
+      return sessionDate >= startDate
+    })
+  }
+
+  // Filter booking history based on review status and time
+  const filteredBookingHistory = (() => {
+    let filtered = bookingHistory
+
+    // Apply review filter
+    if (historyFilter === "reviewed") {
+      filtered = filtered.filter((item) => item.review && Object.keys(item.review).length > 0 && item.review.rating)
+    } else if (historyFilter === "not_reviewed") {
+      filtered = filtered.filter((item) => !item.review || Object.keys(item.review).length === 0 || !item.review.rating)
+    }
+
+    // Apply time filter
+    filtered = getTimeFilteredHistory(filtered)
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.session?.startTime)
+      const dateB = new Date(b.session?.startTime)
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA
+    })
+
+    return filtered
+  })()
+
+  // Calculate statistics for history
+  const historyStats = {
+    total: bookingHistory.length,
+    reviewed: bookingHistory.filter((item) => item.review && Object.keys(item.review).length > 0 && item.review.rating)
+      .length,
+    notReviewed: bookingHistory.filter(
+      (item) => !item.review || Object.keys(item.review).length === 0 || !item.review.rating,
+    ).length,
+    totalSpent: bookingHistory.reduce((sum, item) => sum + (item.price || 0), 0),
+  }
 
   const createPaymentSummaryCard = () => (
     <Card sx={{ mb: 2, bgcolor: "grey.50" }}>
@@ -637,6 +1096,7 @@ function UserBookingPage() {
         >
           <Tab label="Đặt lịch mới" icon={<Add />} iconPosition="start" />
           <Tab label="Lịch đã đặt" icon={<Event />} iconPosition="start" />
+          <Tab label="Lịch sử đặt lịch" icon={<History />} iconPosition="start" />
         </Tabs>
       </Paper>
 
@@ -1153,8 +1613,6 @@ function UserBookingPage() {
                                   Tổng:{" "}
                                   {booking.allSessions
                                     .reduce((total, item) => {
-                                      console.log("🚀 ~ item:", item)
-
                                       return (total += item.price)
                                     }, 0)
                                     .toLocaleString("vi-VN")}
@@ -1282,6 +1740,385 @@ function UserBookingPage() {
         </Box>
       )}
 
+      {/* Tab 3: Booking History */}
+      {activeTab === 2 && (
+        <Box>
+          {/* History Statistics */}
+          <Paper sx={{ p: 3, mb: 3, bgcolor: "grey.50" }}>
+            <Typography variant="h6" gutterBottom>
+              Thống kê lịch sử tập luyện
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h4" color="primary" fontWeight={600}>
+                    {historyStats.total}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Tổng buổi tập
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h4" color="success.main" fontWeight={600}>
+                    {historyStats.reviewed}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Đã đánh giá
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h4" color="warning.main" fontWeight={600}>
+                    {historyStats.notReviewed}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Chưa đánh giá
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="h4" color="info.main" fontWeight={600}>
+                    {historyStats.totalSpent.toLocaleString("vi-VN")}đ
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Tổng chi tiêu
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          {/* Filter and Sort Section */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <FilterList color="primary" />
+              Bộ lọc và sắp xếp
+            </Typography>
+
+            <Grid container spacing={2} alignItems="center">
+              {/* Review Filter */}
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  label="Trạng thái đánh giá"
+                  value={historyFilter}
+                  onChange={(e) => setHistoryFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả ({historyStats.total})</MenuItem>
+                  <MenuItem value="reviewed">Đã đánh giá ({historyStats.reviewed})</MenuItem>
+                  <MenuItem value="not_reviewed">Chưa đánh giá ({historyStats.notReviewed})</MenuItem>
+                </TextField>
+              </Grid>
+
+              {/* Time Filter */}
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  label="Khoảng thời gian"
+                  value={timeFilter}
+                  onChange={(e) => setTimeFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả thời gian</MenuItem>
+                  <MenuItem value="last_week">7 ngày qua</MenuItem>
+                  <MenuItem value="last_month">30 ngày qua</MenuItem>
+                  <MenuItem value="last_3_months">3 tháng qua</MenuItem>
+                  <MenuItem value="custom">Tùy chọn</MenuItem>
+                </TextField>
+              </Grid>
+
+              {/* Custom Date Range */}
+              {timeFilter === "custom" && (
+                <>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="date"
+                      label="Từ ngày"
+                      value={customDateRange.startDate}
+                      onChange={(e) => setCustomDateRange((prev) => ({ ...prev, startDate: e.target.value }))}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="date"
+                      label="Đến ngày"
+                      value={customDateRange.endDate}
+                      onChange={(e) => setCustomDateRange((prev) => ({ ...prev, endDate: e.target.value }))}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </>
+              )}
+
+              {/* Sort Button */}
+              <Grid size={{ xs: 12, sm: timeFilter === "custom" ? 12 : 6, md: timeFilter === "custom" ? 12 : 3 }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={handleSort}
+                  startIcon={sortOrder === "asc" ? <ArrowUpward /> : <ArrowDownward />}
+                  sx={{ height: "40px" }}
+                >
+                  {sortOrder === "asc" ? "Cũ nhất trước" : "Mới nhất trước"}
+                </Button>
+              </Grid>
+            </Grid>
+
+            {/* Results Summary */}
+            <Box sx={{ mt: 2, p: 1, bgcolor: "info.50", borderRadius: 1 }}>
+              <Typography variant="body2" color="info.main">
+                Hiển thị {filteredBookingHistory.length} buổi tập
+                {timeFilter !== "all" &&
+                  ` trong ${
+                    timeFilter === "last_week"
+                      ? "7 ngày qua"
+                      : timeFilter === "last_month"
+                        ? "30 ngày qua"
+                        : timeFilter === "last_3_months"
+                          ? "3 tháng qua"
+                          : "khoảng thời gian đã chọn"
+                  }`}
+              </Typography>
+            </Box>
+          </Paper>
+
+          {/* History Table */}
+          {historyLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <Stack spacing={2} sx={{ width: "100%" }}>
+                {[...Array(5)].map((_, index) => (
+                  <Skeleton key={index} variant="rectangular" height={60} />
+                ))}
+              </Stack>
+            </Box>
+          ) : filteredBookingHistory.length === 0 ? (
+            <Paper sx={{ p: 4, textAlign: "center" }}>
+              <History sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+              <Typography color="text.secondary" gutterBottom>
+                {historyFilter === "all"
+                  ? timeFilter === "all"
+                    ? "Bạn chưa có lịch sử đặt lịch nào"
+                    : "Không có buổi tập nào trong khoảng thời gian này"
+                  : historyFilter === "reviewed"
+                    ? "Bạn chưa có buổi tập nào đã đánh giá trong khoảng thời gian này"
+                    : "Bạn chưa có buổi tập nào chưa đánh giá trong khoảng thời gian này"}
+              </Typography>
+              <Button variant="contained" sx={{ mt: 2 }} onClick={() => setActiveTab(0)}>
+                Đặt lịch mới
+              </Button>
+            </Paper>
+          ) : (
+            <TableContainer component={Paper} sx={{ mb: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: "grey.50" }}>
+                    <TableCell>
+                      <TableSortLabel
+                        active={true}
+                        direction={sortOrder}
+                        onClick={handleSort}
+                        IconComponent={sortOrder === "asc" ? ArrowUpward : ArrowDownward}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <DateRange fontSize="small" />
+                          Thời gian
+                        </Box>
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>Huấn luyện viên</TableCell>
+                    <TableCell>Địa điểm</TableCell>
+                    <TableCell align="center">Trạng thái</TableCell>
+                    <TableCell align="right">Giá tiền</TableCell>
+                    <TableCell align="center">Đánh giá</TableCell>
+                    <TableCell align="center">Hành động</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredBookingHistory.map((historyItem, index) => {
+                    const { trainer, session, review, status, price, note } = historyItem
+                    const trainerInfo = trainer?.userInfo || {}
+                    const trainerName = trainerInfo?.fullName || "Unknown Trainer"
+                    const trainerAvatar = trainerInfo?.avatar || ""
+
+                    // Format address from object structure
+                    const formatAddress = (addressObj) => {
+                      if (!addressObj) return ""
+                      if (typeof addressObj === "string") return addressObj
+
+                      const { street, ward, province } = addressObj
+                      return [street, ward, province].filter(Boolean).join(", ")
+                    }
+
+                    // Check if review exists and has content
+                    const hasReview = review && Object.keys(review).length > 0 && review.rating
+
+                    return (
+                      <TableRow
+                        key={historyItem._id || index}
+                        sx={{
+                          "&:hover": { bgcolor: "grey.50" },
+                          "&:nth-of-type(odd)": { bgcolor: "grey.25" },
+                        }}
+                      >
+                        {/* Time Column */}
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {formatDate(session?.startTime)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(session?.startTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}{" "}
+                              -{" "}
+                              {new Date(session?.endTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+
+                        {/* Trainer Column */}
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                            <Avatar src={trainerAvatar} sx={{ width: 40, height: 40 }}>
+                              {trainerName.charAt(0)}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" fontWeight={600}>
+                                {trainerName}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {trainer?.specialization || "Chưa xác định"}
+                              </Typography>
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                                <Rating value={trainer?.rating || 0} readOnly size="small" />
+                                <Typography variant="caption">({trainer?.rating || 0})</Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        </TableCell>
+
+                        {/* Location Column */}
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" fontWeight={500}>
+                              {session?.location?.name || "Unknown Location"}
+                            </Typography>
+                            {session?.location?.address && (
+                              <Typography variant="caption" color="text.secondary">
+                                {formatAddress(session.location.address)}
+                              </Typography>
+                            )}
+                            {note && (
+                              <Tooltip title={note} arrow>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    display: "block",
+                                    color: "info.main",
+                                    cursor: "help",
+                                    mt: 0.5,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    maxWidth: "150px",
+                                  }}
+                                >
+                                  💬 {note}
+                                </Typography>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+
+                        {/* Status Column */}
+                        <TableCell align="center">
+                          <Chip
+                            icon={getStatusInfo(status).icon}
+                            label={getStatusInfo(status).label}
+                            color={getStatusInfo(status).color}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+
+                        {/* Price Column */}
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight={600} color="success.main">
+                            {(price || 0).toLocaleString("vi-VN")}đ
+                          </Typography>
+                        </TableCell>
+
+                        {/* Review Column */}
+                        <TableCell align="center">
+                          {hasReview ? (
+                            <Tooltip
+                              title={
+                                <Box>
+                                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                    <Rating value={review.rating} readOnly size="small" />
+                                    <Typography variant="caption">({review.rating}/5)</Typography>
+                                  </Box>
+                                  <Typography variant="body2">{review.comment}</Typography>
+                                </Box>
+                              }
+                              arrow
+                            >
+                              <Box sx={{}}>
+                                <Rating value={review.rating} readOnly size="small" />
+                              </Box>
+                            </Tooltip>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              Chưa đánh giá
+                            </Typography>
+                          )}
+                        </TableCell>
+
+                        {/* Actions Column */}
+                        <TableCell align="center">
+                          {!hasReview ? (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              onClick={() => handleReviewSession(historyItem)}
+                            >
+                              Đánh giá
+                            </Button>
+                          ) : (
+                            <Tooltip title="Đã đánh giá">
+                              <IconButton disabled>
+                                <CheckCircle color="success" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </Box>
+      )}
+
       {/* Floating Cart Button */}
       {activeTab === 0 && bookingCart.length > 0 && (
         <Fab
@@ -1356,6 +2193,106 @@ function UserBookingPage() {
         canCancelBooking={canCancelBooking}
       />
 
+      {/* Review Dialog */}
+      <Dialog open={openReviewDialog} onClose={() => setOpenReviewDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Star color="primary" />
+            <Typography variant="h6">Đánh giá buổi tập với {selectedSession?.trainer?.userInfo?.fullName}</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedSession && (
+            <Box>
+              {/* Session Info */}
+              <Paper sx={{ p: 2, mb: 3, bgcolor: "grey.50" }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  📅 {formatDate(selectedSession.session?.startTime)}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  ⏰{" "}
+                  {new Date(selectedSession.session?.startTime).toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}{" "}
+                  -{" "}
+                  {new Date(selectedSession.session?.endTime).toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Typography>
+                <Typography variant="body2">📍 {selectedSession.session?.location?.name}</Typography>
+                {selectedSession.session?.location?.address && (
+                  <Typography variant="caption" color="text.secondary">
+                    {typeof selectedSession.session.location.address === "string"
+                      ? selectedSession.session.location.address
+                      : `${selectedSession.session.location.address.street || ""}, ${selectedSession.session.location.address.ward || ""}, ${selectedSession.session.location.address.province || ""}`.replace(
+                          /^,\s*|,\s*$/g,
+                          "",
+                        )}
+                  </Typography>
+                )}
+              </Paper>
+
+              {/* Rating Section */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Đánh giá chất lượng buổi tập *
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Rating
+                    value={reviewRating}
+                    onChange={(event, newValue) => setReviewRating(newValue || 1)}
+                    size="large"
+                    precision={1}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    ({reviewRating}/5 sao)
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Comment Section */}
+              <Box sx={{ mb: 2 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  label="Nhận xét về buổi tập *"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Chia sẻ trải nghiệm của bạn về buổi tập này..."
+                  error={!reviewComment.trim()}
+                  helperText={!reviewComment.trim() ? "Vui lòng nhập nhận xét" : `${reviewComment.length}/500 ký tự`}
+                  inputProps={{ maxLength: 500 }}
+                />
+              </Box>
+
+              <Alert severity="info" sx={{ mt: 2 }}>
+                <Typography variant="body2">
+                  Đánh giá của bạn sẽ giúp cải thiện chất lượng dịch vụ và hỗ trợ các thành viên khác trong việc lựa
+                  chọn PT phù hợp.
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button onClick={() => setOpenReviewDialog(false)} color="inherit" variant="outlined">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmitReview}
+            color="primary"
+            variant="contained"
+            disabled={reviewLoading || !reviewComment.trim()}
+            startIcon={reviewLoading ? <AutorenewOutlined sx={{ animation: "spin 1s linear infinite" }} /> : <Send />}
+          >
+            {reviewLoading ? "Đang gửi..." : "Gửi đánh giá"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Cancel Dialog */}
       <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
@@ -1409,6 +2346,14 @@ function UserBookingPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <BookingHistoryModal
+        open={openReviewDialog}
+        onClose={() => setOpenReviewDialog(false)}
+        selectedBooking={selectedSession}
+        onSubmitReview={handleSubmitReview}
+        loading={reviewLoading}
+      />
 
       {/* Snackbar */}
       <Snackbar

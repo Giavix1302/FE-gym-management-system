@@ -42,7 +42,7 @@ import CloseIcon from "@mui/icons-material/Close"
 // chart
 import { LineChart } from "@mui/x-charts/LineChart"
 // custom
-import GymCalendar from "~/utils/Calendar"
+import GymCalendar from "~/components/Calendar"
 //react
 import { useState } from "react"
 

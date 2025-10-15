@@ -5,12 +5,23 @@ import { removeFromLocalStorage } from "~/utils/common"
 import { logoutAPI } from "~/apis/auth"
 import useMyMembershipStore from "~/stores/useMyMembershipStore"
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
+import useListTrainerInfoForAdmin from "~/stores/useListTrainerInfoForAdmin"
+import useRoomsStore from "~/stores/useRoomsStore"
+import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
+import useListTrainerInfoForUser from "~/stores/useListTrainerInfoForUser"
+import useLocationStore from "~/stores/useLocationStore"
 
 export function useLogout() {
+  const { resetListSchedule } = useListScheduleForPTStore()
+  const { resetListTrainerInfo } = useListTrainerInfoForAdmin()
+  const { resetListTrainerInfo: resetListTrainerInfoForUser } = useListTrainerInfoForUser()
+  const { resetLocations } = useLocationStore()
   const { resetPackages } = useMembershipStore()
   const { resetMyMembership } = useMyMembershipStore()
-  const { resetUser } = useUserStore()
+  const { resetRooms } = useRoomsStore()
   const { resetTrainerInfo } = useTrainerInfoStore()
+  const { resetUser } = useUserStore()
+
   const navigate = useNavigate()
 
   const logout = async () => {
@@ -18,10 +29,15 @@ export function useLogout() {
       // xóa accessToken
       removeFromLocalStorage("accessToken")
       // xóa store
-      resetUser()
+      resetListSchedule()
+      resetListTrainerInfo()
+      resetListTrainerInfoForUser()
+      resetLocations()
       resetMyMembership()
       resetTrainerInfo()
       resetPackages()
+      resetRooms()
+      resetUser()
       // call API xóa refreshToken
       await logoutAPI() // gọi API logout nếu cần
     } catch (err) {

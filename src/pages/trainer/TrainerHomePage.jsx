@@ -45,9 +45,9 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 
 // Import GymCalendar component
-import GymCalendar from "~/utils/Calendar"
+import GymCalendar from "~/components/Calendar"
 
-const PtHomePage = () => {
+const TrainerHomePage = () => {
   // const [anchorEl, setAnchorEl] = useState(null)
 
   // Calendar events state
@@ -544,4 +544,4 @@ const PtHomePage = () => {
   )
 }
 
-export default PtHomePage
+export default TrainerHomePage
