@@ -2,9 +2,9 @@ import axios from "axios"
 import { toast } from "react-toastify"
 import { getFromLocalStorage, removeFromLocalStorage, saveToLocalStorage } from "~/utils/common"
 
-const API_URL =
-  // eslint-disable-next-line no-undef
-  process.env.BUILD_MODE === "production" ? import.meta.env.VITE_API_URL + "/v1" : "http://localhost:3000/v1"
+const API_URL = import.meta.env.VITE_API_URL + "/v1"
+
+console.log("👉 API_URL =", API_URL)
 
 export const axiosPublic = axios.create({
   baseURL: API_URL,

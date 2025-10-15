@@ -1,0 +1,1491 @@
+import React, { useState, useCallback, useMemo, useEffect } from "react"
+import PropTypes from "prop-types"
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  Avatar,
+  TextField,
+  Button,
+  Grid,
+  IconButton,
+  Chip,
+  Alert,
+  Divider,
+  Card,
+  CardContent,
+  Stack,
+  Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  useMediaQuery,
+  useTheme,
+  Tabs,
+  Tab,
+  Badge,
+  Tooltip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  InputAdornment,
+  ImageList,
+  ImageListItem,
+  ImageListItemBar,
+  Modal,
+} from "@mui/material"
+import {
+  Edit as EditIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  PhotoCamera as PhotoCameraIcon,
+  Person as PersonIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  LocationOn as LocationIcon,
+  Work as WorkIcon,
+  School as SchoolIcon,
+  FitnessCenter as FitnessIcon,
+  EmojiEvents as AwardIcon,
+  Schedule as ScheduleIcon,
+  Send as SendIcon,
+  CheckCircle as CheckIcon,
+  Pending as PendingIcon,
+  Info as InfoIcon,
+  CalendarMonth as CalendarIcon,
+  Badge as BadgeIcon,
+  Groups as GroupsIcon,
+  Star as StarIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
+  AccessTime as AccessTimeIcon,
+  EventAvailable as EventAvailableIcon,
+  Description as DescriptionIcon,
+} from "@mui/icons-material"
+import AddIcon from "@mui/icons-material/Add"
+import CloseIcon from "@mui/icons-material/Close"
+import SportsKabaddiIcon from "@mui/icons-material/SportsKabaddi"
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
+// Import stores - uncommented
+import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
+import useUserStore from "~/stores/useUserStore"
+import GymCalendar from "~/components/Calendar"
+import { toast } from "react-toastify"
+import {
+  buildFormData,
+  convertISOToVNTime,
+  convertToISODateRange,
+  formatToLeadingZero,
+  splitUserTrainerData,
+  toISODate,
+} from "~/utils/common"
+import { updateInfoTrainerByUserIdAPI } from "~/apis/trainer"
+import { updateInfoUserAPI } from "~/apis/user"
+import MyBackdrop from "~/components/MyBackdrop"
+import TimeField from "~/components/TimeField"
+import DateField from "~/components/DateField"
+import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
+import { createScheduleForPtAPI, deleteScheduleForPtAPI, getListScheduleByTrainerIdAPI } from "~/apis/schedule"
+import dayjs from "dayjs"
+
+// CustomTabPanel theo cách chính thức của MUI
+function CustomTabPanel(props) {
+  const { children, value, index, ...other } = props
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    </div>
+  )
+}
+
+CustomTabPanel.propTypes = {
+  children: PropTypes.node,
+  index: PropTypes.number.isRequired,
+  value: PropTypes.number.isRequired,
+}
+
+function a11yProps(index) {
+  return {
+    id: `simple-tab-${index}`,
+    "aria-controls": `simple-tabpanel-${index}`,
+  }
+}
+
+// Component chính
+export default function TrainerProfilePage() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
+
+  // backdrop
+  const [openBackdrop, setOpenBackdrop] = useState(false)
+  const handleCloseBackdrop = () => setOpenBackdrop(false)
+
+  // States - trả lại đầy đủ
+  const [isEditing, setIsEditing] = useState(false)
+  const [tabValue, setTabValue] = useState(0)
+  const [editData, setEditData] = useState({})
+  const [errors, setErrors] = useState({})
+  const [openSnackbar, setOpenSnackbar] = useState(false)
+  const [snackbarMessage, setSnackbarMessage] = useState("")
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success")
+  const [openSubmitDialog, setOpenSubmitDialog] = useState(false)
+  const [openImageDialog, setOpenImageDialog] = useState(false)
+  const [selectedImage, setSelectedImage] = useState("")
+  const [newPhysiqueImages, setNewPhysiqueImages] = useState([])
+
+  // Event Modal States
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [deleteScheduleLoading, setDeleteScheduleLoading] = useState(false)
+
+  const [scheduleDateValue, setScheduleDateValue] = useState({ day: 0, month: 0, year: 0 })
+  console.log("🚀 ~ PtProfilePage ~ scheduleDateValue:", scheduleDateValue)
+  const [startTimeValue, setStartTimeValue] = useState({
+    hour: 0,
+    minute: 0,
+  })
+  const [endTimeValue, setEndTimeValue] = useState({
+    hour: 0,
+    minute: 0,
+  })
+  console.log("🚀 ~ PtProfilePage ~ endTimeValue:", endTimeValue)
+  console.log("🚀 ~ PtProfilePage ~ startTimeValue:", startTimeValue)
+
+  // Stores - uncomment
+  const { user, updateUser } = useUserStore()
+  const { trainerInfo, updateTrainerInfo } = useTrainerInfoStore()
+  const { listSchedule, setListSchedule } = useListScheduleForPTStore()
+
+  // Dữ liệu PT - với stores thực
+  const ptData = useMemo(
+    () => ({
+      id: trainerInfo._id || "",
+      fullName: user.fullName || "Chưa có tên",
+      email: user.email || "",
+      phone: formatToLeadingZero(user.phone) || "",
+      avatar: user.avatar || "",
+      gender: user.gender || "",
+      dateOfBirth: user.dateOfBirth ? convertISOToVNTime(user.dateOfBirth) : "",
+      address: user.address || "",
+      status: trainerInfo.isApproved || "",
+      joinDate: "",
+      pricePerSession: trainerInfo.pricePerSession || 0,
+
+      // Thông tin chuyên môn
+      specialization: trainerInfo.specialization || "",
+      experience: trainerInfo.experience || "",
+      education: trainerInfo.education || "",
+
+      // Hình ảnh cơ thể
+      physiqueImages: [...(trainerInfo.physiqueImages || [])],
+
+      // Giới thiệu bản thân
+      bio: trainerInfo.bio || "",
+
+      // Thời gian làm việc
+      workingDay: "",
+      startTime: "",
+      endTime: "",
+    }),
+    [user, trainerInfo],
+  )
+
+  useEffect(() => {
+    const init = async () => {
+      const data = await getListScheduleByTrainerIdAPI(trainerInfo._id)
+      setListSchedule(data.listSchedule)
+    }
+    init()
+  }, [])
+
+  // Event Modal Functions
+  const handleEventClick = (event) => {
+    setSelectedEvent(event)
+    setIsEventModalOpen(true)
+  }
+
+  const closeEventModal = () => {
+    setIsEventModalOpen(false)
+    setSelectedEvent(null)
+  }
+
+  const formatTime = (date) => {
+    return new Date(date).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+  }
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("vi-VN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  const handleDeleteSchedule = async () => {
+    if (!selectedEvent) return
+
+    setDeleteScheduleLoading(true)
+    try {
+      // Call delete API here
+      await deleteScheduleForPtAPI(selectedEvent._id)
+
+      // Remove from local state
+      const updatedSchedule = listSchedule.filter((schedule) => schedule._id !== selectedEvent._id)
+      setListSchedule(updatedSchedule)
+
+      showSnackbar("Đã xóa lịch thành công!", "success")
+      closeEventModal()
+    } catch (error) {
+      console.error("Error deleting schedule:", error)
+      showSnackbar("Có lỗi xảy ra khi xóa lịch!", "error")
+    } finally {
+      setDeleteScheduleLoading(false)
+    }
+  }
+
+  // Stable functions
+  const getCurrentValue = useCallback(
+    (field) => {
+      if (!isEditing) return ptData[field] || ""
+      return editData[field] !== undefined ? editData[field] : ptData[field] || ""
+    },
+    [isEditing, editData, ptData],
+  )
+
+  // Handlers - direct function call thay vì curried
+  const handleFieldChange = (field, value) => {
+    setEditData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+    // Clear error when user types
+    if (errors[field]) {
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }))
+    }
+  }
+
+  // Image handlers - uncommented
+  const handleImageClick = (imageUrl) => {
+    setSelectedImage(imageUrl)
+    setOpenImageDialog(true)
+  }
+
+  const handleDeleteImage = (imageIndex, isNewImage = false) => {
+    if (isNewImage) {
+      // Tính toán index của ảnh mới trong mảng newPhysiqueImages
+      const oldImagesCount =
+        editData.physiqueImages?.filter((img) => typeof img === "string" && !img.startsWith("blob:")).length || 0
+      const newImageIndexInArray = imageIndex - oldImagesCount
+
+      // Xóa file khỏi newPhysiqueImages
+      const updatedNewImages = newPhysiqueImages.filter((_, index) => index !== newImageIndexInArray)
+      setNewPhysiqueImages(updatedNewImages)
+
+      // Revoke URL để tránh memory leak
+      const currentImages = editData.physiqueImages || ptData.physiqueImages
+      const imageToRevoke = currentImages[imageIndex]
+      if (imageToRevoke && imageToRevoke.startsWith("blob:")) {
+        URL.revokeObjectURL(imageToRevoke)
+      }
+
+      // Xóa khỏi editData.physiqueImages
+      const updatedPhysiqueImages = currentImages.filter((_, index) => index !== imageIndex)
+      setEditData((prev) => ({
+        ...prev,
+        physiqueImages: updatedPhysiqueImages,
+      }))
+    } else {
+      // Xóa ảnh cũ
+      const currentImages = editData.physiqueImages || ptData.physiqueImages
+      const newImages = currentImages.filter((_, index) => index !== imageIndex)
+      setEditData((prev) => ({
+        ...prev,
+        physiqueImages: newImages,
+      }))
+    }
+    showSnackbar("Đã xóa hình ảnh!", "success")
+  }
+
+  const handleAddImagesFromDevice = (event) => {
+    const files = Array.from(event.target.files)
+    const currentImages = editData.physiqueImages || ptData.physiqueImages || []
+
+    const currentTotalImages = currentImages.length
+    const maxNewImages = 6 - currentTotalImages
+
+    if (maxNewImages <= 0) {
+      showSnackbar("Đã đạt giới hạn tối đa 6 hình ảnh!", "warning")
+      return
+    }
+
+    const filesToAdd = files.slice(0, maxNewImages)
+
+    if (files.length > maxNewImages) {
+      showSnackbar(
+        `Chỉ có thể thêm ${maxNewImages} hình ảnh nữa. Đã thêm ${filesToAdd.length} hình đầu tiên.`,
+        "warning",
+      )
+    }
+
+    // Tạo preview URLs và thêm vào editData
+    const newPreviewUrls = filesToAdd.map((file) => URL.createObjectURL(file))
+
+    setEditData((prev) => ({
+      ...prev,
+      physiqueImages: [...currentImages, ...newPreviewUrls],
+    }))
+
+    // Lưu files mới vào state riêng
+    setNewPhysiqueImages([...newPhysiqueImages, ...filesToAdd])
+
+    showSnackbar(`Đã thêm ${filesToAdd.length} hình ảnh mới!`, "success")
+
+    // Reset input
+    event.target.value = ""
+  }
+
+  const handleAddImage = () => {
+    // Mở file picker
+    document.getElementById("physique-image-upload")?.click()
+  }
+
+  // Handle price input change
+  const handlePriceChange = (value) => {
+    // Remove all non-digit characters
+    const numericValue = value.replace(/\D/g, "")
+    // Update the field with numeric value only
+    handleFieldChange("pricePerSession", numericValue)
+  }
+
+  // Validation
+  const validateForm = () => {
+    const newErrors = {}
+    const currentName = editData.fullName !== undefined ? editData.fullName : ptData.fullName
+    const currentEmail = editData.email !== undefined ? editData.email : ptData.email
+    const currentPhone = editData.phone !== undefined ? editData.phone : ptData.phone
+    const currentAddress = editData.address !== undefined ? editData.address : ptData.address
+    const currentGender = editData.gender !== undefined ? editData.gender : ptData.gender
+    const currentDateOfBirth = editData.dateOfBirth !== undefined ? editData.dateOfBirth : ptData.dateOfBirth
+    const currentExperience = editData.experience !== undefined ? editData.experience : ptData.experience
+    const currentEducation = editData.education !== undefined ? editData.education : ptData.education
+    const currentPricePerSession =
+      editData.pricePerSession !== undefined ? editData.pricePerSession : ptData.pricePerSession
+
+    if (!currentName || currentName === "") newErrors.fullName = "Vui lòng nhập họ tên"
+    if (!currentEmail) newErrors.email = "Vui lòng nhập email"
+    else if (!/\S+@\S+\.\S+/.test(currentEmail)) newErrors.email = "Email không hợp lệ"
+    if (!currentPhone) newErrors.phone = "Vui lòng nhập số điện thoại"
+    if (!currentAddress) newErrors.address = "Vui lòng nhập địa chỉ "
+    if (!currentGender) newErrors.gender = "Vui lòng chọn giới tính"
+    if (!currentDateOfBirth) newErrors.dateOfBirth = "Vui lòng nhập ngày sinh"
+    else if (!/^[0-9]{10}$/.test(currentPhone)) newErrors.phone = "Số điện thoại không hợp lệ"
+    if (!currentExperience) newErrors.experience = "Vui lòng nhập kinh nghiệm"
+    if (!currentEducation) newErrors.education = "Vui lòng nhập học vấn"
+    if (!currentPricePerSession) newErrors.pricePerSession = "Vui lòng nhập giá tiền mỗi buổi"
+    else if (isNaN(currentPricePerSession) || parseInt(currentPricePerSession) <= 0)
+      newErrors.pricePerSession = "Giá tiền phải là số dương"
+    else if (parseInt(currentPricePerSession) < 50000) newErrors.pricePerSession = "Giá tiền tối thiểu là 50,000 VNĐ"
+    else if (parseInt(currentPricePerSession) > 5000000) newErrors.pricePerSession = "Giá tiền tối đa là 5,000,000 VNĐ"
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  // Handlers
+  const handleEdit = () => {
+    setIsEditing(true)
+    setErrors({})
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setEditData({})
+    setErrors({})
+    // Reset new images và revoke URLs để tránh memory leak
+    editData.physiqueImages &&
+      editData.physiqueImages.forEach((img) => {
+        if (typeof img === "string" && img.startsWith("blob:")) {
+          URL.revokeObjectURL(img)
+        }
+      })
+    setNewPhysiqueImages([])
+  }
+
+  // Hàm helper để lọc bỏ blob URLs (ảnh mới)
+  function removeBlobUrls(arr) {
+    return arr.filter((item) => !item.startsWith("blob:"))
+  }
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      showSnackbar("Vui lòng kiểm tra lại thông tin!", "error")
+      return
+    }
+
+    setIsEditing(false)
+    setOpenBackdrop(true)
+
+    try {
+      const { userData, trainerData } = splitUserTrainerData(editData)
+
+      // Cập nhật user info (nếu cần)
+      let dataUserToUpdate = {}
+      if ("dateOfBirth" in userData) {
+        dataUserToUpdate = {
+          ...userData,
+          dateOfBirth: toISODate(userData.dateOfBirth),
+        }
+      }
+      const updatedUser = await updateInfoUserAPI(user._id, dataUserToUpdate)
+      updateUser(updatedUser.user)
+
+      // Chuẩn bị FormData cho trainer info
+      let formData = buildFormData(trainerData)
+
+      // Xử lý physiqueImages - QUAN TRỌNG NHẤT
+      if ("physiqueImages" in editData) {
+        console.log("User có thay đổi về hình ảnh")
+
+        // Lấy danh sách ảnh cũ muốn giữ lại (loại bỏ blob URLs)
+        const physiqueImagesToKeep = removeBlobUrls(editData.physiqueImages)
+
+        // Gửi danh sách ảnh cũ muốn giữ lại qua FormData
+        physiqueImagesToKeep.forEach((imageUrl) => {
+          formData.append("physiqueImages", imageUrl)
+        })
+
+        // console.log("Đã thêm vào FormData - physiqueImages:", physiqueImagesToKeep)
+      } else {
+        // console.log("User không thay đổi hình ảnh - gửi tất cả ảnh hiện tại để giữ nguyên")
+
+        // Gửi tất cả ảnh hiện tại để đảm bảo BE hiểu là "giữ nguyên"
+        const currentImages = ptData.physiqueImages || []
+        currentImages.forEach((imageUrl) => {
+          formData.append("physiqueImages", imageUrl)
+        })
+
+        // console.log("Đã thêm vào FormData - physiqueImages (giữ nguyên):", currentImages)
+      }
+
+      // Gửi các file ảnh mới (nếu có)
+      if (newPhysiqueImages.length > 0) {
+        console.log("Các file ảnh mới cần gửi xuống BE:", newPhysiqueImages)
+        newPhysiqueImages.forEach((file) => {
+          formData.append("physiqueImagesNew", file)
+        })
+        // console.log(`Đã thêm ${newPhysiqueImages.length} file mới vào FormData`)
+      }
+
+      // Debug FormData content
+      console.log("=== FormData Content Debug ===")
+      for (let [key, value] of formData.entries()) {
+        if (key === "physiqueImagesNew") {
+          console.log(`${key}: [File] ${value.name} (${value.size} bytes)`)
+        } else {
+          console.log(`${key}:`, value)
+        }
+      }
+
+      // Gửi request lên BE
+      const updatedTrainerInfo = await updateInfoTrainerByUserIdAPI(user._id, formData)
+
+      // Cập nhật store
+      updateTrainerInfo(updatedTrainerInfo.trainer)
+
+      // Reset các state liên quan đến ảnh mới
+      setNewPhysiqueImages([])
+      setEditData({}) // Clear edit data sau khi save thành công
+
+      showSnackbar("Cập nhật thông tin thành công!", "success")
+    } catch (error) {
+      console.error("❌ Lỗi khi cập nhật thông tin:", error)
+      showSnackbar("Có lỗi xảy ra khi cập nhật thông tin!", "error")
+    } finally {
+      handleCloseBackdrop()
+    }
+  }
+
+  const handleSubmitForApproval = () => {
+    if (!validateForm()) {
+      showSnackbar("Vui lòng hoàn thiện thông tin trước khi gửi!", "error")
+      return
+    }
+    setOpenSubmitDialog(false)
+    showSnackbar("Đã gửi yêu cầu phê duyệt cho Admin!", "success")
+  }
+
+  const showSnackbar = (message, severity = "success") => {
+    setSnackbarMessage(message)
+    setSnackbarSeverity(severity)
+    setOpenSnackbar(true)
+  }
+
+  const handleAddSchedule = async () => {
+    // check empty
+    if (!scheduleDateValue.day || !scheduleDateValue.month || !scheduleDateValue.year) {
+      toast.error("Vui lòng chọn ngày")
+      return
+    }
+
+    if (startTimeValue.hour === 0 && startTimeValue.minute === 0) {
+      toast.error("Vui lòng chọn giờ bắt đầu và giờ bắt đầu từ 8:00")
+      return
+    }
+
+    if (endTimeValue.hour === 0 && endTimeValue.minute === 0) {
+      toast.error("Vui lòng chọn giờ kết thúc")
+      return
+    }
+
+    try {
+      // convert
+      const isoDate = convertToISODateRange(scheduleDateValue, startTimeValue, endTimeValue)
+
+      const dataToCreate = {
+        trainerId: trainerInfo._id,
+        startTime: isoDate.startISO,
+        endTime: isoDate.endISO,
+      }
+      const result = await createScheduleForPtAPI(dataToCreate)
+      setListSchedule(result.listSchedule)
+
+      setStartTimeValue({
+        hour: 0,
+        minute: 0,
+      })
+
+      setEndTimeValue({
+        hour: 0,
+        minute: 0,
+      })
+
+      // notification
+      toast.success("Thêm lịch thành công")
+    } catch (err) {}
+  }
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header */}
+      <Paper
+        elevation={2}
+        sx={{
+          p: 3,
+          mb: 3,
+          background: `linear-gradient(135deg, #16697A 0%, #489FB5 100%)`,
+          color: "white",
+          borderRadius: 2,
+        }}
+      >
+        <Stack direction={isMobile ? "column" : "row"} spacing={3} alignItems={isMobile ? "center" : "flex-start"}>
+          <Badge
+            overlap="circular"
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            badgeContent={
+              <IconButton
+                size="small"
+                sx={{
+                  bgcolor: "white",
+                  "&:hover": { bgcolor: "grey.100" },
+                }}
+                disabled={!isEditing}
+              >
+                <PhotoCameraIcon fontSize="small" color="primary" />
+              </IconButton>
+            }
+          >
+            <Avatar
+              sx={{
+                width: 120,
+                height: 120,
+                border: "4px solid white",
+                bgcolor: "#FFA62B",
+              }}
+            >
+              {ptData.fullName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </Avatar>
+          </Badge>
+
+          <Box flex={1} textAlign={isMobile ? "center" : "left"}>
+            <Stack direction="row" spacing={2} alignItems="center" justifyContent={isMobile ? "center" : "flex-start"}>
+              <Typography variant="h4" fontWeight="bold">
+                {ptData.fullName}
+              </Typography>
+              <Chip
+                label={
+                  ptData.status === "approved" ? "Đã duyệt" : ptData.status === "pending" ? "Chờ duyệt" : "Chưa gửi"
+                }
+                color={ptData.status === "approved" ? "success" : ptData.status === "pending" ? "warning" : "default"}
+                icon={
+                  ptData.status === "approved" ? (
+                    <CheckIcon />
+                  ) : ptData.status === "pending" ? (
+                    <PendingIcon />
+                  ) : (
+                    <InfoIcon />
+                  )
+                }
+                size="small"
+                sx={{ fontWeight: "bold" }}
+              />
+            </Stack>
+
+            <Typography variant="h6" sx={{ mt: 1, opacity: 0.9 }}>
+              Personal Trainer
+            </Typography>
+
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent={isMobile ? "center" : "flex-start"}>
+              <Chip icon={<StarIcon />} label="5 / 5" sx={{ bgcolor: "white", color: "primary.main" }} />
+              <Chip icon={<GroupsIcon />} label="10 / 15 khách" sx={{ bgcolor: "white", color: "primary.main" }} />
+            </Stack>
+          </Box>
+
+          {!isMobile && (
+            <Stack direction="row" spacing={2}>
+              {!isEditing ? (
+                <Button
+                  variant="contained"
+                  startIcon={<EditIcon />}
+                  onClick={handleEdit}
+                  sx={{
+                    bgcolor: "white",
+                    color: "primary.main",
+                    "&:hover": { bgcolor: "grey.100" },
+                  }}
+                >
+                  Chỉnh sửa
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    variant="contained"
+                    startIcon={<SaveIcon />}
+                    onClick={handleSave}
+                    sx={{
+                      bgcolor: "#FFA62B",
+                      "&:hover": { bgcolor: "#FF9500" },
+                    }}
+                  >
+                    Lưu
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CancelIcon />}
+                    onClick={handleCancel}
+                    sx={{
+                      color: "white",
+                      borderColor: "white",
+                      "&:hover": {
+                        borderColor: "white",
+                        bgcolor: "rgba(255,255,255,0.1)",
+                      },
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                </>
+              )}
+            </Stack>
+          )}
+        </Stack>
+
+        {isMobile && (
+          <Stack direction="row" spacing={2} sx={{ mt: 3, justifyContent: "center" }}>
+            {!isEditing ? (
+              <Button
+                variant="contained"
+                startIcon={<EditIcon />}
+                onClick={handleEdit}
+                sx={{
+                  bgcolor: "white",
+                  color: "primary.main",
+                  "&:hover": { bgcolor: "grey.100" },
+                }}
+              >
+                Chỉnh sửa
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSave}
+                  sx={{
+                    bgcolor: "#FFA62B",
+                    "&:hover": { bgcolor: "#FF9500" },
+                  }}
+                >
+                  Lưu
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<CancelIcon />}
+                  onClick={handleCancel}
+                  sx={{
+                    color: "white",
+                    borderColor: "white",
+                  }}
+                >
+                  Hủy
+                </Button>
+              </>
+            )}
+          </Stack>
+        )}
+      </Paper>
+
+      {/* Alert for pending status */}
+      {ptData.status === "pending" && (
+        <Alert severity="info" sx={{ mb: 3 }} icon={<PendingIcon />}>
+          Hồ sơ của bạn đang được Admin xem xét. Thời gian duyệt thường trong vòng 24-48 giờ.
+        </Alert>
+      )}
+
+      {/* Main Content - USING MUI OFFICIAL TABS WITH CustomTabPanel */}
+      <Paper elevation={1} sx={{ borderRadius: 2 }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs value={tabValue} onChange={(event, newValue) => setTabValue(newValue)} aria-label="profile tabs">
+            <Tab label="Thông tin cá nhân" icon={<PersonIcon />} iconPosition="start" {...a11yProps(0)} />
+            <Tab label="Chuyên môn" icon={<SchoolIcon />} iconPosition="start" {...a11yProps(1)} />
+            <Tab label="Lịch làm việc" icon={<ScheduleIcon />} iconPosition="start" {...a11yProps(2)} />
+          </Tabs>
+        </Box>
+
+        {/* Tab 1: Thông tin cá nhân - USING CustomTabPanel */}
+        <CustomTabPanel value={tabValue} index={0}>
+          <Grid container spacing={3}>
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Họ và tên"
+                value={getCurrentValue("fullName")}
+                onChange={(e) => handleFieldChange("fullName", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.fullName}
+                helperText={errors.fullName}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Email"
+                value={getCurrentValue("email")}
+                onChange={(e) => handleFieldChange("email", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.email}
+                helperText={errors.email}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Số điện thoại"
+                value={getCurrentValue("phone")}
+                onChange={(e) => handleFieldChange("phone", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.phone}
+                helperText={errors.phone}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PhoneIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel>Giới tính</InputLabel>
+                <Select
+                  value={getCurrentValue("gender")}
+                  onChange={(e) => handleFieldChange("gender", e.target.value)}
+                  disabled={!isEditing}
+                  error={!!errors.gender}
+                  helperText={errors.gender}
+                  label="Giới tính"
+                >
+                  <MenuItem value="male">Nam</MenuItem>
+                  <MenuItem value="female">Nữ</MenuItem>
+                  <MenuItem value="">Khác</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Ngày sinh"
+                placeholder="dd/mm/yyyy"
+                value={getCurrentValue("dateOfBirth")}
+                onChange={(e) => handleFieldChange("dateOfBirth", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.dateOfBirth}
+                helperText={errors.dateOfBirth}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Mã PT"
+                value={ptData.id}
+                disabled
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <BadgeIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Giá mỗi buổi tập"
+                value={getCurrentValue("pricePerSession")}
+                onChange={(e) => handleFieldChange("pricePerSession", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.pricePerSession}
+                helperText={errors.pricePerSession}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <AttachMoneyIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Địa chỉ"
+                value={getCurrentValue("address")}
+                onChange={(e) => handleFieldChange("address", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.address}
+                helperText={errors.address}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocationIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                label="Giới thiệu bản thân"
+                value={getCurrentValue("bio")}
+                onChange={(e) => handleFieldChange("bio", e.target.value)}
+                disabled={!isEditing}
+                multiline
+                rows={4}
+              />
+            </Grid>
+          </Grid>
+        </CustomTabPanel>
+
+        {/* Tab 2: Chuyên môn - USING CustomTabPanel */}
+        <CustomTabPanel value={tabValue} index={1}>
+          <Grid container spacing={3}>
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Kinh nghiệm"
+                value={getCurrentValue("experience")}
+                onChange={(e) => handleFieldChange("experience", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.experience}
+                helperText={errors.experience}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <WorkIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                label="Học vấn"
+                value={getCurrentValue("education")}
+                onChange={(e) => handleFieldChange("education", e.target.value)}
+                disabled={!isEditing}
+                error={!!errors.education}
+                helperText={errors.education}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SchoolIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Grid>
+
+            <Grid item size={{ xs: 12 }}>
+              <FormControl fullWidth>
+                <InputLabel>Chuyên môn</InputLabel>
+                <Select
+                  value={getCurrentValue("specialization")}
+                  onChange={(e) => handleFieldChange("specialization", e.target.value)}
+                  disabled={!isEditing}
+                  label="Chuyên môn"
+                  renderValue={(selected) => (
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                      <Chip key={selected} label={selected} size="small" />
+                    </Box>
+                  )}
+                >
+                  <MenuItem value="yoga">Yoga</MenuItem>
+                  <MenuItem value="gym">Gym</MenuItem>
+                  <MenuItem value="dance">Dance</MenuItem>
+                  <MenuItem value="boxing">Boxing</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Physique Images Gallery */}
+            <Grid item size={{ xs: 12 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Typography variant="h6" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <FitnessIcon color="primary" />
+                  Hình ảnh cơ thể (
+                  {(isEditing ? editData.physiqueImages || ptData.physiqueImages : ptData.physiqueImages).length}/6)
+                </Typography>
+                {isEditing &&
+                  (isEditing ? editData.physiqueImages || ptData.physiqueImages : ptData.physiqueImages).length < 6 && (
+                    <>
+                      <Button variant="outlined" size="small" startIcon={<AddIcon />} onClick={handleAddImage}>
+                        Thêm ảnh
+                      </Button>
+                      <input
+                        id="physique-image-upload"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={handleAddImagesFromDevice}
+                      />
+                    </>
+                  )}
+              </Stack>
+
+              <ImageList
+                cols={isMobile ? 3 : 6}
+                gap={8}
+                sx={{
+                  maxHeight: 400,
+                  overflow: "hidden",
+                }}
+              >
+                {(isEditing ? editData.physiqueImages || ptData.physiqueImages : ptData.physiqueImages).map(
+                  (image, index) => {
+                    // Kiểm tra xem đây có phải ảnh mới (blob URL) không
+                    const isNewImage = typeof image === "string" && image.startsWith("blob:")
+
+                    return (
+                      <ImageListItem key={`${index}-${image}`} sx={{ position: "relative" }}>
+                        <img
+                          src={isNewImage ? image : `${image}?w=300&h=300&fit=crop`}
+                          alt={`Physique ${index + 1}`}
+                          loading="lazy"
+                          style={{
+                            cursor: "pointer",
+                            aspectRatio: "1/1",
+                            objectFit: "cover",
+                          }}
+                          onClick={() => handleImageClick(image)}
+                        />
+
+                        {/* Badge cho ảnh mới */}
+                        {isNewImage && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 8,
+                              left: 8,
+                              bgcolor: "#FFA62B",
+                              color: "white",
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: 1,
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Mới
+                          </Box>
+                        )}
+
+                        <ImageListItemBar
+                          sx={{
+                            background:
+                              "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 70%, rgba(0,0,0,0) 100%)",
+                          }}
+                          position="top"
+                          actionIcon={
+                            <Stack direction="row" spacing={1}>
+                              <IconButton
+                                sx={{ color: "white" }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleImageClick(image)
+                                }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                              {isEditing && (
+                                <IconButton
+                                  sx={{ color: "white" }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteImage(index, isNewImage)
+                                  }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              )}
+                            </Stack>
+                          }
+                          actionPosition="right"
+                        />
+                      </ImageListItem>
+                    )
+                  },
+                )}
+              </ImageList>
+
+              {(isEditing ? editData.physiqueImages || ptData.physiqueImages : ptData.physiqueImages).length === 0 && (
+                <Box
+                  sx={{
+                    border: "2px dashed",
+                    borderColor: "grey.300",
+                    borderRadius: 2,
+                    p: 4,
+                    textAlign: "center",
+                    color: "grey.500",
+                  }}
+                >
+                  <FitnessIcon sx={{ fontSize: 48, mb: 2 }} />
+                  <Typography variant="body1">
+                    {isEditing ? "Nhấn 'Thêm ảnh' để thêm hình ảnh cơ thể" : "Chưa có hình ảnh cơ thể"}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Hiển thị thông tin về giới hạn */}
+              {isEditing && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    * Tối đa 6 hình ảnh. Hỗ trợ định dạng: JPG, PNG, GIF
+                  </Typography>
+                  {newPhysiqueImages.length > 0 && (
+                    <Typography variant="caption" color="primary" sx={{ display: "block", mt: 0.5 }}>
+                      Có {newPhysiqueImages.length} hình ảnh mới sẽ được tải lên khi lưu
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </CustomTabPanel>
+
+        {/* Tab 3: Lịch làm việc */}
+        <CustomTabPanel value={tabValue} index={2}>
+          <Grid container spacing={3}>
+            <Grid item size={{ xs: 12 }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <ScheduleIcon color="primary" />
+                    Tạo thời gian làm việc
+                  </Typography>
+
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item size={{ xs: 12, sm: 4 }}>
+                      <DateField label="Chọn ngày" setValue={setScheduleDateValue} />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, sm: 3 }}>
+                      <TimeField
+                        label="Giờ bắt đầu"
+                        value={dayjs(`${startTimeValue.hour}:${startTimeValue.minute}`, "HH:mm")}
+                        setDetailValue={setStartTimeValue}
+                      />
+                    </Grid>
+
+                    <Grid item size={{ xs: 12, sm: 3 }}>
+                      <TimeField
+                        label="Giờ kết thúc"
+                        value={dayjs(`${endTimeValue.hour}:${endTimeValue.minute}`, "HH:mm")}
+                        setDetailValue={setEndTimeValue}
+                      />
+                    </Grid>
+                    <Grid item size={{ xs: 12, sm: 2 }}>
+                      <Button fullWidth variant="contained" onClick={() => handleAddSchedule()}>
+                        Tạo
+                      </Button>
+                    </Grid>
+                  </Grid>
+
+                  {/* Display current working hours */}
+                  {(ptData.workingDay || ptData.startTime || ptData.endTime) && (
+                    <Box sx={{ mt: 2, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                        Thời gian làm việc hiện tại:
+                      </Typography>
+                      <Typography variant="body1">
+                        {ptData.workingDay && `Ngày: ${ptData.workingDay}`}
+                        {ptData.startTime && ptData.endTime && ` - Từ ${ptData.startTime} đến ${ptData.endTime}`}
+                        {!ptData.workingDay &&
+                          !ptData.startTime &&
+                          !ptData.endTime &&
+                          "Chưa thiết lập thời gian làm việc"}
+                      </Typography>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item size={{ xs: 12 }}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <CalendarIcon color="primary" />
+                    Thời khóa biểu slot dạy
+                  </Typography>
+                  <GymCalendar events={listSchedule} onEventClick={handleEventClick} />
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </CustomTabPanel>
+      </Paper>
+
+      {/* Event Detail Modal */}
+      <Dialog
+        open={isEventModalOpen}
+        onClose={closeEventModal}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2 },
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Box>
+              <Typography variant="h5" component="div" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                {selectedEvent?.title}
+              </Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                {selectedEvent && formatDate(selectedEvent.startTime)}
+              </Typography>
+            </Box>
+            <IconButton onClick={closeEventModal} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <Divider />
+
+        <DialogContent sx={{ pt: 3 }}>
+          {selectedEvent && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {/* Time */}
+              <Card variant="outlined">
+                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                  <Avatar sx={{ bgcolor: "primary.light" }}>
+                    <ScheduleIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                      Thời gian
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatTime(selectedEvent.startTime)} - {formatTime(selectedEvent.endTime)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Coach */}
+              {selectedEvent.coach && (
+                <Card variant="outlined">
+                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                    <Avatar sx={{ bgcolor: "error.main" }}>
+                      <SportsKabaddiIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                        Huấn luyện viên
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedEvent.coach}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* member */}
+              {selectedEvent.member && (
+                <Card variant="outlined">
+                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                    <Avatar sx={{ bgcolor: "success.light" }}>
+                      <PersonIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                        Học viên
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedEvent.member}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Location */}
+              <Card variant="outlined">
+                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
+                  <Avatar sx={{ bgcolor: "warning.light" }}>
+                    <LocationIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
+                      Địa điểm
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedEvent.location}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+
+              {/* Description */}
+              <Card variant="outlined">
+                <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                    <Avatar sx={{ bgcolor: "info.light", mt: 0.5 }}>
+                      <DescriptionIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
+                        Ghi chú
+                      </Typography>
+                      <Paper
+                        variant="outlined"
+                        sx={{
+                          p: 2,
+                          borderStyle: "dashed",
+                        }}
+                      >
+                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                          {selectedEvent.note || "Không có ghi chú"}
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          )}
+        </DialogContent>
+
+        <Divider />
+
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button onClick={closeEventModal} variant="outlined" color="inherit">
+            Đóng
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleDeleteSchedule}
+            disabled={deleteScheduleLoading}
+            sx={{ ml: 1 }}
+          >
+            {deleteScheduleLoading ? "Đang xóa..." : "Xóa lịch"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Modal
+        open={openImageDialog}
+        onClose={() => setOpenImageDialog(false)}
+        sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+      >
+        <Box
+          sx={{
+            outline: "none",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            p: 2,
+            maxWidth: "90vw",
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            position: "relative",
+          }}
+        >
+          <Box
+            component="img"
+            src={selectedImage}
+            alt="Preview"
+            style={{
+              maxWidth: "100%",
+              maxHeight: "80vh",
+              objectFit: "contain",
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              right: 16,
+              top: 16,
+              cursor: "pointer",
+              bgcolor: "rgba(0,0,0,0.5)",
+              borderRadius: "50%",
+              width: 32,
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onClick={() => setOpenImageDialog(false)}
+          >
+            <CloseIcon sx={{ color: "white" }} />
+          </Box>
+        </Box>
+      </Modal>
+
+      {/* Submit for Approval Button */}
+      {ptData.status !== "approved" && (
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<SendIcon />}
+            onClick={() => setOpenSubmitDialog(true)}
+            disabled={ptData.status === "pending"}
+            sx={{
+              bgcolor: "#FFA62B",
+              "&:hover": { bgcolor: "#FF9500" },
+              px: 4,
+              py: 1.5,
+            }}
+          >
+            {ptData.status === "pending" ? "Đang chờ Admin duyệt..." : "Gửi yêu cầu trở thành PT chính thức"}
+          </Button>
+        </Box>
+      )}
+
+      {/* Submit Dialog */}
+      <Dialog open={openSubmitDialog} onClose={() => setOpenSubmitDialog(false)}>
+        <DialogTitle>Xác nhận gửi hồ sơ</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Bạn có chắc chắn muốn gửi hồ sơ để Admin phê duyệt? Hãy đảm bảo rằng tất cả thông tin đã được điền đầy đủ và
+            chính xác.
+          </Typography>
+
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Admin sẽ xem xét hồ sơ trong vòng 24-48 giờ làm việc.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSubmitDialog(false)}>Hủy</Button>
+          <Button
+            onClick={handleSubmitForApproval}
+            variant="contained"
+            sx={{ bgcolor: "#FFA62B", "&:hover": { bgcolor: "#FF9500" } }}
+          >
+            Gửi hồ sơ
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert onClose={() => setOpenSnackbar(false)} severity={snackbarSeverity} sx={{ width: "100%" }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+
+      <MyBackdrop open={openBackdrop} handleClose={handleCloseBackdrop} />
+    </Container>
+  )
+}

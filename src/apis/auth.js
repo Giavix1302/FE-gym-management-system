@@ -28,11 +28,17 @@ export const signupAPI = async (data) => {
 
 // Verify OTP (dùng axiosPublic vì chưa có token)
 export const verifyOtpAPI = async (phone, code) => {
-  const rep = await axiosPublic.post("/auths/verify", {
-    phone: formatPhoneNumber(phone),
-    code,
-  })
-  return rep.data
+  try {
+    const rep = await axiosPublic.post("/auths/verify", {
+      phone: formatPhoneNumber(phone),
+      code,
+    })
+    return rep.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
+  }
 }
 
 export const logoutAPI = async () => {

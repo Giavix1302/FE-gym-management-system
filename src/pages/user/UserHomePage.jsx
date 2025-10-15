@@ -42,7 +42,7 @@ import CloseIcon from "@mui/icons-material/Close"
 // chart
 import { LineChart } from "@mui/x-charts/LineChart"
 // custom
-import GymCalendar from "~/utils/Calendar"
+import GymCalendar from "~/components/Calendar"
 //react
 import { useState } from "react"
 
@@ -319,7 +319,7 @@ function UserHomePage() {
               Đặt thêm
             </Button>
           </Box>
-          <GymCalendar events={events} />
+          <GymCalendar />
           {/* <Grid container spacing={2}>
             {mockBookings.map((booking) => (
               <Grid item xs={12} md={4} key={booking.id}>

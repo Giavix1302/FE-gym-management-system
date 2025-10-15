@@ -23,10 +23,13 @@ import {
 import {
   calculateMonthlyPrice,
   calculateProgressPercent,
+  convertISOToVNTime,
   formatCurrencyVND,
-  formatISODateToVNDate,
+  calculateDiscountedPrice,
 } from "~/utils/common"
 import { getListMembershipAPI } from "~/apis/membership"
+import { createSubscriptionAPI } from "~/apis/subscription"
+import { createLinkVnpayAPI } from "~/apis/payment"
 import useMembershipStore from "~/stores/useMembershipStore"
 import useUserStore from "~/stores/useUserStore"
 import { useState } from "react"
@@ -36,7 +39,8 @@ import useMyMembershipStore from "~/stores/useMyMembershipStore"
 import MyBackdrop from "~/components/MyBackdrop"
 import { useCountdown } from "~/hooks/useCountdown"
 import { toast } from "react-toastify"
-import ConfirmDialog from "~/utils/ConfirmDialog"
+import ConfirmDialog from "~/components/ConfirmDialog"
+import { useNavigate } from "react-router-dom"
 
 // ================= COMPONENT: InfoBox =================
 function InfoBox({ icon, label, value }) {
@@ -65,7 +69,9 @@ function InfoBox({ icon, label, value }) {
 
 // ================= COMPONENT: MembershipCard =================
 function MembershipCard() {
-  const { myMembership } = useMyMembershipStore()
+  // store
+  const { user } = useUserStore()
+  const { updateMyMembership, resetMyMembership, myMembership } = useMyMembershipStore()
 
   const createAt = myMembership?.paymentInfo?.expireAt // ví dụ "2025-09-14T09:39:28.449Z"
   const ttlMs = 60 * 60 * 1000 // 1 giờ
@@ -73,10 +79,6 @@ function MembershipCard() {
 
   // ưu tiên dùng expireAt nếu có, nếu không thì dùng expireAtFromCreate
   const expireAt = myMembership?.paymentInfo?.expireAt || expireAtFromCreate
-
-  // store
-  const { user } = useUserStore()
-  const { updateMyMembership, resetMyMembership } = useMyMembershipStore()
 
   const { expired, formatted } = useCountdown(expireAt, {
     onExpire: () => {
@@ -208,7 +210,13 @@ function MembershipCard() {
           )}
           {myMembership.name !== "" && myMembership.paymentStatus === "unpaid" && (
             <Box>
-              <Button color="warning" variant="contained">
+              <Button
+                onClick={() => {
+                  window.open(myMembership?.paymentInfo?.paymentUrl, "_blank")
+                }}
+                color="warning"
+                variant="contained"
+              >
                 {expired ? (
                   <Typography>Đã hết hạn</Typography>
                 ) : (
@@ -311,14 +319,14 @@ function MembershipCard() {
                   <InfoBox
                     icon={<CalendarToday />}
                     label="Bắt đầu"
-                    value={formatISODateToVNDate(myMembership.startDate) || "Chưa có"}
+                    value={convertISOToVNTime(myMembership.startDate) || "Chưa có"}
                   />
                 </Grid>
                 <Grid item xs={6}>
                   <InfoBox
                     icon={<CalendarMonth />}
                     label="Kết thúc"
-                    value={formatISODateToVNDate(myMembership.endDate) || "Chưa có"}
+                    value={convertISOToVNTime(myMembership.endDate) || "Chưa có"}
                   />
                 </Grid>
               </Grid>
@@ -359,7 +367,7 @@ function MembershipCard() {
       <ConfirmDialog
         open={openDialogConfirm}
         title="Xác nhận xóa"
-        description={`Bạn có chắc muốn xóa gói ""? Hành động này không thể hoàn tác.`}
+        description={`Bạn có chắc muốn xóa gói "${myMembership.name}"? Hành động này không thể hoàn tác.`}
         confirmText="Xóa"
         cancelText="Hủy"
         loading={deleting}
@@ -480,8 +488,8 @@ function PackageCard({ data, handleClickSub, setPackageToPayment }) {
         <Typography variant="h6" sx={{ fontWeight: "bold" }}>
           Bạn sẽ nhận được:{" "}
         </Typography>
-        {data.features.map((text) => (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, my: 1 }}>
+        {data.features.map((text, index) => (
+          <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1, my: 1 }}>
             <CheckCircle color="primary" />
             <Typography variant="subtitle1">{text}</Typography>
           </Box>
@@ -493,12 +501,17 @@ function PackageCard({ data, handleClickSub, setPackageToPayment }) {
 
 // ================= PAGE =================
 export default function UserMembershipPage() {
+  const navigate = useNavigate()
+
+  // State
   const [openBackdrop, setOpenBackdrop] = useState(false)
-  const handleCloseBackdrop = () => setOpenBackdrop(false)
   const [openSelectPaymentModal, setOpenSelectPaymentModal] = useState(false)
   const [packageToPayment, setPackageToPayment] = useState({})
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
 
-  // store
+  const handleCloseBackdrop = () => setOpenBackdrop(false)
+
+  // Store
   const { listMembership, setPackages } = useMembershipStore()
   const { user } = useUserStore()
   const { updateMyMembership, resetMyMembership, myMembership } = useMyMembershipStore()
@@ -540,6 +553,80 @@ export default function UserMembershipPage() {
     setOpenSelectPaymentModal(true)
   }
 
+  // Create summary card for selected package
+  const createSummaryCard = (packageData) => {
+    if (!packageData || !packageData.name) return null
+
+    return (
+      <Card sx={{ mb: 3, bgcolor: "grey.50", border: "2px solid #e3f2fd" }}>
+        <CardContent>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box>
+              <Typography variant="h6" fontWeight="bold" color="primary">
+                {packageData.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Thời hạn: {packageData.durationMonth} tháng
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: "right", lineHeight: 0 }}>
+              <Typography variant="h5" fontWeight="bold" color="primary">
+                {formatCurrencyVND(calculateDiscountedPrice(packageData.price, packageData.discount).finalPrice)}
+              </Typography>
+              <Typography
+                sx={{ textDecoration: "line-through" }}
+                variant="caption"
+                fontWeight="bold"
+                color="text.secondary"
+              >
+                {formatCurrencyVND(packageData.price)}
+              </Typography>
+              <Typography variant="body2" color="success.main" fontWeight="bold">
+                Tiết kiệm {packageData.discount}%
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Payment handler function
+  const handlePaymentMethodSelect = async (methodId, methodData) => {
+    if (methodId === "vnpay") {
+      setIsProcessingPayment(true)
+
+      try {
+        // get data
+        const { _id: userId } = user
+        console.log("🚀 ~ handlePayment ~ userId:", userId)
+        const { _id: membershipId } = packageToPayment
+        console.log("🚀 ~ handlePayment ~ membershipId:", membershipId)
+
+        // call api lấy subId
+        const data = await createSubscriptionAPI(userId, membershipId)
+
+        // call api lầy nữa lấy link thanh toán
+        const vnpay = await createLinkVnpayAPI(data.subscriptionId)
+        console.log("🚀 ~ handlePayment ~ link:", vnpay.paymentUrl)
+
+        window.open(vnpay.paymentUrl, "_blank")
+
+        navigate("/user/membership")
+
+        // Close modal
+        setOpenSelectPaymentModal(false)
+      } catch (error) {
+        console.error("Payment error:", error)
+        toast.error("Có lỗi xảy ra khi tạo thanh toán")
+      } finally {
+        setIsProcessingPayment(false)
+      }
+    } else {
+      toast.warning("Phương thức này đang phát triển")
+    }
+  }
+
   return (
     <Container maxWidth="lg" sx={{ py: 5 }}>
       {/* Gói tập hiện tại */}
@@ -566,17 +653,29 @@ export default function UserMembershipPage() {
 
       {/* Danh sách gói tập */}
       <Grid container spacing={3}>
-        {listMembership.map((p) => (
+        {listMembership?.map((p) => (
           <Grid key={p.id} size={{ xs: 12, sm: 6, md: 4 }}>
             <PackageCard handleClickSub={handleClickSub} setPackageToPayment={setPackageToPayment} data={p} />
           </Grid>
         ))}
       </Grid>
+
+      {/* Updated SelectPaymentModal */}
       <SelectPaymentModal
         open={openSelectPaymentModal}
-        onClose={() => setOpenSelectPaymentModal(false)}
-        packageData={packageToPayment}
+        onClose={() => {
+          if (!isProcessingPayment) {
+            setOpenSelectPaymentModal(false)
+          }
+        }}
+        title="Chọn phương thức thanh toán"
+        subtitle="Hoàn tất đăng ký gói tập luyện của bạn"
+        summaryCard={createSummaryCard(packageToPayment)}
+        onPaymentMethodSelect={handlePaymentMethodSelect}
+        confirmButtonText="Tiếp tục thanh toán"
+        isProcessing={isProcessingPayment}
       />
+
       <MyBackdrop open={openBackdrop} handleClose={handleCloseBackdrop} />
     </Container>
   )

@@ -231,6 +231,9 @@ export default function AddEditMembershipModal({
         // Call add API
         console.log("🚀 ~ Adding new package")
         data = await addMembershipAPI(formDataToSend)
+        for (let [key, value] of formDataToSend.entries()) {
+          console.log(key, value)
+        }
 
         // Add new membership to store
         addPackage(data.membership)
