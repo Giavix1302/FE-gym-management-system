@@ -8,7 +8,16 @@ export default defineConfig({
     "process.env.BUILD_MODE": JSON.stringify(process.env.BUILD_MODE),
   },
   plugins: [react()],
-  // base: './'
+  server: {
+    host: true, // Cho phép truy cập từ bất kỳ host nào
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      '.ngrok-free.app', // 👈 Cho phép TẤT CẢ subdomain của ngrok
+      '.ngrok.io',
+      '.ngrok.app'
+    ],
+  },
   resolve: {
     alias: [{ find: "~", replacement: "/src" }],
   },

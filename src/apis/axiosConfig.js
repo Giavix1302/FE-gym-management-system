@@ -2,7 +2,7 @@ import axios from "axios"
 import { toast } from "react-toastify"
 import { getFromLocalStorage, removeFromLocalStorage, saveToLocalStorage } from "~/utils/common"
 
-const API_URL = import.meta.env.VITE_API_URL + "/v1"
+const API_URL = import.meta.env.VITE_API_URL_BE ? import.meta.env.VITE_API_URL_BE + "/v1" : "http://localhost:3000/v1"
 
 console.log("👉 API_URL =", API_URL)
 
