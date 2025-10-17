@@ -42,6 +42,8 @@ import TrainerHomePage from "~/pages/trainer/TrainerHomePage"
 import TrainerProfilePage from "~/pages/trainer/TrainerProfilePage"
 import TrainerBookingPage from "~/pages/trainer/TrainerBooking/TrainerBookingPage"
 import TrainerClassesPage from "~/pages/trainer/trainerClasses/TrainerClassesPage"
+import UserCheckinPage from "~/pages/user/UserCheckinPage"
+import AdminCheckinPage from "~/pages/admin/AdminCheckinPage"
 
 export default function AppRoutes() {
   const logout = useLogout()
@@ -115,6 +117,7 @@ export default function AppRoutes() {
           <Route path="/user/booking" element={<UserBookingPage />} />
           <Route path="/user/class" element={<ClassEnrollmentPage />} />
           <Route path="/user/payment/success" element={<ResultPaymentPage />} />
+          <Route path="/user/checkin" element={<UserCheckinPage />} />
         </Route>
       </Route>
 
@@ -143,6 +146,7 @@ export default function AppRoutes() {
           <Route path="/admin/equipment" element={<AdminEquipmentPage />} />
           <Route path="/admin/payment" element={<AdminPaymentPage />} />
           <Route path="/admin/report/user" element={<AdminReportMemberPage />} />
+          <Route path="/admin/checkin" element={<AdminCheckinPage />} />
         </Route>
       </Route>
 

@@ -34,7 +34,7 @@ function Signup() {
     console.log("Store changed:", state)
   })
   // store
-  const { updateUser, resetUser } = useUserStore()
+  const { setUser, resetUser } = useUserStore()
 
   // state
   const [fullName, setFullName] = useState("")
@@ -135,7 +135,7 @@ function Signup() {
       }
       // lưu dữu liệu về store
       resetUser()
-      updateUser(data.user)
+      setUser(data.user)
       // tắt modal
       setOpenModalOTP(false)
     }

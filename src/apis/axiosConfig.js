@@ -40,6 +40,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true
       try {
         const res = await axiosPublic.post("/auths/refresh", {}, { withCredentials: true })
+
         const newAccessToken = res.data.accessToken
         saveToLocalStorage("accessToken", newAccessToken)
 

@@ -192,11 +192,11 @@ export default function AddEditMembershipModal({
 
       // Tạo FormData
       const formDataToSend = new FormData()
-      formDataToSend.append("name", formData.name)
+      formDataToSend.append("name", formData.name.trim())
       formDataToSend.append("durationMonth", parseInt(formData.durationMonth))
       formDataToSend.append("price", parseFloat(formData.price))
       formDataToSend.append("discount", formData.discount ? parseFloat(formData.discount) : 0)
-      formDataToSend.append("description", formData.description)
+      formDataToSend.append("description", formData.description.trim())
       formDataToSend.append("type", formData.type)
       formDataToSend.append("features", JSON.stringify(formData.features))
 

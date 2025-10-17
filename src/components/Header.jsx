@@ -302,11 +302,19 @@ export default function Header() {
                     </ListItemIcon>
                     <ListItemText>Lịch sử thanh toán</ListItemText>
                   </MenuItem>
-                  <MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      if (user.role === "user") {
+                        navigate("user/checkin")
+                      } else {
+                        navigate("pt/checkin")
+                      }
+                    }}
+                  >
                     <ListItemIcon>
                       <DirectionsRunIcon fontSize="small" />
                     </ListItemIcon>
-                    <ListItemText>Lịch sử tới phòng gym</ListItemText>
+                    <ListItemText>Checkin / Checkout</ListItemText>
                   </MenuItem>
                   <MenuItem>
                     <ListItemIcon>

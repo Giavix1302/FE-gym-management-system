@@ -1,31 +1,22 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
-const defaultUser = {
-  _id: "",
-  fullName: "",
-  email: "",
-  phone: "",
-  avatar: "",
-  age: 0,
-  dateOfBirth: "",
-  address: "",
-  gender: "",
-  role: "",
-  status: "",
-}
-
 const useUserStore = create(
   persist(
     (set) => ({
-      user: defaultUser,
+      user: null, // ban đầu không có dữ liệu
 
+      // cập nhật toàn bộ user từ BE
+      setUser: (userData) => set({ user: userData }),
+
+      // cập nhật từng field (nếu cần)
       updateUser: (fields) =>
         set((state) => ({
-          user: { ...state.user, ...fields },
+          user: state.user ? { ...state.user, ...fields } : fields,
         })),
 
-      resetUser: () => set({ user: defaultUser }),
+      // reset user về null (khi logout)
+      resetUser: () => set({ user: null }),
     }),
     {
       name: "user-storage", // key trong localStorage

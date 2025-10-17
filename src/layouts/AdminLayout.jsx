@@ -17,6 +17,7 @@ import FitnessCenterIcon from "@mui/icons-material/FitnessCenter"
 import TableRestaurantIcon from "@mui/icons-material/TableRestaurant"
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner"
 
 import { AppProvider } from "@toolpad/core/AppProvider"
 import { DashboardLayout } from "@toolpad/core/DashboardLayout"
@@ -48,6 +49,11 @@ const NAVIGATION = [
   {
     kind: "header",
     title: "Quản lí",
+  },
+  {
+    segment: "admin/checkin",
+    title: "Checkin / Checkout",
+    icon: <QrCodeScannerIcon />,
   },
   {
     segment: "admin/user",
