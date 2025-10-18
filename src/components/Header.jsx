@@ -192,7 +192,7 @@ export default function Header() {
           {/* Right side: Notification + User */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {/* Notification Icon - only show when logged in */}
-            {user._id !== "" && (
+            {user?._id !== "" && (
               <Tooltip title="Thông báo">
                 <IconButton
                   onClick={handleClickNotification}
@@ -275,13 +275,13 @@ export default function Header() {
             </Menu>
 
             {/* Nút Login hoặc Avatar */}
-            {user._id !== "" ? (
+            {user?._id !== "" ? (
               <Box>
-                <Tooltip title={user.fullName || "Thông tin người dùng"}>
+                <Tooltip title={user?.fullName || "Thông tin người dùng"}>
                   <Avatar
                     sx={{ cursor: "pointer" }}
-                    alt={user.fullName}
-                    src={user.avatar}
+                    alt={user?.fullName}
+                    src={user?.avatar}
                     aria-controls={open ? "basic-menu" : undefined}
                     aria-haspopup="true"
                     aria-expanded={open ? "true" : undefined}
@@ -309,7 +309,7 @@ export default function Header() {
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
-                      if (user.role === "user") {
+                      if (user?.role === "user") {
                         navigate("user/checkin")
                       } else {
                         navigate("pt/checkin")
@@ -328,7 +328,7 @@ export default function Header() {
                     <ListItemText>Đổi mật khẩu</ListItemText>
                   </MenuItem>
 
-                  {user.role === "pt" && (
+                  {user?.role === "pt" && (
                     <Box>
                       <Divider />
                       <MenuItem onClick={() => navigate("pt/profile")}>
