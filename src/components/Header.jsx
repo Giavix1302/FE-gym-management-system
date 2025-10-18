@@ -92,14 +92,19 @@ export default function Header() {
 
   const [navHeader, setNavHeader] = useState([])
   useEffect(() => {
-    if (user.role === "") {
+    if (!user) {
       setNavHeader([...navItemsUnsigned])
-    } else if (user.role === "user") {
-      setNavHeader([...navItemUserSigned])
-    } else if (user.role === "pt") {
-      setNavHeader([...navItemPTSigned])
+      return
+    } else {
+      if (user.role === "") {
+        setNavHeader([...navItemsUnsigned])
+      } else if (user.role === "user") {
+        setNavHeader([...navItemUserSigned])
+      } else if (user.role === "pt") {
+        setNavHeader([...navItemPTSigned])
+      }
     }
-  }, [user.role])
+  }, [user])
 
   // router
   const navigate = useNavigate()
