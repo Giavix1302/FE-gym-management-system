@@ -192,7 +192,7 @@ export default function Header() {
           {/* Right side: Notification + User */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {/* Notification Icon - only show when logged in */}
-            {user?._id !== "" && (
+            {user != null && (
               <Tooltip title="Thông báo">
                 <IconButton
                   onClick={handleClickNotification}
@@ -275,7 +275,7 @@ export default function Header() {
             </Menu>
 
             {/* Nút Login hoặc Avatar */}
-            {user?._id !== "" ? (
+            {user != null ? (
               <Box>
                 <Tooltip title={user?.fullName || "Thông tin người dùng"}>
                   <Avatar
