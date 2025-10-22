@@ -2126,7 +2126,7 @@ function UserBookingPage() {
           sx={{
             position: "fixed",
             bottom: 20,
-            right: 20,
+            right: 90,
             zIndex: 1000,
           }}
           onClick={() => setOpenCartDialog(true)}

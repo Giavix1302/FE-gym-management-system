@@ -72,7 +72,7 @@ export default function AppRoutes() {
           }
         }
 
-        // 🚀 Chỉ điều hướng nếu chưa ở trong khu vực đúng role
+        // Chỉ điều hướng nếu chưa ở trong khu vực đúng role
         if (decoded.role === "admin" && !location.pathname.startsWith("/admin")) {
           navigate("/admin/dashboard")
         } else if (decoded.role === "user" && !location.pathname.startsWith("/user")) {
@@ -86,7 +86,7 @@ export default function AppRoutes() {
     }
 
     checkToken()
-  }, [location.pathname]) // depend vào pathname
+  }, [location.pathname])
 
   if (loading) {
     return (
@@ -109,7 +109,7 @@ export default function AppRoutes() {
         <Route path="/signup" element={<Signup />} />
       </Route>
 
-      {/* User Private Routes */}
+      {/* User Private Routes - Floating Chat Widget sẽ tự động xuất hiện */}
       <Route element={<PrivateRoute roles={["user"]} />}>
         <Route element={<UserLayout />}>
           <Route path="/user/home" element={<UserHomePage />} />
@@ -121,6 +121,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
+      {/* Trainer Private Routes - Floating Chat Widget sẽ tự động xuất hiện */}
       <Route element={<PrivateRoute roles={["pt"]} />}>
         <Route element={<UserLayout />}>
           <Route path="/pt/home" element={<TrainerHomePage />} />
@@ -130,11 +131,7 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
-      {/* <Route element={<DefaultLayout />}>
-          <Route path="/user/home" element={<HomeUserSigned />} />
-        </Route> */}
-
-      {/* Admin Private Routes */}
+      {/* Admin Private Routes - Không có chat widget */}
       <Route element={<PrivateRoute roles={["admin"]} />}>
         <Route element={<AdminLayout />}>
           <Route path="/admin/dashboard" element={<AdminHomePage />} />
