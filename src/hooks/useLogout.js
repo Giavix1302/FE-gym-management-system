@@ -11,6 +11,7 @@ import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
 import useListTrainerInfoForUser from "~/stores/useListTrainerInfoForUser"
 import useLocationStore from "~/stores/useLocationStore"
 import useChatStore from "~/stores/useChatStore"
+import useEquipmentForAdminStore from "~/stores/useEquipmentForAdminStore"
 
 export function useLogout() {
   const { reset } = useChatStore()
@@ -23,6 +24,7 @@ export function useLogout() {
   const { resetRooms } = useRoomsStore()
   const { resetTrainerInfo } = useTrainerInfoStore()
   const { resetUser } = useUserStore()
+  const { clearStore } = useEquipmentForAdminStore()
 
   const navigate = useNavigate()
 
@@ -41,6 +43,7 @@ export function useLogout() {
       resetPackages()
       resetRooms()
       resetUser()
+      clearStore()
       // call API xóa refreshToken
       await logoutAPI() // gọi API logout nếu cần
     } catch (err) {

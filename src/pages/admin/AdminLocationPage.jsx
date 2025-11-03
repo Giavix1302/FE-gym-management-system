@@ -1,11 +1,11 @@
 import { Box, Typography } from "@mui/material"
 
-function AdminEquipmentPage() {
+function AdminLocationPage() {
   return (
     <Box sx={{ display: "flex", justifyContent: "center" }}>
-      <Typography variant="h3">AdminEquipmentPage admin</Typography>
+      <Typography variant="h3">AdminLocationPage admin</Typography>
     </Box>
   )
 }
 
-export default AdminEquipmentPage
+export default AdminLocationPage

@@ -29,7 +29,7 @@ import useSocket from "~/hooks/useSocket"
 import useUserStore from "~/stores/useUserStore"
 import { getConversationsAPI, getMessagesAPI, sendMessageAPI, markMessagesAsReadAPI } from "~/apis/conversation"
 
-const FloatingChatWidget = () => {
+const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
   const {
     conversations,
     setConversations,
@@ -46,14 +46,13 @@ const FloatingChatWidget = () => {
     getTypingUsersInCurrentConversation,
     getParticipant,
   } = useChatStore()
-  console.log("🚀 ~ FloatingChatWidget ~ messages:", messages)
 
   const { isConnected, connect, disconnect, sendMessage, setTyping, markAsRead, joinConversation, on, off } =
     useSocket()
 
   const { user } = useUserStore()
 
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(true) // Start open when controlled by SpeedDial
   const [isMinimized, setIsMinimized] = useState(false)
   const [showConversationList, setShowConversationList] = useState(true)
   const [messageInput, setMessageInput] = useState("")
@@ -117,8 +116,6 @@ const FloatingChatWidget = () => {
       const response = await getConversationsAPI(currentUserId, 1, 20, user?.role)
 
       if (response.success) {
-        // Debug log để xem conversation structure
-        console.log("🔍 Conversation structure:", response.data[0])
         setConversations(response.data)
         console.log("✅ Conversations loaded:", response.data.length)
       }
@@ -135,12 +132,9 @@ const FloatingChatWidget = () => {
       const response = await getMessagesAPI(conversationId, 1, 50, user?.role)
 
       if (response.success) {
-        // ✅ THÊM: Debug log để xem message structure
-        console.log("🔍 Message structure:", response.data.messages?.[0])
         setMessages(response.data.messages || [])
         console.log("✅ Messages loaded:", response.data.messages?.length || 0)
 
-        // Auto mark all messages as read khi vào conversation
         const unreadMessages =
           response.data.messages?.filter((msg) => !msg.isRead && msg.senderId !== currentUserId) || []
 
@@ -148,9 +142,6 @@ const FloatingChatWidget = () => {
           const unreadIds = unreadMessages.map((msg) => msg._id)
           try {
             await markMessagesAsReadAPI(conversationId, unreadIds, user?.role)
-            console.log("✅ Marked", unreadIds.length, "messages as read")
-
-            // Update local state
             markMessagesAsRead(unreadIds)
           } catch (error) {
             console.error("Failed to mark messages as read:", error)
@@ -179,6 +170,13 @@ const FloatingChatWidget = () => {
     setMessages([])
   }
 
+  const handleClose = () => {
+    setIsOpen(false)
+    if (onClose) {
+      onClose()
+    }
+  }
+
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !currentConversation || isSending) return
 
@@ -186,7 +184,6 @@ const FloatingChatWidget = () => {
     setMessageInput("")
     setIsSending(true)
 
-    // Optimistic update - hiển thị tin nhắn ngay lập tức
     const tempMessage = {
       _id: Date.now().toString(),
       conversationId: currentConversation._id,
@@ -194,40 +191,30 @@ const FloatingChatWidget = () => {
       senderType: user.role === "pt" ? "trainer" : "user",
       content: content,
       isRead: false,
-      createdAt: new Date().toISOString(), // ✅ SỬA: Dùng ISO string thay vì Date object
+      createdAt: new Date().toISOString(),
       isOptimistic: true,
     }
 
-    // Thêm tin nhắn vào UI ngay lập tức
     addMessage(tempMessage)
     scrollToBottom()
 
     try {
-      // Gửi qua socket (real-time)
       sendMessage(currentConversation._id, content)
-
-      // Gửi qua API (persistent storage)
       const response = await sendMessageAPI(currentConversation._id, content, user?.role)
 
       if (response.success) {
-        // Thay thế tin nhắn tạm bằng tin nhắn thật từ server
         const realMessage = response.data
         updateMessage(tempMessage._id, {
           ...realMessage,
           isOptimistic: false,
         })
-
-        console.log("✅ Message sent successfully:", realMessage)
       }
     } catch (error) {
       console.error("Failed to send message:", error)
-
-      // Xóa tin nhắn tạm nếu gửi thất bại
       updateMessage(tempMessage._id, {
         isError: true,
         content: content + " (Gửi thất bại)",
       })
-
       setMessageInput(content)
     } finally {
       setIsSending(false)
@@ -238,43 +225,44 @@ const FloatingChatWidget = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  // ✅ SỬA: formatTime function để handle Invalid Date
   const formatTime = (timestamp) => {
-    console.log("🚀 ~ formatTime ~ timestamp:", timestamp)
     try {
-      if (!timestamp) {
-        return "--:--"
-      }
+      if (!timestamp) return "--:--"
 
-      // Handle different timestamp formats
       let date
       if (typeof timestamp === "number") {
-        // Unix timestamp (milliseconds hoặc seconds)
         date = timestamp > 1000000000000 ? new Date(timestamp) : new Date(timestamp * 1000)
       } else if (typeof timestamp === "string") {
-        // ISO string hoặc date string
         date = new Date(timestamp)
-      } else if (timestamp instanceof Date) {
-        // Date object
-        date = timestamp
       } else {
-        console.warn("Invalid timestamp format:", timestamp)
-        return "--:--"
+        date = new Date()
       }
 
-      // Check if date is valid
       if (isNaN(date.getTime())) {
-        console.warn("Invalid Date created from timestamp:", timestamp)
         return "--:--"
       }
 
-      return date.toLocaleTimeString([], {
+      return date.toLocaleTimeString("vi-VN", {
         hour: "2-digit",
         minute: "2-digit",
       })
     } catch (error) {
-      console.error("Error formatting time:", error, "timestamp:", timestamp)
+      console.error("Error formatting time:", error)
       return "--:--"
+    }
+  }
+
+  const handleTyping = (value) => {
+    setMessageInput(value)
+
+    if (value.trim() && currentConversation) {
+      setTyping(currentConversation._id, true)
+
+      clearTimeout(typingTimeout)
+      const timeout = setTimeout(() => {
+        setTyping(currentConversation._id, false)
+      }, 1000)
+      setTypingTimeout(timeout)
     }
   }
 
@@ -282,149 +270,66 @@ const FloatingChatWidget = () => {
     return message.senderId === currentUserId
   }
 
-  const handleTyping = (value) => {
-    setMessageInput(value)
-
-    if (currentConversation && value.trim()) {
-      setTyping(currentConversation._id, true)
-
-      // Clear previous timeout
-      if (typingTimeout) {
-        clearTimeout(typingTimeout)
-      }
-
-      // Set new timeout to stop typing
-      const timeout = setTimeout(() => {
-        setTyping(currentConversation._id, false)
-      }, 1000)
-
-      setTypingTimeout(timeout)
-    }
-  }
-
-  // ✅ THÊM: Helper functions để format tin nhắn trong conversation list
-  const formatConversationMessage = (conversation) => {
-    if (!conversation.lastMessage || conversation.lastMessage === "Bắt đầu cuộc hội thoại...") {
-      return "Bắt đầu cuộc hội thoại..."
-    }
-
-    let messageText = conversation.lastMessage
-
-    // ✅ SỬA: Logic backup để detect tin nhắn của mình
-    let isMyLastMessage = false
-
-    if (conversation.lastSenderId) {
-      // Nếu có lastSenderId từ backend (sau khi fix backend)
-      isMyLastMessage = conversation.lastSenderId.toString() === currentUserId?.toString()
-    } else {
-      // ✅ WORKAROUND: Dùng messages local để check nếu có
-      if (currentConversation && currentConversation._id === conversation._id && messages.length > 0) {
-        const lastMessage = messages[messages.length - 1]
-        isMyLastMessage = lastMessage.senderId === currentUserId
-      }
-    }
-
-    if (isMyLastMessage) {
-      messageText = `Bạn: ${conversation.lastMessage}`
-    }
-
-    // ✅ THÊM: Truncate text nếu quá dài (giới hạn 40 ký tự)
-    if (messageText.length > 35) {
-      messageText = messageText.substring(0, 32) + "..."
-    }
-
-    return messageText
-  }
-
-  const isConversationUnread = (conversation) => {
-    // Kiểm tra conversation có tin nhắn chưa đọc không
-    return conversation.unreadCount > 0
-  }
-
   const renderConversationList = () => (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {isLoading ? (
-        <Box sx={{ p: 2, textAlign: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            Đang tải...
-          </Typography>
-        </Box>
-      ) : conversations.length === 0 ? (
-        <Box sx={{ p: 2, textAlign: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            Chưa có cuộc hội thoại nào
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ flex: 1, overflow: "auto" }}>
+      <Box sx={{ p: 2, borderBottom: "1px solid #e0e0e0" }}>
+        <Typography variant="h6">Tin nhắn</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {conversations.length} cuộc trò chuyện
+        </Typography>
+      </Box>
+
+      <Box sx={{ flex: 1, overflow: "auto" }}>
+        {isLoading ? (
+          <Box sx={{ p: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Đang tải...
+            </Typography>
+          </Box>
+        ) : conversations.length === 0 ? (
+          <Box sx={{ p: 2, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              Chưa có cuộc trò chuyện nào
+            </Typography>
+          </Box>
+        ) : (
           <List sx={{ p: 0 }}>
             {conversations.map((conversation) => {
               const participant = getParticipant(conversation)
-              const messageText = formatConversationMessage(conversation)
-              const isUnread = isConversationUnread(conversation)
-
               return (
                 <ListItem
                   key={conversation._id}
-                  component="div"
                   onClick={() => handleSelectConversation(conversation)}
                   sx={{
-                    borderBottom: "1px solid #f0f0f0",
                     cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor: "rgba(0, 0, 0, 0.04)",
-                    },
+                    "&:hover": { bgcolor: "grey.50" },
+                    borderBottom: "1px solid #f0f0f0",
                   }}
                 >
-                  <Avatar src={participant?.avatar} sx={{ mr: 1.5 }}>
+                  <Avatar src={participant?.avatar} sx={{ mr: 2 }}>
                     {participant?.fullName?.charAt(0)}
                   </Avatar>
-
-                  <Box sx={{ flex: 1 }}>
-                    <Typography sx={{ fontWeight: "bold" }} variant="subtitle1">
-                      {participant?.fullName || "Bắt đầu cuộc hội thoại..."}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body1" noWrap>
+                      {participant?.fullName}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      noWrap
-                      sx={{
-                        fontWeight: isUnread ? "bold" : "normal", // ✅ In đậm nếu chưa đọc
-                        color: isUnread ? "text.primary" : "text.secondary", // ✅ Màu đậm hơn nếu chưa đọc
-                      }}
-                    >
-                      {messageText}
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {conversation.lastMessage || "Chưa có tin nhắn"}
                     </Typography>
                   </Box>
-
-                  {/* Badge hiển thị số tin nhắn chưa đọc */}
-                  {isUnread && (
-                    <Chip
-                      label={conversation.unreadCount}
-                      size="small"
-                      color="primary"
-                      sx={{ minWidth: 24, height: 24 }}
-                    />
-                  )}
-
-                  {/* Badge hiển thị "Mới" nếu chưa có tin nhắn */}
-                  {(!conversation.lastMessage || conversation.lastMessage === "Bắt đầu cuộc hội thoại...") && (
-                    <Chip label="Mới" size="small" color="secondary" />
-                  )}
+                  {conversation.unreadCount > 0 && <Chip label="Mới" size="small" color="secondary" />}
                 </ListItem>
               )
             })}
           </List>
-        </Box>
-      )}
+        )}
+      </Box>
     </Box>
   )
 
   const renderChatView = () => (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Messages Area */}
       <Box sx={{ flex: 1, overflow: "auto", p: 1 }}>
-        {/* Timestamp ở đầu - luôn hiển thị */}
         <Box sx={{ textAlign: "center", mb: 2 }}>
           <Typography
             variant="caption"
@@ -446,7 +351,6 @@ const FloatingChatWidget = () => {
           </Typography>
         </Box>
 
-        {/* Welcome Screen - luôn hiển thị khi vào conversation */}
         {currentConversation && (
           <Box
             sx={{
@@ -466,21 +370,16 @@ const FloatingChatWidget = () => {
               {getParticipant(currentConversation)?.fullName}
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
-              🔒 Tin nhắn và cuộc gọi được bảo mật bằng mã hóa đầu cuối. Chỉ những người tham gia đoạn chat này mới có
-              thể đọc, nghe hoặc chia sẻ.{" "}
-              <Typography component="span" color="primary" sx={{ cursor: "pointer" }}>
-                Tìm hiểu thêm
-              </Typography>
+              🔒 Tin nhắn được bảo mật an toàn
             </Typography>
             {messages.length === 0 && (
               <Typography variant="caption" color="text.secondary">
-                Bắt đầu cuộc trò chuyện của bạn...
+                Bắt đầu cuộc trò chuyện...
               </Typography>
             )}
           </Box>
         )}
 
-        {/* Messages */}
         {messages.map((message, index) => (
           <Box
             key={message._id}
@@ -491,7 +390,6 @@ const FloatingChatWidget = () => {
               alignItems: "flex-start",
             }}
           >
-            {/* Avatar cho tin nhắn của người khác */}
             {!isMyMessage(message) && (
               <Avatar src={getParticipant(currentConversation)?.avatar} sx={{ width: 32, height: 32, mt: 0.5 }}>
                 {getParticipant(currentConversation)?.fullName?.charAt(0)}
@@ -523,10 +421,9 @@ const FloatingChatWidget = () => {
                 }}
               >
                 <Typography variant="caption" sx={{ opacity: 0.7, fontSize: "0.625rem" }}>
-                  {formatTime(message.timestamp)}
+                  {formatTime(message.createdAt)}
                 </Typography>
 
-                {/* Read status indicator cho tin nhắn của mình */}
                 {isMyMessage(message) && (
                   <Typography variant="caption" sx={{ opacity: 0.7, fontSize: "0.625rem", ml: 1 }}>
                     {message.isRead ? "✓✓" : "✓"}
@@ -542,7 +439,6 @@ const FloatingChatWidget = () => {
 
       <Divider />
 
-      {/* Input Area */}
       <Box sx={{ p: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <TextField
@@ -571,94 +467,67 @@ const FloatingChatWidget = () => {
   )
 
   return (
-    <>
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
+    <Collapse in={isOpen}>
+      <Card
         sx={{
           position: "fixed",
-          bottom: 20,
+          bottom: lowPosition ? 20 : 90, // Move down when SpeedDial is hidden
           right: 20,
+          width: 350,
+          height: isMinimized ? 60 : 500,
           zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
         }}
-        onClick={() => setIsOpen(!isOpen)}
       >
-        <Badge badgeContent={unreadCount} color="error">
-          <ChatIcon />
-        </Badge>
-      </Fab>
-
-      {/* Chat Widget */}
-      <Collapse in={isOpen}>
-        <Card
+        <Box
           sx={{
-            position: "fixed",
-            bottom: 90,
-            right: 20,
-            width: 350,
-            height: isMinimized ? 60 : 500,
-            zIndex: 1000,
+            bgcolor: "primary.main",
+            color: "white",
+            p: 1,
             display: "flex",
-            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          {/* Header */}
-          <Box
-            sx={{
-              bgcolor: "primary.main",
-              color: "white",
-              p: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
-              {/* Back button - chỉ hiển thị khi đang trong chat */}
-              {!showConversationList && (
-                <IconButton size="small" sx={{ color: "white", mr: 1 }} onClick={handleBackToList}>
-                  <ArrowBackIcon />
-                </IconButton>
-              )}
-
-              <Typography
-                variant="h6"
-                sx={{
-                  pl: !currentConversation || !getParticipant(currentConversation)?.fullName ? 1 : 0,
-                }}
-              >
-                {currentConversation ? getParticipant(currentConversation)?.fullName || "Tin nhắn" : "Tin nhắn"}
-              </Typography>
-            </Box>
-
-            <Box>
-              <IconButton size="small" sx={{ color: "white" }} onClick={() => setIsMinimized(!isMinimized)}>
-                {isMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
+          <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
+            {!showConversationList && (
+              <IconButton size="small" sx={{ color: "white", mr: 1 }} onClick={handleBackToList}>
+                <ArrowBackIcon />
               </IconButton>
-              <IconButton size="small" sx={{ color: "white" }} onClick={() => setIsOpen(false)}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
+            )}
+
+            <Typography variant="h6">
+              {currentConversation ? getParticipant(currentConversation)?.fullName || "Tin nhắn" : "Tin nhắn"}
+            </Typography>
           </Box>
 
-          {/* Content */}
-          {!isMinimized && (
-            <CardContent
-              sx={{
-                p: 0,
-                flex: 1,
-                overflow: "hidden",
-                "&:last-child": {
-                  pb: 0,
-                },
-              }}
-            >
-              {showConversationList ? renderConversationList() : renderChatView()}
-            </CardContent>
-          )}
-        </Card>
-      </Collapse>
-    </>
+          <Box>
+            <IconButton size="small" sx={{ color: "white" }} onClick={() => setIsMinimized(!isMinimized)}>
+              {isMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
+            </IconButton>
+            <IconButton size="small" sx={{ color: "white" }} onClick={handleClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {!isMinimized && (
+          <CardContent
+            sx={{
+              p: 0,
+              flex: 1,
+              overflow: "hidden",
+              "&:last-child": {
+                pb: 0,
+              },
+            }}
+          >
+            {showConversationList ? renderConversationList() : renderChatView()}
+          </CardContent>
+        )}
+      </Card>
+    </Collapse>
   )
 }
 

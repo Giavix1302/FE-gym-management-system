@@ -42,12 +42,14 @@ import QrScanner from "qr-scanner"
 // API imports
 import { toggleAttendanceQrCodeAPI, getListAttendanceByLocationIdAPI } from "~/apis/attendance"
 import { toast } from "react-toastify"
+import useCurrentLocation from "~/stores/useCurrentLocationStore"
 
 // Configuration - replace with actual values
-// sau này khi thêm role staff thì nhớ lấy từ store staff ra không fix cứng
-const LOCATION_ID = "68e62d5b8bc0ac69b9eb15f7" // Replace with actual location ID
 
-export default function AdminCheckinPage() {
+export default function StaffCheckinPage() {
+  const { currentLocation } = useCurrentLocation()
+  console.log("🚀 ~ StaffCheckinPage ~ currentLocation:", currentLocation)
+
   const videoRef = useRef(null)
   const qrScannerRef = useRef(null)
 
@@ -79,7 +81,7 @@ export default function AdminCheckinPage() {
       const startDateISO = startOfDay(new Date(startDate)).toISOString()
       const endDateISO = endOfDay(new Date(endDate)).toISOString()
 
-      const result = await getListAttendanceByLocationIdAPI(LOCATION_ID, {
+      const result = await getListAttendanceByLocationIdAPI(currentLocation?._id, {
         startDate: startDateISO,
         endDate: endDateISO,
       })
@@ -127,7 +129,7 @@ export default function AdminCheckinPage() {
         setLoading(true)
         const result = await toggleAttendanceQrCodeAPI({
           userId,
-          locationId: LOCATION_ID,
+          locationId: currentLocation?._id,
         })
 
         if (result.success) {
