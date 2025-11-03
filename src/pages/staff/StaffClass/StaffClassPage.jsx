@@ -46,7 +46,7 @@ import { deleteClassAPI, getListClassForAdminAPI } from "~/apis/class"
 import useLocationStore from "~/stores/useLocationStore"
 
 // Main Component
-export default function AdminClassPage() {
+export default function StaffClassPage() {
   const { rooms } = useRoomsStore()
   const { listTrainerInfo } = useListTrainerInfoForAdmin()
   const { locations } = useLocationStore()

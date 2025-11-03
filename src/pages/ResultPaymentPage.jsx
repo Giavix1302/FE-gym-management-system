@@ -35,6 +35,7 @@ import { copyToClipboard, formatCurrencyVND } from "~/utils/common"
 import successGIF from "~/assets/gif/result_page_success.gif"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
+import useUserStore from "~/stores/useUserStore"
 
 const MyCardContent = ({ title, content, border, isCopy }) => {
   console.log("🚀 ~ MyCardContent ~ border:", border)
@@ -85,6 +86,7 @@ const MyCardContent = ({ title, content, border, isCopy }) => {
 }
 
 const PaymentSuccessPage = () => {
+  const { user } = useUserStore()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -431,7 +433,13 @@ const PaymentSuccessPage = () => {
                     variant="contained"
                     size="large"
                     startIcon={<Home />}
-                    onClick={() => navigate("/user/home")}
+                    onClick={() => {
+                      if (user?.role === "user") {
+                        navigate("/user/home")
+                      } else {
+                        navigate("/pt/home")
+                      }
+                    }}
                     sx={{
                       py: 1.5,
                       background: "linear-gradient(45deg, #FF9800, #F57C00)",
