@@ -13,12 +13,28 @@ export default function PrivateRoute({ roles }) {
   try {
     const decoded = jwtDecode(token)
 
+    // ✅ Kiểm tra token hết hạn
+    const now = Date.now() / 1000
+    if (decoded.exp && decoded.exp < now) {
+      removeFromLocalStorage("accessToken")
+      return <Navigate to="/login" replace />
+    }
+
+    // ✅ Kiểm tra quyền truy cập
     if (roles && !roles.includes(decoded.role)) {
-      return <Navigate to="/" replace />
+      // ✅ Điều hướng về trang phù hợp với role thay vì về "/"
+      const roleHomePaths = {
+        admin: "/admin/dashboard",
+        staff: "/staff/dashboard",
+        user: "/user/home",
+        pt: "/pt/home",
+      }
+
+      const redirectPath = roleHomePaths[decoded.role] || "/"
+      return <Navigate to={redirectPath} replace />
     }
 
     return <Outlet />
-    // eslint-disable-next-line no-unused-vars
   } catch (err) {
     // Token lỗi (ví dụ bị sửa)
     removeFromLocalStorage("accessToken")

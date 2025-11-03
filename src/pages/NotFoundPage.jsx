@@ -11,6 +11,10 @@ export default function NotFoundPage() {
       navigate("/user/home")
     } else if (user.role === "pt") {
       navigate("/pt/home")
+    } else if (user.role === "staff") {
+      navigate("/staff/dashboard")
+    } else if (user.role === "admin") {
+      navigate("/admin/dashboard")
     } else {
       navigate("/")
     }

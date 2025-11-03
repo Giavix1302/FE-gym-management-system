@@ -6,6 +6,11 @@ export const createSubscriptionAPI = async (userId, membershipId) => {
   return rep.data
 }
 
+export const createSubscriptionForStaffAPI = async (data) => {
+  const rep = await axiosInstance.post("/subscriptions/staff", data)
+  return rep.data
+}
+
 export const getSubscriptionByUserIdAPI = async (userId) => {
   const rep = await axiosInstance.get("/subscriptions/" + userId)
   return rep.data

@@ -11,21 +11,14 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
-  Badge,
 } from "@mui/material"
 import Avatar from "@mui/material/Avatar"
 import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
 import Tooltip from "@mui/material/Tooltip"
 import Divider from "@mui/material/Divider"
-import Paper from "@mui/material/Paper"
-import MenuList from "@mui/material/MenuList"
 import ListItemIcon from "@mui/material/ListItemIcon"
 import Typography from "@mui/material/Typography"
-import ContentCut from "@mui/icons-material/ContentCut"
-import ContentCopy from "@mui/icons-material/ContentCopy"
-import ContentPaste from "@mui/icons-material/ContentPaste"
-import Cloud from "@mui/icons-material/Cloud"
 // icon
 import MenuIcon from "@mui/icons-material/Menu"
 import PasswordIcon from "@mui/icons-material/Password"
@@ -34,7 +27,6 @@ import DirectionsRunIcon from "@mui/icons-material/DirectionsRun"
 import PaymentsIcon from "@mui/icons-material/Payments"
 import PersonIcon from "@mui/icons-material/Person"
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
-import NotificationsIcon from "@mui/icons-material/Notifications"
 // logo
 import logo from "~/assets/logo.png"
 // router
@@ -45,6 +37,8 @@ import { navItemsUnsigned, navItemPTSigned, navItemUserSigned } from "~/utils/co
 import useUserStore from "~/stores/useUserStore"
 import { toast } from "react-toastify"
 import { useLogout } from "~/hooks/useLogout"
+// components
+import NotificationPanel from "~/components/NotificationPanel"
 
 export default function Header() {
   // custom hooks
@@ -64,31 +58,6 @@ export default function Header() {
   const handleClose = () => {
     setAnchorEl(null)
   }
-
-  // notifications menu
-  const [notificationAnchorEl, setNotificationAnchorEl] = React.useState(null)
-  const openNotificationMenu = Boolean(notificationAnchorEl)
-  const handleClickNotification = (event) => {
-    setNotificationAnchorEl(event.currentTarget)
-  }
-  const handleCloseNotification = () => {
-    setNotificationAnchorEl(null)
-  }
-
-  // Sample notifications data - replace with your actual data source
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: "Thông báo mới", message: "Bạn có lịch tập mới vào ngày mai", time: "5 phút trước", unread: true },
-    {
-      id: 2,
-      title: "Thanh toán thành công",
-      message: "Gói tập của bạn đã được gia hạn",
-      time: "1 giờ trước",
-      unread: true,
-    },
-    { id: 3, title: "Nhắc nhở", message: "Đừng quên buổi tập lúc 6h chiều nay", time: "2 giờ trước", unread: false },
-  ])
-
-  const unreadCount = notifications.filter((n) => n.unread).length
 
   const [navHeader, setNavHeader] = useState([])
   useEffect(() => {
@@ -191,88 +160,8 @@ export default function Header() {
 
           {/* Right side: Notification + User */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* Notification Icon - only show when logged in */}
-            {user != null && (
-              <Tooltip title="Thông báo">
-                <IconButton
-                  onClick={handleClickNotification}
-                  sx={{
-                    color: "#EDE7E3",
-                    "&:hover": { color: "#FFA62B" },
-                  }}
-                >
-                  <Badge badgeContent={unreadCount} color="error">
-                    <NotificationsIcon />
-                  </Badge>
-                </IconButton>
-              </Tooltip>
-            )}
-
-            {/* Notification Menu */}
-            <Menu
-              anchorEl={notificationAnchorEl}
-              open={openNotificationMenu}
-              onClose={handleCloseNotification}
-              slotProps={{
-                paper: {
-                  sx: {
-                    mt: 1,
-                    width: 450,
-                    maxHeight: 500,
-                  },
-                },
-              }}
-            >
-              <Box sx={{ px: 2, py: 1.5, borderBottom: "1px solid #e0e0e0" }}>
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  Thông báo
-                </Typography>
-              </Box>
-              {notifications.length > 0 ? (
-                notifications.map((notification) => (
-                  <MenuItem
-                    key={notification.id}
-                    onClick={handleCloseNotification}
-                    sx={{
-                      display: "block",
-                      py: 1.5,
-                      px: 2,
-                      backgroundColor: notification.unread ? "#f5f5f5" : "transparent",
-                      "&:hover": {
-                        backgroundColor: notification.unread ? "#eeeeee" : "#f9f9f9",
-                      },
-                    }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                      {notification.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "text.secondary", mb: 0.5 }}>
-                      {notification.message}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "text.disabled" }}>
-                      {notification.time}
-                    </Typography>
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem disabled>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    Không có thông báo mới
-                  </Typography>
-                </MenuItem>
-              )}
-              <Divider />
-              <MenuItem
-                onClick={handleCloseNotification}
-                sx={{
-                  justifyContent: "center",
-                  color: "primary.main",
-                  fontWeight: "bold",
-                }}
-              >
-                Xem tất cả thông báo
-              </MenuItem>
-            </Menu>
+            {/* Notification Panel - chỉ hiển thị khi đã login */}
+            {user != null && <NotificationPanel />}
 
             {/* Nút Login hoặc Avatar */}
             {user != null ? (

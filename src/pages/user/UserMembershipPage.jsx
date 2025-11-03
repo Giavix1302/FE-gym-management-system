@@ -612,7 +612,11 @@ export default function UserMembershipPage() {
 
         window.open(vnpay.paymentUrl, "_blank")
 
-        navigate("/user/membership")
+        if (user?.role === "user") {
+          navigate("/user/membership")
+        } else {
+          navigate("/pt/membership")
+        }
 
         // Close modal
         setOpenSelectPaymentModal(false)
