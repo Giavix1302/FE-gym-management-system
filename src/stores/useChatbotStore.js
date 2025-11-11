@@ -34,6 +34,7 @@ const useChatbotStore = create((set, get) => ({
       localStorage.setItem("chatbot_anonymousId", anonymousId)
     }
 
+    console.log("🛠 Frontend - Initialized with anonymousId:", anonymousId)
     set({ anonymousId })
   },
 
@@ -140,7 +141,7 @@ const useChatbotStore = create((set, get) => ({
   // ========================================
 
   /**
-   * Send message to chatbot
+   * Send message to chatbot - FIXED COMPLETE FUNCTION
    */
   sendMessage: async (messageText) => {
     const state = get()
@@ -172,6 +173,8 @@ const useChatbotStore = create((set, get) => ({
         })
       }
 
+      console.log("🛠 Frontend - API Response:", response)
+
       if (response.success) {
         // Add bot response
         get().addMessage({
@@ -195,6 +198,8 @@ const useChatbotStore = create((set, get) => ({
 
         // Load quick replies after successful message
         get().loadQuickReplies()
+
+        console.log("🛠 Frontend - Messages after add:", get().messages)
       } else {
         throw new Error(response.message || "Failed to send message")
       }
@@ -261,7 +266,7 @@ const useChatbotStore = create((set, get) => ({
   },
 
   /**
-   * Load conversation history
+   * Load conversation history - ✅ FIXED: Load for both authenticated and anonymous users
    */
   loadConversationHistory: async () => {
     const state = get()
@@ -271,66 +276,147 @@ const useChatbotStore = create((set, get) => ({
     try {
       set({ isLoading: true, error: null })
 
-      const { getAuthConversationAPI, getAnonymousConversationAPI } = await import("../apis/chatbot")
-
-      let response
       if (isAuthenticated) {
-        response = await getAuthConversationAPI()
-      } else {
-        if (!state.anonymousId) {
-          get().initializeChatbot()
-          return
+        // ✅ Load authenticated user conversation
+        const { getAuthConversationAPI } = await import("../apis/chatbot")
+        const response = await getAuthConversationAPI()
+
+        if (response.success && response.conversation) {
+          const conversation = response.conversation
+
+          // Parse messages from conversation
+          const messages =
+            conversation.messages
+              ?.map((msg, index) => {
+                // Parse userMessage if it's in object format (bug from BE)
+                let userContent = msg.userMessage || msg.content
+                if (typeof userContent === "object" && userContent !== null) {
+                  userContent = Object.values(userContent).join("")
+                }
+
+                // Handle different message formats
+                if (msg.type) {
+                  // New format: individual messages
+                  return {
+                    id: `${msg.type}_${index}`,
+                    type: msg.type,
+                    content: userContent || msg.content,
+                    timestamp: new Date(msg.timestamp),
+                    responseType: msg.responseType,
+                  }
+                } else {
+                  // Old format: user-bot pairs
+                  return [
+                    {
+                      id: `user_${index}`,
+                      type: "user",
+                      content: userContent,
+                      timestamp: new Date(msg.timestamp),
+                    },
+                    {
+                      id: `bot_${index}`,
+                      type: "bot",
+                      content: msg.botResponse?.content || "",
+                      responseType: msg.botResponse?.type,
+                      responseData: msg.botResponse?.data || null,
+                      timestamp: new Date(msg.timestamp),
+                    },
+                  ]
+                }
+              })
+              .flat()
+              .filter((msg) => msg && msg.content) || []
+
+          set({
+            messages,
+            conversationId: conversation._id,
+          })
+
+          console.log("🛠 Frontend - Loaded authenticated conversation:", conversation._id)
         }
-        response = await getAnonymousConversationAPI(state.anonymousId)
-      }
+      } else {
+        // ✅ FIXED: Load anonymous user conversation if anonymousId exists
+        if (state.anonymousId) {
+          console.log("🛠 Frontend - Loading anonymous conversation for:", state.anonymousId)
 
-      if (response.success && response.conversation) {
-        const conversation = response.conversation
+          const { getAnonymousConversationAPI } = await import("../apis/chatbot")
+          const response = await getAnonymousConversationAPI(state.anonymousId)
 
-        // Parse messages from conversation
-        const messages =
-          conversation.messages
-            ?.map((msg, index) => {
-              // Parse userMessage if it's in object format (bug from BE)
-              let userContent = msg.userMessage
-              if (typeof userContent === "object" && userContent !== null) {
-                userContent = Object.values(userContent).join("")
-              }
+          if (response.success && response.conversation) {
+            const conversation = response.conversation
 
-              return [
-                {
-                  id: `user_${index}`,
-                  type: "user",
-                  content: userContent,
-                  timestamp: new Date(msg.timestamp),
-                },
-                {
-                  id: `bot_${index}`,
-                  type: "bot",
-                  content: msg.botResponse.content,
-                  responseType: msg.botResponse.type,
-                  responseData: msg.botResponse.data || null,
-                  timestamp: new Date(msg.timestamp),
-                },
-              ]
+            // Parse messages from conversation
+            const messages =
+              conversation.messages
+                ?.map((msg, index) => {
+                  // Handle different message formats
+                  if (msg.type) {
+                    // New format: individual messages
+                    return {
+                      id: `${msg.type}_${index}`,
+                      type: msg.type,
+                      content: msg.content,
+                      timestamp: new Date(msg.timestamp),
+                      responseType: msg.responseType,
+                    }
+                  } else {
+                    // Old format: user-bot pairs
+                    let userContent = msg.userMessage || msg.content
+                    if (typeof userContent === "object" && userContent !== null) {
+                      userContent = Object.values(userContent).join("")
+                    }
+
+                    return [
+                      {
+                        id: `user_${index}`,
+                        type: "user",
+                        content: userContent,
+                        timestamp: new Date(msg.timestamp),
+                      },
+                      {
+                        id: `bot_${index}`,
+                        type: "bot",
+                        content: msg.botResponse?.content || "",
+                        responseType: msg.botResponse?.type,
+                        responseData: msg.botResponse?.data || null,
+                        timestamp: new Date(msg.timestamp),
+                      },
+                    ]
+                  }
+                })
+                .flat()
+                .filter((msg) => msg && msg.content) || []
+
+            set({
+              messages,
+              conversationId: conversation._id,
             })
-            .flat() || []
 
-        set({
-          messages,
-          conversationId: conversation._id,
-        })
+            console.log(
+              "🛠 Frontend - Loaded anonymous conversation:",
+              conversation._id,
+              "with",
+              messages.length,
+              "messages",
+            )
+          } else {
+            console.log("🛠 Frontend - No anonymous conversation found")
+          }
+        } else {
+          console.log("🛠 Frontend - No anonymousId available")
+        }
       }
     } catch (error) {
       console.error("Load conversation error:", error)
-      set({ error: error.message })
+      // Don't show error to user for history loading failure
+      set({ error: null })
     } finally {
       set({ isLoading: false })
     }
   },
 
   /**
-   * Load quick replies
+   * Load quick replies - QUICK FIX: HANDLE ERRORS GRACEFULLY
    */
   loadQuickReplies: async () => {
     const user = useUserStore.getState().user
@@ -351,7 +437,8 @@ const useChatbotStore = create((set, get) => ({
       }
     } catch (error) {
       console.error("Load quick replies error:", error)
-      // Don't set error for quick replies failure
+      // Don't set error for quick replies failure - just use empty array
+      set({ quickReplies: [] })
     }
   },
 

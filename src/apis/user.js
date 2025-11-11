@@ -18,6 +18,17 @@ export const getListUserForStaffAPI = async (page = 1, limit = 20) => {
   return res.data
 }
 
+export const getListUserForAdminAPI = async (page = 1, limit = 20) => {
+  console.log("🚀 ~ getListUserForStaffAPI ~ page:", page, "limit:", limit)
+  const res = await axiosInstance.get(`/users/admin/list`, {
+    params: {
+      page,
+      limit,
+    },
+  })
+  return res.data
+}
+
 // NEW: Lấy chi tiết 1 user
 export const getUserDetailAPI = async (userId) => {
   console.log("🚀 ~ getUserDetailAPI ~ userId:", userId)
