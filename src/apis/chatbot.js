@@ -11,6 +11,7 @@ import { axiosPublic, axiosInstance } from "./axiosConfig"
  * @returns {Promise<Object>} Response with bot reply and conversation data
  */
 export const chatbotWithAnonymousAPI = async (data) => {
+  console.log("🐛 API Call Data:", data) // Thêm log này
   try {
     const response = await axiosPublic.post("/chatbot/anonymous/message", data)
     return response.data
@@ -241,77 +242,6 @@ export const getAllActionsAPI = async (params = {}) => {
     return response.data
   } catch (err) {
     const errorMessage = err.response?.data?.message || err.message || "Không thể tải actions"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-// ========================================
-// KNOWLEDGE BASE APIs (Admin only)
-// ========================================
-
-/**
- * Get all knowledge base entries (Admin only)
- * @returns {Promise<Object>} Knowledge base entries
- */
-export const getAllKnowledgeAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/admin/knowledge")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải knowledge base"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Create knowledge base entry (Admin only)
- * @param {Object} data - Knowledge entry data
- * @returns {Promise<Object>} Created knowledge entry
- */
-export const createKnowledgeAPI = async (data) => {
-  try {
-    const response = await axiosInstance.post("/chatbot/admin/knowledge", data)
-    toast.success("Tạo knowledge thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tạo knowledge"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Update knowledge base entry (Admin only)
- * @param {string} id - Knowledge entry ID
- * @param {Object} data - Updated knowledge data
- * @returns {Promise<Object>} Updated knowledge entry
- */
-export const updateKnowledgeAPI = async (id, data) => {
-  try {
-    const response = await axiosInstance.put(`/chatbot/admin/knowledge/${id}`, data)
-    toast.success("Cập nhật knowledge thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể cập nhật knowledge"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Delete knowledge base entry (Admin only)
- * @param {string} id - Knowledge entry ID
- * @returns {Promise<Object>} Delete result
- */
-export const deleteKnowledgeAPI = async (id) => {
-  try {
-    const response = await axiosInstance.delete(`/chatbot/admin/knowledge/${id}`)
-    toast.success("Xóa knowledge thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể xóa knowledge"
     toast.error(errorMessage)
     throw err
   }
@@ -559,12 +489,6 @@ export default {
   getUserConversationsAPI,
   getUserActionsAPI,
   getAllActionsAPI,
-
-  // Knowledge Base APIs
-  getAllKnowledgeAPI,
-  createKnowledgeAPI,
-  updateKnowledgeAPI,
-  deleteKnowledgeAPI,
 
   // Gym Info APIs
   getAllGymInfoAPI,

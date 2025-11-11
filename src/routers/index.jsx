@@ -17,7 +17,7 @@ import Signup from "~/pages/auth/Signup"
 // admin layout
 import AdminLayout from "~/layouts/AdminLayout/AdminLayout"
 import AdminHomePage from "~/pages/admin/AdminHomePage"
-import AdminUserPage from "~/pages/admin/AdminUserPage"
+import AdminUserPage from "~/pages/admin/AdminUser/AdminUserPage"
 import AdminTrainerPage from "~/pages/admin/AdminTrainerPage"
 import AdminPaymentPage from "~/pages/admin/AdminPaymentPage"
 import AdminReportMemberPage from "~/pages/admin/report/AdminReportUserPage"
@@ -42,15 +42,16 @@ import TrainerClassesPage from "~/pages/trainer/trainerClasses/TrainerClassesPag
 import UserCheckinPage from "~/pages/user/UserCheckinPage"
 import StaffCheckinPage from "~/pages/staff/StaffCheckinPage"
 import StaffUserPage from "~/pages/staff/StaffUserPage"
-import StaffRoomPage from "~/pages/staff/StaffRoomPage"
-import AdminLocationPage from "~/pages/admin/AdminLocationPage"
 import StaffClassPage from "~/pages/staff/StaffClass/StaffClassPage"
-import StaffTrainerPage from "~/pages/staff/StaffTrainerPage"
+import StaffTrainerPage from "~/pages/staff/staffTrainer/StaffTrainerPage"
 import StaffHomePage from "~/pages/staff/StaffHomePage"
 import StaffEquipmentPage from "~/pages/staff/staffEquipment/StaffEquipmentPage"
 import StaffLocationInfoPage from "~/pages/staff/StaffLocationInfoPage"
 import AdminStaffPage from "~/pages/admin/AdminStaff/AdminStaffPage"
 import AdminEquipmentPage from "~/pages/admin/adminEquipment/AdminEquipmentPage"
+import StaffRoomPage from "~/pages/staff/staffRoom/StaffRoomPage"
+import AdminLocationPage from "~/pages/admin/adminLocation/AdminLocationPage"
+import AdminChatbotPage from "~/pages/admin/adminChatbot/AdminChatbotPage"
 
 // ✅ Loading Component
 const LoadingScreen = () => (
@@ -201,6 +202,8 @@ export default function AppRoutes() {
             <Route path="/admin/payment" element={<AdminPaymentPage />} />
             <Route path="/admin/staff" element={<AdminStaffPage />} />
             <Route path="/admin/equipment" element={<AdminEquipmentPage />} />
+            <Route path="/admin/chatbot" element={<AdminChatbotPage />} />
+
             <Route path="/admin/report/user" element={<AdminReportMemberPage />} />
           </Route>
         </Route>

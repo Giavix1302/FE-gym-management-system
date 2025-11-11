@@ -102,6 +102,12 @@ export const useLoginLogic = () => {
           updateUser(user)
           setCurrentLocation(data?.locationInfo)
           setStaff(data?.staffInfo)
+
+          // trainer
+          const response = await getListTrainerForAdminAPI()
+          if (response.success && response.listTrainerInfo) {
+            setListTrainerInfo(response.listTrainerInfo)
+          }
           navigate("/staff/dashboard")
         } else if (user.role === "user") {
           updateUser(user)
