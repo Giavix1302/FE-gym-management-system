@@ -26,6 +26,7 @@ import InfoIcon from "@mui/icons-material/Info"
 import HomeWorkIcon from "@mui/icons-material/HomeWork"
 import LocationOnIcon from "@mui/icons-material/LocationOn"
 import PeopleIcon from "@mui/icons-material/People"
+import SmartToyIcon from "@mui/icons-material/SmartToy"
 
 import { AppProvider } from "@toolpad/core/AppProvider"
 import { DashboardLayout } from "@toolpad/core/DashboardLayout"
@@ -97,6 +98,11 @@ const NAVIGATION_ADMIN = [
     segment: "admin/payment",
     title: "Thanh toán",
     icon: <AttachMoneyIcon />,
+  },
+  {
+    segment: "admin/chatbot",
+    title: "Chatbot",
+    icon: <SmartToyIcon />,
   },
   {
     kind: "divider",

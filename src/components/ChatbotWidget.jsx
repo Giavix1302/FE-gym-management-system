@@ -245,6 +245,7 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
     )
   }
 
+  // ✅ FIXED: Quick replies with horizontal scroll
   const renderQuickReplies = () => {
     if (!quickReplies.length || awaitingConfirmation) return null
 
@@ -253,8 +254,30 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
         <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
           Gợi ý câu hỏi:
         </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {quickReplies.slice(0, 6).map((reply, index) => (
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            overflowX: "auto",
+            scrollbarWidth: "thin",
+            "&::-webkit-scrollbar": {
+              height: "6px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "#f1f1f1",
+              borderRadius: "3px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "#c1c1c1",
+              borderRadius: "3px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "#a8a8a8",
+            },
+            pb: 1,
+          }}
+        >
+          {quickReplies.slice(0, 8).map((reply, index) => (
             <Chip
               key={index}
               label={reply.text}
@@ -263,6 +286,10 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
               variant="outlined"
               clickable
               disabled={isSending || isLoading}
+              sx={{
+                flexShrink: 0,
+                whiteSpace: "nowrap",
+              }}
             />
           ))}
         </Box>
@@ -272,30 +299,30 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
 
   const renderChatContent = () => (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Header Info */}
-      <Box sx={{ p: 2, borderBottom: "1px solid #e0e0e0", textAlign: "center" }}>
-        <Avatar
-          sx={{
-            width: 48,
-            height: 48,
-            bgcolor: "secondary.main",
-            color: "white",
-            mx: "auto",
-            mb: 1,
-          }}
-        >
-          <SmartToyIcon />
-        </Avatar>
-        <Typography variant="body2" color="text.secondary">
-          Trợ lý AI Elite Fitness
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {isAuthenticated ? `Xin chào ${user.fullName}!` : "Chat ẩn danh"}
-        </Typography>
-      </Box>
-
       {/* Messages Area */}
       <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+        {/* Header Info - Now inside scrollable area */}
+        <Box sx={{ p: 2, textAlign: "center", mb: 2 }}>
+          <Avatar
+            sx={{
+              width: 48,
+              height: 48,
+              bgcolor: "secondary.main",
+              color: "white",
+              mx: "auto",
+              mb: 1,
+            }}
+          >
+            <SmartToyIcon />
+          </Avatar>
+          <Typography variant="body2" color="text.secondary">
+            Trợ lý AI Elite Fitness
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {isAuthenticated ? `Xin chào ${user.fullName}!` : "Chat ẩn danh"}
+          </Typography>
+        </Box>
+
         {messages.length === 0 && (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

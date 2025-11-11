@@ -90,9 +90,14 @@ function StaffUserPage() {
 
   // Main state
   const [users, setUsers] = useState([])
+  const [filteredUsers, setFilteredUsers] = useState([])
   const [selectedUser, setSelectedUser] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("")
+  const [subscriptionFilter, setSubscriptionFilter] = useState("all")
 
   // Pagination state
   const [page, setPage] = useState(0)
@@ -135,9 +140,33 @@ function StaffUserPage() {
     }
   }
 
+  // Filter users based on search term and subscription status
+  const filterUsers = () => {
+    let filtered = users
+
+    // Filter by search term (name)
+    if (searchTerm.trim()) {
+      filtered = filtered.filter((user) => user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()))
+    }
+
+    // Filter by subscription status
+    if (subscriptionFilter !== "all") {
+      filtered = filtered.filter((user) => {
+        const hasActiveSubscription = hasActiveSubscription(user)
+        return subscriptionFilter === "hasSubscription" ? hasActiveSubscription : !hasActiveSubscription
+      })
+    }
+
+    setFilteredUsers(filtered)
+  }
+
   useEffect(() => {
     fetchUsers(page)
   }, [page, rowsPerPage])
+
+  useEffect(() => {
+    filterUsers()
+  }, [users, searchTerm, subscriptionFilter])
 
   // Event handlers
   const handleRowClick = (user) => {
@@ -162,6 +191,20 @@ function StaffUserPage() {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10))
     setPage(0)
+  }
+
+  // Filter handlers
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value)
+  }
+
+  const handleSubscriptionFilterChange = (event) => {
+    setSubscriptionFilter(event.target.value)
+  }
+
+  const handleClearFilters = () => {
+    setSearchTerm("")
+    setSubscriptionFilter("all")
   }
 
   // Registration handlers
@@ -319,6 +362,14 @@ function StaffUserPage() {
     return user.subscriptions.some((sub) => sub.status === "active")
   }
 
+  // Get filtered count for display
+  const getFilteredCount = () => {
+    if (searchTerm || subscriptionFilter !== "all") {
+      return filteredUsers.length
+    }
+    return totalUsers
+  }
+
   if (loading && users.length === 0) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
@@ -327,14 +378,17 @@ function StaffUserPage() {
     )
   }
 
+  // Use filtered users for display
+  const displayUsers = searchTerm || subscriptionFilter !== "all" ? filteredUsers : users
+
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 1, display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Header */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      <Card sx={{ mb: 1 }}>
+        <CardContent sx={{ "&:last-child": { pb: 0 } }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
             <PeopleIcon sx={{ fontSize: 32, color: "primary.main" }} />
-            <Typography variant="h4" fontWeight="bold">
+            <Typography variant="h4" fontWeight="bold" color="primary">
               Quản lý người dùng - Staff
             </Typography>
           </Box>
@@ -344,31 +398,67 @@ function StaffUserPage() {
               {error}
             </Alert>
           )}
+        </CardContent>
+      </Card>
 
-          <Typography variant="body2" color="text.secondary">
-            Quản lý thông tin người dùng và đăng ký gói tập
-          </Typography>
+      {/* Filters */}
+      <Card sx={{ mb: 1 }}>
+        <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+            <TextField
+              placeholder="Tìm kiếm theo tên..."
+              variant="outlined"
+              size="small"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              sx={{ width: 250 }}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: "action.active" }} />,
+              }}
+            />
+
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Trạng thái gói tập</InputLabel>
+              <Select value={subscriptionFilter} onChange={handleSubscriptionFilterChange} label="Trạng thái gói tập">
+                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="hasSubscription">Có gói tập</MenuItem>
+                <MenuItem value="noSubscription">Chưa có gói tập</MenuItem>
+              </Select>
+            </FormControl>
+
+            {(searchTerm || subscriptionFilter !== "all") && (
+              <Button variant="outlined" onClick={handleClearFilters} size="small">
+                Xóa bộ lọc
+              </Button>
+            )}
+
+            <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Hiển thị {displayUsers.length} / {totalUsers} người dùng
+              </Typography>
+            </Box>
+          </Box>
         </CardContent>
       </Card>
 
       {/* User Table */}
-      <Card>
-        <CardContent>
-          <TableContainer component={Paper}>
-            <Table>
+      <Card sx={{ flex: 1 }}>
+        <CardContent sx={{ p: 0, height: "100%", display: "flex", flexDirection: "column", "&:last-child": { pb: 0 } }}>
+          <TableContainer component={Paper} sx={{ flex: 1 }}>
+            <Table stickyHeader sx={{ flex: 1 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Avatar</TableCell>
-                  <TableCell>Họ và tên</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Số điện thoại</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell>Gói tập hiện tại</TableCell>
-                  <TableCell>Ngày tạo</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Avatar</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Họ và tên</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Số điện thoại</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Trạng thái</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Gói tập hiện tại</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>Ngày tạo</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {users.map((user) => {
+                {displayUsers.map((user) => {
                   const currentSub = getCurrentSubscription(user)
 
                   return (
@@ -399,23 +489,37 @@ function StaffUserPage() {
                     </TableRow>
                   )
                 })}
+                {displayUsers.length === 0 && !loading && (
+                  <TableRow>
+                    <TableCell colSpan={7} sx={{ textAlign: "center", py: 4 }}>
+                      <Typography variant="body1" color="text.secondary">
+                        {searchTerm || subscriptionFilter !== "all"
+                          ? "Không tìm thấy người dùng nào phù hợp với bộ lọc"
+                          : "Không có dữ liệu người dùng"}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </TableContainer>
 
-          <TablePagination
-            component="div"
-            count={totalUsers}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[10, 20, 50]}
-            labelRowsPerPage="Số hàng mỗi trang:"
-            labelDisplayedRows={({ from, to, count }) =>
-              `${from}-${to} trong tổng số ${count !== -1 ? count : `hơn ${to}`}`
-            }
-          />
+          {/* Only show pagination when not filtering */}
+          {!searchTerm && subscriptionFilter === "all" && (
+            <TablePagination
+              component="div"
+              count={totalUsers}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 20, 50]}
+              labelRowsPerPage="Số hàng mỗi trang:"
+              labelDisplayedRows={({ from, to, count }) =>
+                `${from}-${to} trong tổng số ${count !== -1 ? count : `hơn ${to}`}`
+              }
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -423,7 +527,7 @@ function StaffUserPage() {
       <Dialog
         open={isUserModalOpen}
         onClose={handleCloseUserModal}
-        maxWidth="lg"
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: { height: "90vh" },
