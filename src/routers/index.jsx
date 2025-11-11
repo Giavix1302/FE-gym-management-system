@@ -17,7 +17,7 @@ import Signup from "~/pages/auth/Signup"
 // admin layout
 import AdminLayout from "~/layouts/AdminLayout/AdminLayout"
 import AdminHomePage from "~/pages/admin/AdminHomePage"
-import AdminUserPage from "~/pages/admin/AdminUser/AdminUserPage"
+import AdminUserPage from "~/pages/admin/adminUser/AdminUserPage"
 import AdminTrainerPage from "~/pages/admin/AdminTrainerPage"
 import AdminPaymentPage from "~/pages/admin/AdminPaymentPage"
 import AdminReportMemberPage from "~/pages/admin/report/AdminReportUserPage"
