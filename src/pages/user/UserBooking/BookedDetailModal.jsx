@@ -30,10 +30,6 @@ import { theme } from "~/theme"
 
 function BookedDetailModal({ open, onClose, selectedBooking, formatDate, onCancelSession, canCancelBooking }) {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
-
-  console.log("🚀 ~ BookedDetailModal ~ selectedBooking:", selectedBooking)
-  console.log("🚀 ~ BookedDetailModal ~ open:", open)
-
   // Helper function to format date from ISO string
   const formatISODate = (isoString) => {
     if (!isoString) return "N/A"
@@ -164,9 +160,9 @@ function BookedDetailModal({ open, onClose, selectedBooking, formatDate, onCance
                     {selectedBooking.allSessions.length} buổi tập
                   </Typography>
                   <Typography variant="h5" color="warning.dark" fontWeight={700}>
-                    {(
-                      selectedBooking.allSessions.length * (selectedBooking.trainer?.pricePerSession || 0)
-                    ).toLocaleString("vi-VN")}
+                    {(selectedBooking.allSessions.length * (selectedBooking.trainer?.pricePerHour || 0)).toLocaleString(
+                      "vi-VN",
+                    )}
                     đ
                   </Typography>
                 </Box>
@@ -293,7 +289,7 @@ function BookedDetailModal({ open, onClose, selectedBooking, formatDate, onCance
                     </Typography>
                     <Typography variant="h6" color="warning.dark" fontWeight={600}>
                       {(
-                        selectedBooking.allSessions.length * (selectedBooking.trainer?.pricePerSession || 0)
+                        selectedBooking.allSessions.length * (selectedBooking.trainer?.pricePerHour || 0)
                       ).toLocaleString("vi-VN")}
                       đ
                     </Typography>

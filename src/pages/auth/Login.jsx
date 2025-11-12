@@ -1,6 +1,5 @@
 // Login.jsx
 import { Box, Button, Checkbox, Divider, FormControlLabel, TextField, Typography } from "@mui/material"
-import { Google } from "@mui/icons-material"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 import { useNavigate } from "react-router-dom"
 
@@ -52,27 +51,23 @@ const LoginForm = ({
     />
 
     {/* Lưu mật khẩu & Quên mật khẩu */}
-    <FormControlLabel
-      control={<Checkbox color="primary" size="small" />}
-      label="Lưu mật khẩu"
-      sx={{ mt: 0, width: "100%", justifyContent: "flex-end", mr: 0 }}
-    />
+    <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", mt: 1, mb: 1 }}>
+      <Button
+        onClick={() => navigate("/forgot-password")}
+        color="primary"
+        sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
+      >
+        Quên mật khẩu?
+      </Button>
+    </Box>
 
     {/* Nút đăng nhập */}
-    <Button onClick={handleLogin} fullWidth variant="contained" color="primary" sx={{ mt: 1, py: 1, borderRadius: 2 }}>
+    <Button onClick={handleLogin} fullWidth variant="contained" color="primary" sx={{ mt: 2, py: 1, borderRadius: 2 }}>
       Đăng nhập
     </Button>
 
-    {/* Divider */}
-    <Divider sx={{ my: 3 }}>hoặc</Divider>
-
-    {/* Đăng nhập với Google */}
-    <Button fullWidth variant="outlined" startIcon={<Google />} sx={{ py: 1, borderRadius: 2 }}>
-      Đăng nhập với Google
-    </Button>
-
     {/* Chưa có tài khoản */}
-    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", mt: 2 }}>
+    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", mt: 10 }}>
       <Typography variant="body2" align="center" sx={{ color: "text.secondary" }}>
         Bạn chưa có tài khoản?
       </Typography>

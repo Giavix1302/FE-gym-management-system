@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react"
+import React, { useState, useCallback, useMemo } from "react"
 import PropTypes from "prop-types"
 import {
   Box,
@@ -12,7 +12,6 @@ import {
   IconButton,
   Chip,
   Alert,
-  Divider,
   Card,
   CardContent,
   Stack,
@@ -30,11 +29,6 @@ import {
   Tabs,
   Tab,
   Badge,
-  Tooltip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   InputAdornment,
   ImageList,
   ImageListItem,
@@ -53,8 +47,6 @@ import {
   Work as WorkIcon,
   School as SchoolIcon,
   FitnessCenter as FitnessIcon,
-  EmojiEvents as AwardIcon,
-  Schedule as ScheduleIcon,
   Send as SendIcon,
   CheckCircle as CheckIcon,
   Pending as PendingIcon,
@@ -65,35 +57,17 @@ import {
   Star as StarIcon,
   Delete as DeleteIcon,
   Visibility as VisibilityIcon,
-  AccessTime as AccessTimeIcon,
-  EventAvailable as EventAvailableIcon,
-  Description as DescriptionIcon,
 } from "@mui/icons-material"
 import AddIcon from "@mui/icons-material/Add"
 import CloseIcon from "@mui/icons-material/Close"
-import SportsKabaddiIcon from "@mui/icons-material/SportsKabaddi"
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
-// Import stores - uncommented
+// Import stores
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import useUserStore from "~/stores/useUserStore"
-import GymCalendar from "~/components/Calendar"
-import { toast } from "react-toastify"
-import {
-  buildFormData,
-  convertISOToVNTime,
-  convertToISODateRange,
-  formatToLeadingZero,
-  splitUserTrainerData,
-  toISODate,
-} from "~/utils/common"
+import { buildFormData, convertISOToVNTime, formatToLeadingZero, splitUserTrainerData, toISODate } from "~/utils/common"
 import { updateInfoTrainerByUserIdAPI } from "~/apis/trainer"
 import { updateInfoUserAPI } from "~/apis/user"
 import MyBackdrop from "~/components/MyBackdrop"
-import TimeField from "~/components/TimeField"
-import DateField from "~/components/DateField"
-import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
-import { createScheduleForPtAPI, deleteScheduleForPtAPI, getListScheduleByTrainerIdAPI } from "~/apis/schedule"
-import dayjs from "dayjs"
 
 // CustomTabPanel theo cách chính thức của MUI
 function CustomTabPanel(props) {
@@ -125,6 +99,18 @@ function a11yProps(index) {
   }
 }
 
+// Helper function to format price display (add commas)
+const formatPriceDisplay = (price) => {
+  if (!price) return ""
+  return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+}
+
+// Helper function to parse price input (remove commas)
+const parsePriceInput = (input) => {
+  if (!input) return ""
+  return input.replace(/,/g, "")
+}
+
 // Component chính
 export default function TrainerProfilePage() {
   const theme = useTheme()
@@ -134,7 +120,7 @@ export default function TrainerProfilePage() {
   const [openBackdrop, setOpenBackdrop] = useState(false)
   const handleCloseBackdrop = () => setOpenBackdrop(false)
 
-  // States - trả lại đầy đủ
+  // States - bỏ bớt schedule-related states
   const [isEditing, setIsEditing] = useState(false)
   const [tabValue, setTabValue] = useState(0)
   const [editData, setEditData] = useState({})
@@ -147,30 +133,11 @@ export default function TrainerProfilePage() {
   const [selectedImage, setSelectedImage] = useState("")
   const [newPhysiqueImages, setNewPhysiqueImages] = useState([])
 
-  // Event Modal States
-  const [selectedEvent, setSelectedEvent] = useState(null)
-  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
-  const [deleteScheduleLoading, setDeleteScheduleLoading] = useState(false)
-
-  const [scheduleDateValue, setScheduleDateValue] = useState({ day: 0, month: 0, year: 0 })
-  console.log("🚀 ~ PtProfilePage ~ scheduleDateValue:", scheduleDateValue)
-  const [startTimeValue, setStartTimeValue] = useState({
-    hour: 0,
-    minute: 0,
-  })
-  const [endTimeValue, setEndTimeValue] = useState({
-    hour: 0,
-    minute: 0,
-  })
-  console.log("🚀 ~ PtProfilePage ~ endTimeValue:", endTimeValue)
-  console.log("🚀 ~ PtProfilePage ~ startTimeValue:", startTimeValue)
-
-  // Stores - uncomment
+  // Stores
   const { user, updateUser } = useUserStore()
   const { trainerInfo, updateTrainerInfo } = useTrainerInfoStore()
-  const { listSchedule, setListSchedule } = useListScheduleForPTStore()
 
-  // Dữ liệu PT - với stores thực
+  // Dữ liệu PT - bỏ các field schedule-related
   const ptData = useMemo(
     () => ({
       id: trainerInfo._id || "",
@@ -182,8 +149,7 @@ export default function TrainerProfilePage() {
       dateOfBirth: user.dateOfBirth ? convertISOToVNTime(user.dateOfBirth) : "",
       address: user.address || "",
       status: trainerInfo.isApproved || "",
-      joinDate: "",
-      pricePerSession: trainerInfo.pricePerSession || 0,
+      pricePerHour: trainerInfo.pricePerHour || 0,
 
       // Thông tin chuyên môn
       specialization: trainerInfo.specialization || "",
@@ -195,88 +161,57 @@ export default function TrainerProfilePage() {
 
       // Giới thiệu bản thân
       bio: trainerInfo.bio || "",
-
-      // Thời gian làm việc
-      workingDay: "",
-      startTime: "",
-      endTime: "",
     }),
     [user, trainerInfo],
   )
 
-  useEffect(() => {
-    const init = async () => {
-      const data = await getListScheduleByTrainerIdAPI(trainerInfo._id)
-      setListSchedule(data.listSchedule)
-    }
-    init()
-  }, [])
-
-  // Event Modal Functions
-  const handleEventClick = (event) => {
-    setSelectedEvent(event)
-    setIsEventModalOpen(true)
-  }
-
-  const closeEventModal = () => {
-    setIsEventModalOpen(false)
-    setSelectedEvent(null)
-  }
-
-  const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString("vi-VN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    })
-  }
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString("vi-VN", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
-
-  const handleDeleteSchedule = async () => {
-    if (!selectedEvent) return
-
-    setDeleteScheduleLoading(true)
-    try {
-      // Call delete API here
-      await deleteScheduleForPtAPI(selectedEvent._id)
-
-      // Remove from local state
-      const updatedSchedule = listSchedule.filter((schedule) => schedule._id !== selectedEvent._id)
-      setListSchedule(updatedSchedule)
-
-      showSnackbar("Đã xóa lịch thành công!", "success")
-      closeEventModal()
-    } catch (error) {
-      console.error("Error deleting schedule:", error)
-      showSnackbar("Có lỗi xảy ra khi xóa lịch!", "error")
-    } finally {
-      setDeleteScheduleLoading(false)
-    }
-  }
-
   // Stable functions
   const getCurrentValue = useCallback(
     (field) => {
-      if (!isEditing) return ptData[field] || ""
+      if (!isEditing) {
+        // Special handling for price display
+        if (field === "pricePerHour") {
+          return formatPriceDisplay(ptData[field] || "")
+        }
+        return ptData[field] || ""
+      }
+
+      // In editing mode
+      if (field === "pricePerHour") {
+        const value = editData[field] !== undefined ? editData[field] : ptData[field] || ""
+        return formatPriceDisplay(value)
+      }
+
       return editData[field] !== undefined ? editData[field] : ptData[field] || ""
     },
     [isEditing, editData, ptData],
   )
 
-  // Handlers - direct function call thay vì curried
+  // Handlers
   const handleFieldChange = (field, value) => {
-    setEditData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    console.log(`🔄 handleFieldChange - Field: ${field}, Raw Value: "${value}"`)
+
+    // Special handling for pricePerHour
+    if (field === "pricePerHour") {
+      // Remove commas and non-digit characters except for existing digits
+      const cleanValue = value.replace(/,/g, "").replace(/\D/g, "")
+      console.log(`💰 Price field - Clean Value: "${cleanValue}"`)
+
+      setEditData((prev) => {
+        const newData = {
+          ...prev,
+          [field]: cleanValue,
+        }
+        console.log(`📊 Updated editData.pricePerHour:`, cleanValue)
+        return newData
+      })
+    } else {
+      setEditData((prev) => ({
+        ...prev,
+        [field]: value,
+      }))
+    }
+
     // Clear error when user types
     if (errors[field]) {
       setErrors((prev) => ({
@@ -286,7 +221,7 @@ export default function TrainerProfilePage() {
     }
   }
 
-  // Image handlers - uncommented
+  // Image handlers
   const handleImageClick = (imageUrl) => {
     setSelectedImage(imageUrl)
     setOpenImageDialog(true)
@@ -371,16 +306,10 @@ export default function TrainerProfilePage() {
     document.getElementById("physique-image-upload")?.click()
   }
 
-  // Handle price input change
-  const handlePriceChange = (value) => {
-    // Remove all non-digit characters
-    const numericValue = value.replace(/\D/g, "")
-    // Update the field with numeric value only
-    handleFieldChange("pricePerSession", numericValue)
-  }
-
   // Validation
   const validateForm = () => {
+    console.log("🔍 validateForm - Current editData:", editData)
+
     const newErrors = {}
     const currentName = editData.fullName !== undefined ? editData.fullName : ptData.fullName
     const currentEmail = editData.email !== undefined ? editData.email : ptData.email
@@ -390,30 +319,42 @@ export default function TrainerProfilePage() {
     const currentDateOfBirth = editData.dateOfBirth !== undefined ? editData.dateOfBirth : ptData.dateOfBirth
     const currentExperience = editData.experience !== undefined ? editData.experience : ptData.experience
     const currentEducation = editData.education !== undefined ? editData.education : ptData.education
-    const currentPricePerSession =
-      editData.pricePerSession !== undefined ? editData.pricePerSession : ptData.pricePerSession
+    const currentPricePerHour = editData.pricePerHour !== undefined ? editData.pricePerHour : ptData.pricePerHour
+
+    console.log(`💰 validateForm - currentPricePerHour: "${currentPricePerHour}" (type: ${typeof currentPricePerHour})`)
 
     if (!currentName || currentName === "") newErrors.fullName = "Vui lòng nhập họ tên"
     if (!currentEmail) newErrors.email = "Vui lòng nhập email"
     else if (!/\S+@\S+\.\S+/.test(currentEmail)) newErrors.email = "Email không hợp lệ"
     if (!currentPhone) newErrors.phone = "Vui lòng nhập số điện thoại"
-    if (!currentAddress) newErrors.address = "Vui lòng nhập địa chỉ "
+    else if (!/^[0-9]{10}$/.test(currentPhone)) newErrors.phone = "Số điện thoại không hợp lệ"
+    if (!currentAddress) newErrors.address = "Vui lòng nhập địa chỉ"
     if (!currentGender) newErrors.gender = "Vui lòng chọn giới tính"
     if (!currentDateOfBirth) newErrors.dateOfBirth = "Vui lòng nhập ngày sinh"
-    else if (!/^[0-9]{10}$/.test(currentPhone)) newErrors.phone = "Số điện thoại không hợp lệ"
     if (!currentExperience) newErrors.experience = "Vui lòng nhập kinh nghiệm"
     if (!currentEducation) newErrors.education = "Vui lòng nhập học vấn"
-    if (!currentPricePerSession) newErrors.pricePerSession = "Vui lòng nhập giá tiền mỗi buổi"
-    else if (isNaN(currentPricePerSession) || parseInt(currentPricePerSession) <= 0)
-      newErrors.pricePerSession = "Giá tiền phải là số dương"
-    else if (parseInt(currentPricePerSession) < 50000) newErrors.pricePerSession = "Giá tiền tối thiểu là 50,000 VNĐ"
-    else if (parseInt(currentPricePerSession) > 5000000) newErrors.pricePerSession = "Giá tiền tối đa là 5,000,000 VNĐ"
 
+    // Price validation - improved
+    if (!currentPricePerHour || currentPricePerHour === "" || currentPricePerHour === "0") {
+      newErrors.pricePerHour = "Vui lòng nhập giá tiền mỗi giờ"
+    } else {
+      const priceNumber = parseInt(currentPricePerHour)
+      console.log(`💰 validateForm - priceNumber: ${priceNumber}`)
+
+      if (isNaN(priceNumber) || priceNumber <= 0) {
+        newErrors.pricePerHour = "Giá tiền phải là số dương"
+      } else if (priceNumber < 50000) {
+        newErrors.pricePerHour = "Giá tiền tối thiểu là 50,000 VNĐ"
+      } else if (priceNumber > 5000000) {
+        newErrors.pricePerHour = "Giá tiền tối đa là 5,000,000 VNĐ"
+      }
+    }
+
+    console.log("❌ Validation errors:", newErrors)
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  // Handlers
   const handleEdit = () => {
     setIsEditing(true)
     setErrors({})
@@ -439,6 +380,9 @@ export default function TrainerProfilePage() {
   }
 
   const handleSave = async () => {
+    console.log("💾 handleSave - Starting save process...")
+    console.log("📊 Current editData before validation:", editData)
+
     if (!validateForm()) {
       showSnackbar("Vui lòng kiểm tra lại thông tin!", "error")
       return
@@ -448,73 +392,87 @@ export default function TrainerProfilePage() {
     setOpenBackdrop(true)
 
     try {
+      console.log("🔄 Splitting user and trainer data...")
       const { userData, trainerData } = splitUserTrainerData(editData)
 
-      // Cập nhật user info (nếu cần)
-      let dataUserToUpdate = {}
-      if ("dateOfBirth" in userData) {
-        dataUserToUpdate = {
-          ...userData,
-          dateOfBirth: toISODate(userData.dateOfBirth),
-        }
+      console.log("👤 userData to update:", userData)
+      console.log("🏋️ trainerData to update:", trainerData)
+
+      // Special logging for pricePerHour
+      if (trainerData.pricePerHour !== undefined) {
+        console.log(
+          `💰 PRICE DEBUG - trainerData.pricePerHour: "${trainerData.pricePerHour}" (type: ${typeof trainerData.pricePerHour})`,
+        )
       }
-      const updatedUser = await updateInfoUserAPI(user._id, dataUserToUpdate)
-      updateUser(updatedUser.user)
+
+      // Cập nhật user info (nếu cần)
+      if (Object.keys(userData).length > 0) {
+        let dataUserToUpdate = {}
+        if ("dateOfBirth" in userData) {
+          dataUserToUpdate = {
+            ...userData,
+            dateOfBirth: toISODate(userData.dateOfBirth),
+          }
+        } else {
+          dataUserToUpdate = userData
+        }
+
+        console.log("📤 Sending user data to API:", dataUserToUpdate)
+        const updatedUser = await updateInfoUserAPI(user._id, dataUserToUpdate)
+        updateUser(updatedUser.user)
+        console.log("✅ User update successful")
+      }
 
       // Chuẩn bị FormData cho trainer info
-      let formData = buildFormData(trainerData)
+      if (Object.keys(trainerData).length > 0 || newPhysiqueImages.length > 0 || "physiqueImages" in editData) {
+        let formData = buildFormData(trainerData)
 
-      // Xử lý physiqueImages - QUAN TRỌNG NHẤT
-      if ("physiqueImages" in editData) {
-        console.log("User có thay đổi về hình ảnh")
-
-        // Lấy danh sách ảnh cũ muốn giữ lại (loại bỏ blob URLs)
-        const physiqueImagesToKeep = removeBlobUrls(editData.physiqueImages)
-
-        // Gửi danh sách ảnh cũ muốn giữ lại qua FormData
-        physiqueImagesToKeep.forEach((imageUrl) => {
-          formData.append("physiqueImages", imageUrl)
-        })
-
-        // console.log("Đã thêm vào FormData - physiqueImages:", physiqueImagesToKeep)
-      } else {
-        // console.log("User không thay đổi hình ảnh - gửi tất cả ảnh hiện tại để giữ nguyên")
-
-        // Gửi tất cả ảnh hiện tại để đảm bảo BE hiểu là "giữ nguyên"
-        const currentImages = ptData.physiqueImages || []
-        currentImages.forEach((imageUrl) => {
-          formData.append("physiqueImages", imageUrl)
-        })
-
-        // console.log("Đã thêm vào FormData - physiqueImages (giữ nguyên):", currentImages)
-      }
-
-      // Gửi các file ảnh mới (nếu có)
-      if (newPhysiqueImages.length > 0) {
-        console.log("Các file ảnh mới cần gửi xuống BE:", newPhysiqueImages)
-        newPhysiqueImages.forEach((file) => {
-          formData.append("physiqueImagesNew", file)
-        })
-        // console.log(`Đã thêm ${newPhysiqueImages.length} file mới vào FormData`)
-      }
-
-      // Debug FormData content
-      console.log("=== FormData Content Debug ===")
-      for (let [key, value] of formData.entries()) {
-        if (key === "physiqueImagesNew") {
-          console.log(`${key}: [File] ${value.name} (${value.size} bytes)`)
+        console.log("🖼️ Processing physique images...")
+        // Xử lý physiqueImages
+        if ("physiqueImages" in editData) {
+          console.log("User có thay đổi về hình ảnh")
+          const physiqueImagesToKeep = removeBlobUrls(editData.physiqueImages)
+          physiqueImagesToKeep.forEach((imageUrl) => {
+            formData.append("physiqueImages", imageUrl)
+          })
         } else {
-          console.log(`${key}:`, value)
+          console.log("User không thay đổi hình ảnh - gửi tất cả ảnh hiện tại để giữ nguyên")
+          const currentImages = ptData.physiqueImages || []
+          currentImages.forEach((imageUrl) => {
+            formData.append("physiqueImages", imageUrl)
+          })
         }
+
+        // Gửi các file ảnh mới (nếu có)
+        if (newPhysiqueImages.length > 0) {
+          console.log("📤 Adding new physique images:", newPhysiqueImages)
+          newPhysiqueImages.forEach((file) => {
+            formData.append("physiqueImagesNew", file)
+          })
+        }
+
+        // Debug FormData content
+        console.log("=== 📋 FormData Content Debug ===")
+        for (let [key, value] of formData.entries()) {
+          if (key === "physiqueImagesNew") {
+            console.log(`${key}: [File] ${value.name} (${value.size} bytes)`)
+          } else if (key === "pricePerHour") {
+            console.log(`💰 ${key}: "${value}" (type: ${typeof value})`)
+          } else {
+            console.log(`${key}: "${value}"`)
+          }
+        }
+
+        console.log("📤 Sending trainer data to API...")
+        // Gửi request lên BE
+        const updatedTrainerInfo = await updateInfoTrainerByUserIdAPI(user._id, formData)
+
+        console.log("✅ Trainer update response:", updatedTrainerInfo)
+        // Cập nhật store
+        updateTrainerInfo(updatedTrainerInfo.trainer)
       }
 
-      // Gửi request lên BE
-      const updatedTrainerInfo = await updateInfoTrainerByUserIdAPI(user._id, formData)
-
-      // Cập nhật store
-      updateTrainerInfo(updatedTrainerInfo.trainer)
-
-      // Reset các state liên quan đến ảnh mới
+      // Reset các state liên quan
       setNewPhysiqueImages([])
       setEditData({}) // Clear edit data sau khi save thành công
 
@@ -540,50 +498,6 @@ export default function TrainerProfilePage() {
     setSnackbarMessage(message)
     setSnackbarSeverity(severity)
     setOpenSnackbar(true)
-  }
-
-  const handleAddSchedule = async () => {
-    // check empty
-    if (!scheduleDateValue.day || !scheduleDateValue.month || !scheduleDateValue.year) {
-      toast.error("Vui lòng chọn ngày")
-      return
-    }
-
-    if (startTimeValue.hour === 0 && startTimeValue.minute === 0) {
-      toast.error("Vui lòng chọn giờ bắt đầu và giờ bắt đầu từ 8:00")
-      return
-    }
-
-    if (endTimeValue.hour === 0 && endTimeValue.minute === 0) {
-      toast.error("Vui lòng chọn giờ kết thúc")
-      return
-    }
-
-    try {
-      // convert
-      const isoDate = convertToISODateRange(scheduleDateValue, startTimeValue, endTimeValue)
-
-      const dataToCreate = {
-        trainerId: trainerInfo._id,
-        startTime: isoDate.startISO,
-        endTime: isoDate.endISO,
-      }
-      const result = await createScheduleForPtAPI(dataToCreate)
-      setListSchedule(result.listSchedule)
-
-      setStartTimeValue({
-        hour: 0,
-        minute: 0,
-      })
-
-      setEndTimeValue({
-        hour: 0,
-        minute: 0,
-      })
-
-      // notification
-      toast.success("Thêm lịch thành công")
-    } catch (err) {}
   }
 
   return (
@@ -766,17 +680,16 @@ export default function TrainerProfilePage() {
         </Alert>
       )}
 
-      {/* Main Content - USING MUI OFFICIAL TABS WITH CustomTabPanel */}
+      {/* Main Content - CHỈ CÒN 2 TABS */}
       <Paper elevation={1} sx={{ borderRadius: 2 }}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs value={tabValue} onChange={(event, newValue) => setTabValue(newValue)} aria-label="profile tabs">
             <Tab label="Thông tin cá nhân" icon={<PersonIcon />} iconPosition="start" {...a11yProps(0)} />
             <Tab label="Chuyên môn" icon={<SchoolIcon />} iconPosition="start" {...a11yProps(1)} />
-            <Tab label="Lịch làm việc" icon={<ScheduleIcon />} iconPosition="start" {...a11yProps(2)} />
           </Tabs>
         </Box>
 
-        {/* Tab 1: Thông tin cá nhân - USING CustomTabPanel */}
+        {/* Tab 1: Thông tin cá nhân */}
         <CustomTabPanel value={tabValue} index={0}>
           <Grid container spacing={3}>
             <Grid item size={{ xs: 12, md: 6 }}>
@@ -837,20 +750,22 @@ export default function TrainerProfilePage() {
             </Grid>
 
             <Grid item size={{ xs: 12, md: 6 }}>
-              <FormControl fullWidth>
+              <FormControl fullWidth disabled={!isEditing} error={!!errors.gender}>
                 <InputLabel>Giới tính</InputLabel>
                 <Select
                   value={getCurrentValue("gender")}
                   onChange={(e) => handleFieldChange("gender", e.target.value)}
-                  disabled={!isEditing}
-                  error={!!errors.gender}
-                  helperText={errors.gender}
                   label="Giới tính"
                 >
                   <MenuItem value="male">Nam</MenuItem>
                   <MenuItem value="female">Nữ</MenuItem>
-                  <MenuItem value="">Khác</MenuItem>
+                  <MenuItem value="other">Khác</MenuItem>
                 </Select>
+                {errors.gender && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                    {errors.gender}
+                  </Typography>
+                )}
               </FormControl>
             </Grid>
 
@@ -890,15 +805,17 @@ export default function TrainerProfilePage() {
               />
             </Grid>
 
+            {/* FIXED PRICE FIELD */}
             <Grid item size={{ xs: 12 }}>
               <TextField
                 fullWidth
-                label="Giá mỗi buổi tập"
-                value={getCurrentValue("pricePerSession")}
-                onChange={(e) => handleFieldChange("pricePerSession", e.target.value)}
+                label="Giá mỗi giờ (VNĐ)"
+                value={getCurrentValue("pricePerHour")}
+                onChange={(e) => handleFieldChange("pricePerHour", e.target.value)}
                 disabled={!isEditing}
-                error={!!errors.pricePerSession}
-                helperText={errors.pricePerSession}
+                error={!!errors.pricePerHour}
+                helperText={errors.pricePerHour || "Nhập số tiền, ví dụ: 50000"}
+                placeholder="Ví dụ: 50000"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -942,7 +859,7 @@ export default function TrainerProfilePage() {
           </Grid>
         </CustomTabPanel>
 
-        {/* Tab 2: Chuyên môn - USING CustomTabPanel */}
+        {/* Tab 2: Chuyên môn */}
         <CustomTabPanel value={tabValue} index={1}>
           <Grid container spacing={3}>
             <Grid item size={{ xs: 12, md: 6 }}>
@@ -984,12 +901,11 @@ export default function TrainerProfilePage() {
             </Grid>
 
             <Grid item size={{ xs: 12 }}>
-              <FormControl fullWidth>
+              <FormControl fullWidth disabled={!isEditing}>
                 <InputLabel>Chuyên môn</InputLabel>
                 <Select
                   value={getCurrentValue("specialization")}
                   onChange={(e) => handleFieldChange("specialization", e.target.value)}
-                  disabled={!isEditing}
                   label="Chuyên môn"
                   renderValue={(selected) => (
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
@@ -1150,231 +1066,7 @@ export default function TrainerProfilePage() {
             </Grid>
           </Grid>
         </CustomTabPanel>
-
-        {/* Tab 3: Lịch làm việc */}
-        <CustomTabPanel value={tabValue} index={2}>
-          <Grid container spacing={3}>
-            <Grid item size={{ xs: 12 }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <ScheduleIcon color="primary" />
-                    Tạo thời gian làm việc
-                  </Typography>
-
-                  <Grid container spacing={2} sx={{ mt: 1 }}>
-                    <Grid item size={{ xs: 12, sm: 4 }}>
-                      <DateField label="Chọn ngày" setValue={setScheduleDateValue} />
-                    </Grid>
-
-                    <Grid item size={{ xs: 12, sm: 3 }}>
-                      <TimeField
-                        label="Giờ bắt đầu"
-                        value={dayjs(`${startTimeValue.hour}:${startTimeValue.minute}`, "HH:mm")}
-                        setDetailValue={setStartTimeValue}
-                      />
-                    </Grid>
-
-                    <Grid item size={{ xs: 12, sm: 3 }}>
-                      <TimeField
-                        label="Giờ kết thúc"
-                        value={dayjs(`${endTimeValue.hour}:${endTimeValue.minute}`, "HH:mm")}
-                        setDetailValue={setEndTimeValue}
-                      />
-                    </Grid>
-                    <Grid item size={{ xs: 12, sm: 2 }}>
-                      <Button fullWidth variant="contained" onClick={() => handleAddSchedule()}>
-                        Tạo
-                      </Button>
-                    </Grid>
-                  </Grid>
-
-                  {/* Display current working hours */}
-                  {(ptData.workingDay || ptData.startTime || ptData.endTime) && (
-                    <Box sx={{ mt: 2, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                        Thời gian làm việc hiện tại:
-                      </Typography>
-                      <Typography variant="body1">
-                        {ptData.workingDay && `Ngày: ${ptData.workingDay}`}
-                        {ptData.startTime && ptData.endTime && ` - Từ ${ptData.startTime} đến ${ptData.endTime}`}
-                        {!ptData.workingDay &&
-                          !ptData.startTime &&
-                          !ptData.endTime &&
-                          "Chưa thiết lập thời gian làm việc"}
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item size={{ xs: 12 }}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CalendarIcon color="primary" />
-                    Thời khóa biểu slot dạy
-                  </Typography>
-                  <GymCalendar events={listSchedule} onEventClick={handleEventClick} />
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </CustomTabPanel>
       </Paper>
-
-      {/* Event Detail Modal */}
-      <Dialog
-        open={isEventModalOpen}
-        onClose={closeEventModal}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 2 },
-        }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <Box>
-              <Typography variant="h5" component="div" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                {selectedEvent?.title}
-              </Typography>
-              <Typography variant="subtitle2" color="text.secondary">
-                {selectedEvent && formatDate(selectedEvent.startTime)}
-              </Typography>
-            </Box>
-            <IconButton onClick={closeEventModal} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-
-        <Divider />
-
-        <DialogContent sx={{ pt: 3 }}>
-          {selectedEvent && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {/* Time */}
-              <Card variant="outlined">
-                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                  <Avatar sx={{ bgcolor: "primary.light" }}>
-                    <ScheduleIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                      Thời gian
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatTime(selectedEvent.startTime)} - {formatTime(selectedEvent.endTime)}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Coach */}
-              {selectedEvent.coach && (
-                <Card variant="outlined">
-                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                    <Avatar sx={{ bgcolor: "error.main" }}>
-                      <SportsKabaddiIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                        Huấn luyện viên
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {selectedEvent.coach}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* member */}
-              {selectedEvent.member && (
-                <Card variant="outlined">
-                  <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                    <Avatar sx={{ bgcolor: "success.light" }}>
-                      <PersonIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                        Học viên
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {selectedEvent.member}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Location */}
-              <Card variant="outlined">
-                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, "&:last-child": { pb: 2 } }}>
-                  <Avatar sx={{ bgcolor: "warning.light" }}>
-                    <LocationIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 0.5 }}>
-                      Địa điểm
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedEvent.location}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-
-              {/* Description */}
-              <Card variant="outlined">
-                <CardContent sx={{ "&:last-child": { pb: 2 } }}>
-                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                    <Avatar sx={{ bgcolor: "info.light", mt: 0.5 }}>
-                      <DescriptionIcon />
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 1 }}>
-                        Ghi chú
-                      </Typography>
-                      <Paper
-                        variant="outlined"
-                        sx={{
-                          p: 2,
-                          borderStyle: "dashed",
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                          {selectedEvent.note || "Không có ghi chú"}
-                        </Typography>
-                      </Paper>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          )}
-        </DialogContent>
-
-        <Divider />
-
-        <DialogActions sx={{ p: 3, gap: 1 }}>
-          <Button onClick={closeEventModal} variant="outlined" color="inherit">
-            Đóng
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            onClick={handleDeleteSchedule}
-            disabled={deleteScheduleLoading}
-            sx={{ ml: 1 }}
-          >
-            {deleteScheduleLoading ? "Đang xóa..." : "Xóa lịch"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Image Preview Dialog */}
       <Modal

@@ -48,3 +48,37 @@ export const logoutAPI = async () => {
     console.error("Logout failed", err)
   }
 }
+
+export const forgotPasswordSentOptAPI = async (phone) => {
+  try {
+    const rep = await axiosPublic.post("/auths/forgot-password/sent-opt", { phone })
+    return rep.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+export const forgotPasswordVerifyOtpAPI = async (phone, code) => {
+  try {
+    const rep = await axiosPublic.post("/auths/forgot-password/verify", { phone, code })
+    return rep.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+export const resetPasswordAPI = async (phone, password) => {
+  console.log("🚀 ~ resetPasswordAPI ~ password:", password)
+  try {
+    const rep = await axiosPublic.post("/users/reset-password", { phone, plainPassword: password })
+    return rep.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
+  }
+}

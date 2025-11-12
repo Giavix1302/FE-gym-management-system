@@ -481,7 +481,7 @@ export default function AddEditClassModal({
       rating: trainer.rating || 0,
       totalReviews: trainer.totalReviews || 0,
       experience: trainer.trainerInfo?.experience || "",
-      pricePerSession: trainer.trainerInfo?.pricePerSession || 0,
+      pricePerHour: trainer.trainerInfo?.pricePerHour || 0,
     }
   }
 
@@ -849,12 +849,12 @@ export default function AddEditClassModal({
                             Kinh nghiệm: {trainerInfo.experience}
                           </Typography>
                         )}
-                        {trainerInfo.pricePerSession > 0 && (
+                        {trainerInfo.pricePerHour > 0 && (
                           <Typography variant="caption" color="primary.main" sx={{ display: "block" }}>
                             {new Intl.NumberFormat("vi-VN", {
                               style: "currency",
                               currency: "VND",
-                            }).format(trainerInfo.pricePerSession)}
+                            }).format(trainerInfo.pricePerHour)}
                             /buổi
                           </Typography>
                         )}

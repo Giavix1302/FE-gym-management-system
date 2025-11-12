@@ -93,7 +93,7 @@ function BookingCartModal({
                           ⏰ {item.schedule.startTime} - {item.schedule.endTime}
                         </Typography>
                         <Typography variant="body2" fontWeight={600} color="warning.dark">
-                          💰 {item.trainer.pricePerSession.toLocaleString("vi-VN")}đ
+                          💰 {item.trainer.pricePerHour.toLocaleString("vi-VN")}đ x {item.hours}
                         </Typography>
                       </Stack>
                     }

@@ -251,7 +251,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
                     Giá mỗi buổi
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" color="success.main">
-                    {formatCurrencyVND(Number(trainer.trainerInfo.pricePerSession))}
+                    {formatCurrencyVND(Number(trainer.trainerInfo.pricePerHour))}
                   </Typography>
                 </Box>
               </Box>
@@ -350,7 +350,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
                     <Card variant="outlined" sx={{ textAlign: "center", p: 2 }}>
                       <MoneyIcon color="success" />
                       <Typography variant="h6" fontWeight="bold" color="success.main">
-                        {formatCurrencyVND(Number(trainer.trainerInfo.pricePerSession))}
+                        {formatCurrencyVND(Number(trainer.trainerInfo.pricePerHour))}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Giá/buổi
@@ -903,7 +903,7 @@ export default function PTManagementPage() {
 
                       <TableCell>
                         <Typography fontWeight="bold" color="success.main">
-                          {formatCurrencyVND(Number(trainer.trainerInfo.pricePerSession))}
+                          {formatCurrencyVND(Number(trainer.trainerInfo.pricePerHour))}
                         </Typography>
                       </TableCell>
 

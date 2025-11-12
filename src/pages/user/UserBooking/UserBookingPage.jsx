@@ -81,6 +81,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"
 import { createReviewAPI } from "~/apis/review"
 import { toast } from "react-toastify"
 import BookingHistoryModal from "./BookingHistoryModal"
+import { getHoursBetween } from "~/utils/common"
 
 function UserBookingPage() {
   // store
@@ -102,6 +103,7 @@ function UserBookingPage() {
 
   // Booking cart states
   const [bookingCart, setBookingCart] = useState([])
+  console.log("🚀 ~ UserBookingPage ~ bookingCart:", bookingCart)
   const [selectedLocation, setSelectedLocation] = useState("")
   const [bookingNote, setBookingNote] = useState("")
 
@@ -167,7 +169,7 @@ function UserBookingPage() {
         education: trainer?.trainerInfo?.education || "Chưa có thông tin",
         rating: trainer?.review?.rating || 0,
         totalBookings: trainer?.review?.totalBookings || 0,
-        pricePerSession: parseInt(trainer?.trainerInfo?.pricePerSession) || 500000,
+        pricePerHour: parseInt(trainer?.trainerInfo?.pricePerHour) || 500000,
         physiqueImages: trainer?.trainerInfo?.physiqueImages || [],
         schedule: trainer?.schedule || [],
       }
@@ -192,7 +194,7 @@ function UserBookingPage() {
           },
           specialization: booking.trainer?.specialization || "Chưa xác định",
           rating: booking.trainer?.rating || 0,
-          pricePerSession: parseInt(booking.trainer?.pricePerSession) || 0,
+          pricePerHour: parseInt(booking.trainer?.pricePerHour) || 0,
         },
         allSessions:
           booking.allSessions?.map((session) => ({
@@ -384,6 +386,7 @@ function UserBookingPage() {
       trainer,
       schedule,
       workDate: selectedDate,
+      hours: getHoursBetween(schedule?.originalStartTime, schedule?.originalEndTime),
     }
 
     const exists = bookingCart.find((item) => item.id === cartItem.id)
@@ -409,7 +412,7 @@ function UserBookingPage() {
 
   const getTotalPrice = () => {
     return bookingCart.reduce((total, item) => {
-      const price = item?.trainer?.pricePerSession || item?.trainer?.userId?.pricePerSession || 0
+      const price = item?.trainer?.pricePerHour * item.hours
       return total + price
     }, 0)
   }
@@ -446,8 +449,10 @@ function UserBookingPage() {
           status: "pending",
           bookingNote: bookingNote || "",
           paymentMethod: paymentMethodData?.name || "Unknown",
+          hours: item.hours,
         }
       })
+      console.log("🚀 ~ handlePaymentMethodSelect ~ newBookings:", newBookings)
 
       const dataToCreatePaymentURL = newBookings.map((booking) => {
         const trainerName =
@@ -459,7 +464,7 @@ function UserBookingPage() {
           userId: user?._id || "",
           scheduleId: booking?.schedule?._id || "",
           locationId: booking?.location?._id || "",
-          price: booking?.trainer?.pricePerSession || 0,
+          price: booking?.trainer?.pricePerHour * booking.hours,
           note: booking?.bookingNote || "",
         }
       })
@@ -1034,7 +1039,7 @@ function UserBookingPage() {
                 {item?.schedule?.endTime})
               </Typography>
               <Typography variant="body2" fontWeight={600}>
-                {(item?.trainer?.pricePerSession || 0).toLocaleString("vi-VN")}đ
+                {(item?.trainer?.pricePerHour || 0).toLocaleString("vi-VN")}đ
               </Typography>
             </Box>
           ))}
@@ -1272,7 +1277,7 @@ function UserBookingPage() {
                               </Box>
                             </Box>
                             <Chip
-                              label={`${(trainer?.pricePerSession || 0).toLocaleString("vi-VN")}đ`}
+                              label={`${(trainer?.pricePerHour || 0).toLocaleString("vi-VN")}đ / giờ`}
                               color="warning"
                               size="small"
                               sx={{ fontWeight: 600 }}
@@ -1447,7 +1452,7 @@ function UserBookingPage() {
                   const trainerAvatar = trainerInfo?.avatar || ""
                   const trainerSpecialization = booking.trainer?.specialization || "Chưa xác định"
                   const trainerRating = booking.trainer?.rating || 0
-                  const pricePerSession = parseInt(booking.trainer?.pricePerSession) || 0
+                  const pricePerHour = parseInt(booking.trainer?.pricePerHour) || 0
 
                   const isMultiSession = booking.allSessions && booking.allSessions.length > 1
                   const overallStatus = getBookingStatus(booking.allSessions)

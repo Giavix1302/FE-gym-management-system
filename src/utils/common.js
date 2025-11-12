@@ -306,7 +306,7 @@ export const computeRemaining = (expireAtInput) => {
 }
 
 const userKeys = ["email", "gender", "dateOfBirth", "address", "age", "phone", "avatar", "fullName"]
-const trainerKeys = ["bio", "education", "experience", "specialization", "isApproved", "pricePerSession"]
+const trainerKeys = ["bio", "education", "experience", "specialization", "isApproved", "pricePerHour"]
 
 export function splitUserTrainerData(data) {
   const userData = {}

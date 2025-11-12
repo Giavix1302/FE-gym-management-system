@@ -121,7 +121,7 @@ function PTDetailModal({
                 </Box>
 
                 <Chip
-                  label={`${trainer.pricePerSession.toLocaleString("vi-VN")}đ / buổi`}
+                  label={`${trainer.pricePerHour.toLocaleString("vi-VN")}đ / giờ`}
                   color="warning"
                   sx={{ fontWeight: 600, fontSize: "1rem", py: 2 }}
                 />

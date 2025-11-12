@@ -51,12 +51,21 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
 
   if (!booking) return null
 
-  // Handle the new data structure - check if booking has nested booking data
-  const bookingData =
-    booking.booking && Object.keys(booking.booking.userInfo || {}).length > 0 ? booking.booking : booking
+  // Helper function to check if schedule has booking data
+  const hasBookingData = (schedule) => {
+    return (
+      schedule.booking &&
+      schedule.booking.userInfo &&
+      Object.keys(schedule.booking.userInfo).length > 0 &&
+      schedule.booking.userInfo.fullName
+    )
+  }
 
-  // Check if this is an available slot (no user info)
-  const isAvailableSlot = !bookingData.userInfo || Object.keys(bookingData.userInfo).length === 0
+  // Determine if this is an available slot or booked slot
+  const isAvailableSlot = !hasBookingData(booking)
+
+  // Get booking data based on structure
+  const bookingData = isAvailableSlot ? booking : booking.booking
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -88,6 +97,8 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
         return "info"
       case "cancelled":
         return "error"
+      case "booking":
+        return "primary"
       default:
         return "default"
     }
@@ -103,8 +114,10 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
         return "Hoàn thành"
       case "cancelled":
         return "Đã hủy"
+      case "booking":
+        return "Đang đặt"
       default:
-        return status
+        return status || "Chưa xác định"
     }
   }
 
@@ -199,7 +212,7 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
               {isAvailableSlot ? "Chi tiết slot trống" : "Chi tiết booking"}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {booking.title || bookingData.title}
+              {booking.title || (isAvailableSlot ? "Slot thời gian có sẵn" : bookingData.title)}
             </Typography>
           </Box>
           <IconButton onClick={onClose} size="small">
@@ -230,40 +243,35 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
                       <Typography variant="body2">
                         <strong>Giờ:</strong> {startTime.time} - {endTime.time}
                       </Typography>
+                      <Chip label="Slot trống" color="info" size="small" sx={{ alignSelf: "flex-start", mt: 1 }} />
                     </Stack>
                   </CardContent>
                 </Card>
               </Grid>
 
-              {/* Status */}
+              {/* Slot Info */}
               <Grid item size={{ xs: 12, md: 6 }}>
                 <Card variant="outlined" sx={{ height: "100%" }}>
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <InfoIcon color="primary" />
-                      Trạng thái
+                      Thông tin slot
                     </Typography>
-                    <Stack spacing={2}>
-                      <Chip label="Slot trống - Có thể đặt" color="success" icon={<InfoIcon />} size="medium" />
+                    <Stack spacing={1}>
                       <Typography variant="body2" color="text.secondary">
-                        Đây là slot thời gian trống có thể được học viên đặt booking
+                        Slot này chưa có học viên đặt lịch. Bạn có thể:
                       </Typography>
+                      <Typography variant="body2">• Chờ học viên đặt lịch</Typography>
+                      <Typography variant="body2">• Xóa slot nếu không còn cần thiết</Typography>
                     </Stack>
                   </CardContent>
                 </Card>
               </Grid>
             </Grid>
-
-            <Alert severity="info" sx={{ mb: 4 }}>
-              <Typography variant="body2">
-                Đây là slot thời gian trống. Bạn có thể xóa slot này nếu không muốn nhận booking trong khung giờ này.
-              </Typography>
-            </Alert>
           </>
         ) : (
           /* Booked Slot Content */
           <>
-            {/* Basic Information Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               {/* User Information */}
               <Grid item size={{ xs: 12, md: 6 }}>
@@ -273,8 +281,8 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
                       <PersonIcon color="primary" />
                       Thông tin học viên
                     </Typography>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <Avatar sx={{ bgcolor: "primary.light", width: 56, height: 56 }}>
+                    <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                      <Avatar sx={{ width: 56, height: 56, bgcolor: "primary.main" }}>
                         {bookingData.userInfo.fullName
                           .split(" ")
                           .map((n) => n[0])
@@ -294,39 +302,12 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
                         </Typography>
                       </Box>
                     </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Status & Price */}
-              <Grid item size={{ xs: 12, md: 6 }}>
-                <Card variant="outlined" sx={{ height: "100%" }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <AttachMoneyIcon color="primary" />
-                      Thông tin thanh toán
-                    </Typography>
-                    <Stack spacing={2}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Trạng thái:
-                        </Typography>
-                        <Chip
-                          label={getStatusText(bookingData.status)}
-                          color={getStatusColor(bookingData.status)}
-                          icon={getStatusIcon(bookingData.status)}
-                          size="small"
-                        />
-                      </Box>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Giá tiền:
-                        </Typography>
-                        <Typography variant="h6" fontWeight="bold" color="success.main">
-                          {formatCurrency(bookingData.price)}
-                        </Typography>
-                      </Box>
-                    </Stack>
+                    <Chip
+                      icon={getStatusIcon(bookingData.status)}
+                      label={getStatusText(bookingData.status)}
+                      color={getStatusColor(bookingData.status)}
+                      size="small"
+                    />
                   </CardContent>
                 </Card>
               </Grid>
@@ -337,7 +318,7 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccessTimeIcon color="primary" />
-                      Thời gian tập
+                      Thời gian & Giá cả
                     </Typography>
                     <Stack spacing={1}>
                       <Typography variant="body2">
@@ -346,14 +327,20 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
                       <Typography variant="body2">
                         <strong>Giờ:</strong> {startTime.time} - {endTime.time}
                       </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
+                        <AttachMoneyIcon color="success" fontSize="small" />
+                        <Typography variant="h6" color="success.main" fontWeight="bold">
+                          {formatCurrency(bookingData.price || 0)}
+                        </Typography>
+                      </Box>
                     </Stack>
                   </CardContent>
                 </Card>
               </Grid>
 
               {/* Location Information */}
-              <Grid item size={{ xs: 12, md: 6 }}>
-                <Card variant="outlined" sx={{ height: "100%" }}>
+              <Grid item size={{ xs: 12 }}>
+                <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <LocationIcon color="primary" />
@@ -361,9 +348,9 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
                     </Typography>
                     <Stack spacing={1}>
                       <Typography variant="subtitle2" fontWeight="bold">
-                        {bookingData.locationName}
+                        {bookingData.locationName || "Chưa xác định"}
                       </Typography>
-                      {bookingData.address && (
+                      {bookingData.address && bookingData.address.street && (
                         <Typography variant="body2" color="text.secondary">
                           {bookingData.address.street}, {bookingData.address.ward}, {bookingData.address.province}
                         </Typography>
@@ -560,7 +547,7 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
             Xóa slot này
           </Button>
         ) : (
-          /* Actions for Booked Slot - No Delete Button */
+          /* Actions for Booked Slot - Show status-based actions */
           <>
             {bookingData.status === "pending" && (
               <>

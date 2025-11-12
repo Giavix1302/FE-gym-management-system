@@ -52,6 +52,7 @@ import AdminEquipmentPage from "~/pages/admin/adminEquipment/AdminEquipmentPage"
 import StaffRoomPage from "~/pages/staff/staffRoom/StaffRoomPage"
 import AdminLocationPage from "~/pages/admin/adminLocation/AdminLocationPage"
 import AdminChatbotPage from "~/pages/admin/adminChatbot/AdminChatbotPage"
+import ForgotPassword from "~/pages/homeUnsigned/ForgotPassword"
 
 // ✅ Loading Component
 const LoadingScreen = () => (
@@ -221,6 +222,8 @@ export default function AppRoutes() {
             <Route path="/staff/info" element={<StaffLocationInfoPage />} />
           </Route>
         </Route>
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* 404 Not Found */}
         <Route path="*" element={<NotFoundPage />} />

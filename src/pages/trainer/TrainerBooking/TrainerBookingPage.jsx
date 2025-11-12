@@ -81,6 +81,8 @@ function BookingListItem({ booking, onViewDetails, onAddAdvice }) {
         return "Hoàn thành"
       case "cancelled":
         return "Đã hủy"
+      case "booking":
+        return "Đang đặt"
       default:
         return status
     }
@@ -156,11 +158,13 @@ function BookingListItem({ booking, onViewDetails, onAddAdvice }) {
                 sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
               >
                 <LocationIcon fontSize="small" />
-                {booking.booking.locationName}
+                {booking.booking.locationName || "Chưa xác định"}
               </Typography>
-              <Typography variant="caption">
-                {booking.booking.address.street}, {booking.booking.address.ward}
-              </Typography>
+              {booking.booking.address && booking.booking.address.street && (
+                <Typography variant="caption">
+                  {booking.booking.address.street}, {booking.booking.address.ward}
+                </Typography>
+              )}
             </Stack>
           </Grid>
 
@@ -172,7 +176,7 @@ function BookingListItem({ booking, onViewDetails, onAddAdvice }) {
                 size="small"
               />
               <Typography variant="body2" fontWeight="bold" color="success.main">
-                {formatCurrency(booking.booking.price)}
+                {formatCurrency(booking.booking.price || 0)}
               </Typography>
             </Stack>
           </Grid>
@@ -223,7 +227,6 @@ export default function TrainerBookingPage() {
   const { listSchedule, setListSchedule } = useListScheduleForPTStore()
 
   // States
-  const [bookings, setBooking] = useState([])
   const [tabValue, setTabValue] = useState(0)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -233,7 +236,9 @@ export default function TrainerBookingPage() {
     sortBy: "time",
     search: "",
   })
-  const [scheduleDateValue, setScheduleDateValue] = useState({ day: 0, month: 0, year: 0 })
+
+  // States for creating new schedule
+  const [scheduleDateValue, setScheduleDateValue] = useState(null)
   const [startTimeValue, setStartTimeValue] = useState({
     hour: 0,
     minute: 0,
@@ -243,94 +248,115 @@ export default function TrainerBookingPage() {
     minute: 0,
   })
 
-  useEffect(() => {
-    const init = async () => {
-      const result = await getBookingsByTrainerIdAPI(trainerInfo._id)
-      setBooking(result.bookings)
+  // Helper function to check if schedule has booking data
+  const hasBookingData = (schedule) => {
+    return (
+      schedule.booking &&
+      schedule.booking.userInfo &&
+      Object.keys(schedule.booking.userInfo).length > 0 &&
+      schedule.booking.userInfo.fullName
+    )
+  }
+
+  // Event click handler
+  const handleEventClick = (event) => {
+    // GymCalendar passes the event object directly, not wrapped in eventInfo.event
+    const schedule = listSchedule.find((s) => s._id === event.id)
+    if (schedule) {
+      handleViewDetails(schedule)
     }
-    init()
-  }, [])
+  }
 
-  // Convert bookings to calendar events format
-  const calendarEvents = useMemo(() => {
-    return listSchedule.map((booking) => {
-      // Check if this booking has actual booking data
-      const hasBookingData =
-        booking.booking && booking.booking.userInfo && Object.keys(booking.booking.userInfo).length > 0
-
-      if (hasBookingData) {
-        return {
-          _id: booking._id,
-          title: booking.title || booking.booking.title,
-          startTime: booking.startTime,
-          endTime: booking.endTime,
-          status: booking.booking.status,
-          member: booking.booking.userInfo.fullName,
-          location: booking.booking.locationName,
-          note: booking.booking.note,
-          ...booking.booking,
-          bookingId: booking.booking.bookingId,
-          userInfo: booking.booking.userInfo,
-          locationName: booking.booking.locationName,
-          address: booking.booking.address,
-          price: booking.booking.price,
-          review: booking.booking.review,
-        }
-      } else {
-        // This is just a schedule slot without booking
-        return {
-          _id: booking._id,
-          title: "Slot trống",
-          startTime: booking.startTime,
-          endTime: booking.endTime,
-          status: "available",
-          member: null,
-          location: "Chưa xác định",
-          note: "Slot thời gian trống cho booking",
-          isAvailableSlot: true,
-        }
-      }
-    })
-  }, [bookings])
-
-  // Filter and sort bookings - only include bookings with actual booking data
+  // Filter and sort bookings - only include schedules with actual booking data
   const filteredBookings = useMemo(() => {
-    let filtered = listSchedule.filter((booking) => {
-      // Only include bookings that have actual booking data
-      return booking.booking && booking.booking.userInfo && Object.keys(booking.booking.userInfo).length > 0
-    })
+    let filtered = listSchedule.filter(hasBookingData)
 
+    // Status filter
     if (filters.status !== "all") {
-      filtered = filtered.filter((booking) => booking.booking.status === filters.status)
+      filtered = filtered.filter((schedule) => schedule.booking.status === filters.status)
     }
 
+    // Search filter
     if (filters.search) {
       filtered = filtered.filter(
-        (booking) =>
-          booking.booking.userInfo.fullName.toLowerCase().includes(filters.search.toLowerCase()) ||
-          booking.booking.locationName.toLowerCase().includes(filters.search.toLowerCase()),
+        (schedule) =>
+          schedule.booking.userInfo.fullName.toLowerCase().includes(filters.search.toLowerCase()) ||
+          schedule.booking.userInfo.phone.includes(filters.search) ||
+          (schedule.booking.locationName &&
+            schedule.booking.locationName.toLowerCase().includes(filters.search.toLowerCase())),
       )
     }
 
+    // Sort
     filtered.sort((a, b) => {
-      if (filters.sortBy === "time") {
-        return new Date(b.startTime) - new Date(a.startTime)
+      switch (filters.sortBy) {
+        case "time":
+          return new Date(a.startTime) - new Date(b.startTime)
+        case "price":
+          return (b.booking.price || 0) - (a.booking.price || 0)
+        case "status":
+          return (a.booking.status || "").localeCompare(b.booking.status || "")
+        default:
+          return 0
       }
-      return 0
     })
 
     return filtered
-  }, [filters, bookings])
+  }, [listSchedule, filters, hasBookingData])
 
-  // Separate upcoming and past bookings
-  const upcomingBookings = filteredBookings.filter((booking) => new Date(booking.startTime) > new Date())
+  // Split bookings by time
+  const now = new Date()
+  const upcomingBookings = filteredBookings.filter((booking) => new Date(booking.startTime) >= now)
+  const pastBookings = filteredBookings.filter((booking) => new Date(booking.startTime) < now)
 
-  const pastBookings = filteredBookings.filter((booking) => new Date(booking.startTime) <= new Date())
+  // Helper function to get event color based on status
+  const getEventColor = (status) => {
+    switch (status) {
+      case "confirmed":
+        return "#4caf50"
+      case "pending":
+        return "#ff9800"
+      case "completed":
+        return "#2196f3"
+      case "cancelled":
+        return "#f44336"
+      case "booking":
+        return "#9c27b0"
+      default:
+        return "#9e9e9e"
+    }
+  }
 
-  // Event handlers
-  const handleEventClick = (event) => {
-    setSelectedBooking(event)
-    setIsModalOpen(true)
+  // Calendar events
+  const calendarEvents = useMemo(() => {
+    return listSchedule.map((schedule) => {
+      if (hasBookingData(schedule)) {
+        // Schedule with booking data
+        return {
+          id: schedule._id,
+          title: `${schedule.booking.userInfo.fullName} - ${schedule.booking.locationName || "Chưa xác định địa điểm"}`,
+          startTime: schedule.startTime, // Use startTime instead of start
+          endTime: schedule.endTime, // Use endTime instead of end
+          backgroundColor: getEventColor(schedule.booking.status),
+          borderColor: getEventColor(schedule.booking.status),
+        }
+      } else {
+        // Empty schedule slot
+        return {
+          id: schedule._id,
+          title: "Slot trống",
+          startTime: schedule.startTime, // Use startTime instead of start
+          endTime: schedule.endTime, // Use endTime instead of end
+          backgroundColor: "#e0e0e0",
+          borderColor: "#bdbdbd",
+        }
+      }
+    })
+  }, [listSchedule])
+
+  // Handlers
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleViewDetails = (booking) => {
@@ -348,79 +374,126 @@ export default function TrainerBookingPage() {
     setSelectedBooking(null)
   }
 
-  const handleSaveAdvice = (bookingId, newAdvice) => {
-    console.log("Saving advice for booking:", bookingId, newAdvice)
-    // Here you would typically call an API to save the advice
-    // For now, just close the modal
+  const handleSaveAdvice = (bookingId, advice) => {
+    // Handle save advice logic
+    console.log("Save advice for booking:", bookingId, advice)
     handleCloseModal()
   }
 
-  const handleDeleteSlot = async (slotId) => {
-    try {
-      // Add your delete API call here
-      // await deleteSlotAPI(slotId)
-
-      // Remove from local state
-      // const updatedBookings = listSchedule.filter((booking) => booking._id !== slotId)
-      // setBooking(updatedBookings)
-
-      // Show success message
-      console.log("Slot deleted successfully")
-    } catch (error) {
-      console.error("Error deleting slot:", error)
-      // Show error message
-    }
+  const handleDeleteSlot = (bookingId) => {
+    // Handle delete slot logic
+    console.log("Delete slot for booking:", bookingId)
+    handleCloseModal()
   }
 
-  const handleFilterChange = (field, value) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
-
+  // Add schedule handler with booking refresh fix
   const handleAddSchedule = async () => {
-    // check empty
-    if (!scheduleDateValue.day || !scheduleDateValue.month || !scheduleDateValue.year) {
-      toast.error("Vui lòng chọn ngày")
-      return
-    }
-
-    if (startTimeValue.hour === 0 && startTimeValue.minute === 0) {
-      toast.error("Vui lòng chọn giờ bắt đầu và giờ bắt đầu từ 8:00")
-      return
-    }
-
-    if (endTimeValue.hour === 0 && endTimeValue.minute === 0) {
-      toast.error("Vui lòng chọn giờ kết thúc")
-      return
-    }
-
     try {
-      // convert
-      const isoDate = convertToISODateRange(scheduleDateValue, startTimeValue, endTimeValue)
+      console.log("🚀 ~ handleAddSchedule ~ scheduleDateValue:", scheduleDateValue)
+      console.log("🚀 ~ handleAddSchedule ~ startTimeValue:", startTimeValue)
+      console.log("🚀 ~ handleAddSchedule ~ endTimeValue:", endTimeValue)
 
-      const dataToCreate = {
-        trainerId: trainerInfo._id,
-        startTime: isoDate.startISO,
-        endTime: isoDate.endISO,
+      // Validation
+      if (!scheduleDateValue) {
+        toast.error("Vui lòng chọn ngày")
+        return
       }
-      const result = await createScheduleForPtAPI(dataToCreate)
-      setListSchedule(result.listSchedule)
 
+      if (startTimeValue.hour === 0 && startTimeValue.minute === 0) {
+        toast.error("Vui lòng chọn giờ bắt đầu")
+        return
+      }
+
+      if (endTimeValue.hour === 0 && endTimeValue.minute === 0) {
+        toast.error("Vui lòng chọn giờ kết thúc")
+        return
+      }
+
+      // Convert scheduleDateValue to dayjs if it's not already
+      let dateValue = scheduleDateValue
+      if (
+        typeof scheduleDateValue === "object" &&
+        scheduleDateValue.day &&
+        scheduleDateValue.month &&
+        scheduleDateValue.year
+      ) {
+        // If scheduleDateValue is in {day, month, year} format
+        dateValue = dayjs(
+          `${scheduleDateValue.year}-${scheduleDateValue.month.toString().padStart(2, "0")}-${scheduleDateValue.day.toString().padStart(2, "0")}`,
+        )
+      } else if (!dayjs.isDayjs(scheduleDateValue)) {
+        // If it's not a dayjs object, try to parse it
+        dateValue = dayjs(scheduleDateValue)
+      }
+
+      // Check if the date is valid
+      if (!dateValue || !dateValue.isValid()) {
+        toast.error("Ngày không hợp lệ")
+        return
+      }
+
+      const startTime = dateValue
+        .hour(startTimeValue.hour)
+        .minute(startTimeValue.minute)
+        .second(0)
+        .millisecond(0)
+        .toISOString()
+
+      const endTime = dateValue
+        .hour(endTimeValue.hour)
+        .minute(endTimeValue.minute)
+        .second(0)
+        .millisecond(0)
+        .toISOString()
+
+      console.log("🚀 ~ handleAddSchedule ~ startTime:", startTime)
+      console.log("🚀 ~ handleAddSchedule ~ endTime:", endTime)
+
+      const dataToSend = {
+        trainerId: trainerInfo._id,
+        startTime,
+        endTime,
+        isBooked: false,
+      }
+
+      const result = await createScheduleForPtAPI(dataToSend)
+      console.log("🚀 ~ handleAddSchedule ~ result:", result)
+
+      // Create new schedule object with proper structure
+      const newSchedule = {
+        _id: result.data._id || result.data.id || `temp-${Date.now()}`,
+        startTime: startTime,
+        endTime: endTime,
+        booking: {
+          userInfo: {},
+          address: {},
+          review: {
+            rating: null,
+            comment: "",
+          },
+        },
+      }
+
+      // Update list schedule store
+      setListSchedule([...listSchedule, newSchedule])
+
+      // Reset input
+      setScheduleDateValue(null)
       setStartTimeValue({
         hour: 0,
         minute: 0,
       })
-
       setEndTimeValue({
         hour: 0,
         minute: 0,
       })
 
-      // notification
+      // Notification
       toast.success("Thêm lịch thành công")
-    } catch (err) {}
+    } catch (err) {
+      console.error("Error creating schedule:", err)
+      toast.error("Có lỗi khi tạo lịch")
+    }
   }
 
   return (
