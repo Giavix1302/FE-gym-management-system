@@ -66,7 +66,7 @@ import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import useUserStore from "~/stores/useUserStore"
 import { buildFormData, convertISOToVNTime, formatToLeadingZero, splitUserTrainerData, toISODate } from "~/utils/common"
 import { updateInfoTrainerByUserIdAPI } from "~/apis/trainer"
-import { updateInfoUserAPI } from "~/apis/user"
+import { updateInfoUserAPI, updateAvatarAPI } from "~/apis/user"
 import MyBackdrop from "~/components/MyBackdrop"
 
 // CustomTabPanel theo cách chính thức của MUI
@@ -133,6 +133,11 @@ export default function TrainerProfilePage() {
   const [selectedImage, setSelectedImage] = useState("")
   const [newPhysiqueImages, setNewPhysiqueImages] = useState([])
 
+  // Avatar states
+  const [openAvatarDialog, setOpenAvatarDialog] = useState(false)
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState("")
+
   // Stores
   const { user, updateUser } = useUserStore()
   const { trainerInfo, updateTrainerInfo } = useTrainerInfoStore()
@@ -186,6 +191,83 @@ export default function TrainerProfilePage() {
     },
     [isEditing, editData, ptData],
   )
+
+  // Avatar Handlers
+  const handleAvatarClick = () => {
+    if (isEditing) {
+      // Trigger file input
+      document.getElementById("avatar-upload-input")?.click()
+    }
+  }
+
+  const handleAvatarFileChange = (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      showSnackbar("Vui lòng chọn file ảnh!", "error")
+      return
+    }
+
+    // Validate file size (optional - 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      showSnackbar("File ảnh không được vượt quá 5MB!", "error")
+      return
+    }
+
+    setSelectedAvatarFile(file)
+    const previewUrl = URL.createObjectURL(file)
+    setAvatarPreview(previewUrl)
+    setOpenAvatarDialog(true)
+
+    // Reset input
+    event.target.value = ""
+  }
+
+  const handleConfirmAvatarUpdate = async () => {
+    if (!selectedAvatarFile) return
+
+    setOpenAvatarDialog(false)
+    setOpenBackdrop(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("avatar", selectedAvatarFile)
+
+      console.log("🖼️ Uploading avatar for user:", user._id)
+      const result = await updateAvatarAPI(user._id, formData)
+
+      if (result.success) {
+        // Update user store with new avatar
+        updateUser(result.user)
+        showSnackbar("Cập nhật ảnh đại diện thành công!", "success")
+      } else {
+        showSnackbar("Có lỗi xảy ra khi cập nhật ảnh đại diện!", "error")
+      }
+    } catch (error) {
+      console.error("❌ Error updating avatar:", error)
+      showSnackbar("Có lỗi xảy ra khi cập nhật ảnh đại diện!", "error")
+    } finally {
+      // Cleanup
+      if (avatarPreview && avatarPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview)
+      }
+      setSelectedAvatarFile(null)
+      setAvatarPreview("")
+      setOpenBackdrop(false)
+    }
+  }
+
+  const handleCancelAvatarUpdate = () => {
+    // Cleanup preview URL
+    if (avatarPreview && avatarPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview)
+    }
+    setSelectedAvatarFile(null)
+    setAvatarPreview("")
+    setOpenAvatarDialog(false)
+  }
 
   // Handlers
   const handleFieldChange = (field, value) => {
@@ -523,20 +605,25 @@ export default function TrainerProfilePage() {
                 sx={{
                   bgcolor: "white",
                   "&:hover": { bgcolor: "grey.100" },
+                  cursor: isEditing ? "pointer" : "default",
                 }}
                 disabled={!isEditing}
+                onClick={handleAvatarClick}
               >
                 <PhotoCameraIcon fontSize="small" color="primary" />
               </IconButton>
             }
           >
             <Avatar
+              src={ptData.avatar}
               sx={{
                 width: 120,
                 height: 120,
                 border: "4px solid white",
                 bgcolor: "#FFA62B",
+                cursor: isEditing ? "pointer" : "default",
               }}
+              onClick={handleAvatarClick}
             >
               {ptData.fullName
                 .split(" ")
@@ -544,6 +631,15 @@ export default function TrainerProfilePage() {
                 .join("")}
             </Avatar>
           </Badge>
+
+          {/* Hidden file input for avatar */}
+          <input
+            id="avatar-upload-input"
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleAvatarFileChange}
+          />
 
           <Box flex={1} textAlign={isMobile ? "center" : "left"}>
             <Stack direction="row" spacing={2} alignItems="center" justifyContent={isMobile ? "center" : "flex-start"}>
@@ -1067,6 +1163,43 @@ export default function TrainerProfilePage() {
           </Grid>
         </CustomTabPanel>
       </Paper>
+
+      {/* Avatar Update Confirmation Dialog */}
+      <Dialog open={openAvatarDialog} onClose={handleCancelAvatarUpdate} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ textAlign: "center" }}>Xác nhận cập nhật ảnh đại diện</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <Avatar
+              src={avatarPreview}
+              sx={{
+                width: 200,
+                height: 200,
+                border: "2px solid",
+                borderColor: "primary.main",
+              }}
+            />
+          </Box>
+          <Typography variant="body2" color="text.secondary" align="center">
+            Bạn có muốn cập nhật ảnh đại diện mới này không?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelAvatarUpdate} color="inherit">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleConfirmAvatarUpdate}
+            variant="contained"
+            startIcon={<SaveIcon />}
+            sx={{
+              bgcolor: "#FFA62B",
+              "&:hover": { bgcolor: "#FF9500" },
+            }}
+          >
+            Cập nhật
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Image Preview Dialog */}
       <Modal

@@ -52,6 +52,7 @@ export default function StaffClassPage() {
   const { locations } = useLocationStore()
 
   const [classes, setClasses] = useState([])
+  console.log("🚀 ~ StaffClassPage ~ classes:", classes)
   const [selectedClass, setSelectedClass] = useState(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [formModalOpen, setFormModalOpen] = useState(false)

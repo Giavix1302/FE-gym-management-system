@@ -36,6 +36,7 @@ const NotificationPanel = () => {
   // React Query hooks
   const {
     data: notificationsData,
+
     isLoading,
     error,
     refetch,
@@ -43,13 +44,13 @@ const NotificationPanel = () => {
     page,
     limit: 10,
   })
-
   const unreadCount = useUnreadNotificationCount()
   const markAsRead = useMarkNotificationAsRead()
   const markAllAsRead = useMarkAllNotificationsAsRead()
   const deleteNotification = useDeleteNotification()
 
   const notifications = notificationsData?.notifications || []
+  console.log("🚀 ~ NotificationPanel ~ notifications:", notifications)
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget)

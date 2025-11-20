@@ -453,7 +453,6 @@ export default function TrainerBookingPage() {
         trainerId: trainerInfo._id,
         startTime,
         endTime,
-        isBooked: false,
       }
 
       const result = await createScheduleForPtAPI(dataToSend)
@@ -461,7 +460,7 @@ export default function TrainerBookingPage() {
 
       // Create new schedule object with proper structure
       const newSchedule = {
-        _id: result.data._id || result.data.id || `temp-${Date.now()}`,
+        _id: result?.newSchedule._id,
         startTime: startTime,
         endTime: endTime,
         booking: {
@@ -476,6 +475,7 @@ export default function TrainerBookingPage() {
 
       // Update list schedule store
       setListSchedule([...listSchedule, newSchedule])
+      console.log("🚀 ~ handleAddSchedule ~ newSchedule:", newSchedule)
 
       // Reset input
       setScheduleDateValue(null)

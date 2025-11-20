@@ -6,6 +6,12 @@ export const updateInfoUserAPI = async (userId, payload) => {
   return res.data
 }
 
+export const updateAvatarAPI = async (userId, payload) => {
+  console.log("🚀 ~ updateInfoUserAPI ~ payload:", payload)
+  const res = await axiosInstance.put(`/users/${userId}/avatar`, payload)
+  return res.data
+}
+
 // NEW: Lấy danh sách user cho staff với phân trang
 export const getListUserForStaffAPI = async (page = 1, limit = 20) => {
   console.log("🚀 ~ getListUserForStaffAPI ~ page:", page, "limit:", limit)
@@ -47,6 +53,12 @@ export const createNewUserAPI = async (payload) => {
 export const softDeleteUserAPI = async (userId) => {
   console.log("🚀 ~ softDeleteUserAPI ~ userId:", userId)
   const res = await axiosInstance.delete(`/users/${userId}/soft-delete`)
+  return res.data
+}
+
+// NEW: Lấy events của user trong 3 tháng
+export const getUserEventsForThreeMonthsAPI = async (userId) => {
+  const res = await axiosInstance.get(`/users/${userId}/events/three-months`)
   return res.data
 }
 
@@ -109,4 +121,52 @@ export const softDeleteUserWithErrorHandling = async (userId) => {
       statusCode,
     }
   }
+}
+
+// BONUS: Wrapper function với error handling cho getUserEventsForThreeMonthsAPI
+export const getUserEventsForThreeMonthsWithErrorHandling = async (userId) => {
+  try {
+    const response = await getUserEventsForThreeMonthsAPI(userId)
+    return {
+      success: true,
+      data: response,
+    }
+  } catch (error) {
+    console.error("🚀 ~ getUserEventsForThreeMonthsWithErrorHandling ~ error:", error)
+
+    // Xử lý các error code cụ thể
+    const statusCode = error.response?.status
+    const errorMessage = error.response?.data?.message || error.message
+
+    let userFriendlyMessage = errorMessage
+
+    switch (statusCode) {
+      case 404:
+        userFriendlyMessage = "Người dùng không tồn tại"
+        break
+      case 400:
+        userFriendlyMessage = "ID người dùng không hợp lệ"
+        break
+      case 500:
+        userFriendlyMessage = "Lỗi server khi lấy dữ liệu events"
+        break
+      default:
+        userFriendlyMessage = "Có lỗi xảy ra khi lấy lịch trình của người dùng"
+    }
+
+    return {
+      success: false,
+      error: userFriendlyMessage,
+      originalError: errorMessage,
+      statusCode,
+    }
+  }
+}
+
+export const changePasswordAPI = async (userId, oldPassword, newPlainPassword) => {
+  const res = await axiosInstance.put(`/users/${userId}/change-password`, {
+    oldPassword,
+    newPlainPassword,
+  })
+  return res.data
 }

@@ -46,6 +46,7 @@ import useCurrentLocation from "~/stores/useCurrentLocationStore"
 
 import StaffInfoModal from "./StaffInfoModal"
 import ChangePasswordModal from "./ChangePasswordModal"
+import { handleLogoutStaff } from "~/apis/staff"
 
 const NAVIGATION_ADMIN = [
   {
@@ -62,7 +63,7 @@ const NAVIGATION_ADMIN = [
   },
   {
     kind: "header",
-    title: "Quản lí",
+    title: "Quản lý",
   },
   {
     segment: "admin/user",
@@ -151,7 +152,7 @@ const NAVIGATION_STAFF = [
   },
   {
     kind: "header",
-    title: "Quản lí",
+    title: "Quản lý",
   },
   {
     segment: "staff/checkin",
@@ -257,14 +258,28 @@ function CustomToolbarActions() {
     handleCloseMenu()
   }
 
-  const handleUpdateUser = async (userData) => {
-    // TODO: Implement API call to update user information
-    console.log("Updating user:", userData)
+  // 🔧 FIXED: Now properly updates Zustand store
+  const handleUpdateUser = async (updatedUserData) => {
+    try {
+      // Update the user store with new data
+      const { updateUser } = useUserStore.getState()
+      updateUser(updatedUserData)
+      console.log("✅ User store updated successfully:", updatedUserData)
+    } catch (error) {
+      console.error("❌ Error updating user store:", error)
+    }
   }
 
-  const handleUpdateStaff = async (staffData) => {
-    // TODO: Implement API call to update staff information
-    console.log("Updating staff:", staffData)
+  // 🔧 FIXED: Now properly updates Zustand store
+  const handleUpdateStaff = async (updatedStaffData) => {
+    try {
+      // Update the staff store with new data
+      const { updateStaff } = useStaffStore.getState()
+      updateStaff(updatedStaffData)
+      console.log("✅ Staff store updated successfully:", updatedStaffData)
+    } catch (error) {
+      console.error("❌ Error updating staff store:", error)
+    }
   }
 
   const handleChangePassword = async (passwordData) => {
@@ -313,7 +328,7 @@ function CustomToolbarActions() {
                 <MenuItem onClick={handleChangeMode} sx={{ "&.MuiMenuItem-root": { px: 1 } }}>
                   <ToolbarActions />
 
-                  <ListItemText sx={{ ml: 0.75 }}>Giao diên {mode === "light" ? "sáng" : "tối"}</ListItemText>
+                  <ListItemText sx={{ ml: 0.75 }}>Giao diện {mode === "light" ? "sáng" : "tối"}</ListItemText>
                 </MenuItem>
 
                 <Divider />
@@ -333,7 +348,11 @@ function CustomToolbarActions() {
 
                 <Divider />
 
-                <MenuItem onClick={handleLogout}>
+                <MenuItem
+                  onClick={() => {
+                    handleLogout()
+                  }}
+                >
                   <ListItemIcon>
                     <LogoutIcon fontSize="small" />
                   </ListItemIcon>
@@ -395,10 +414,10 @@ function AdminLayout() {
       branding={{
         logo: <img src={logoAdmin} alt="THE GYM logo" />,
         title: "",
-        homeUrl: user.role === "staff" ? "/dashboard" : "/dashboard",
+        homeUrl: user?.role === "staff" ? "/dashboard" : "/dashboard",
       }}
       router={router}
-      navigation={user.role === "staff" ? NAVIGATION_STAFF : NAVIGATION_ADMIN}
+      navigation={user?.role === "staff" ? NAVIGATION_STAFF : NAVIGATION_ADMIN}
       theme={adminTheme}
     >
       <DashboardLayout

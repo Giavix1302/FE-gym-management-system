@@ -26,11 +26,14 @@ export const useNotifications = (params = {}) => {
       return {
         ...data,
         notifications:
-          data.notifications?.map((notification) => ({
-            ...notification,
-            timeAgo: formatTimeAgo(notification.createdAt),
-            navigationPath: getNavigationPath(notification.referenceType, notification.referenceId),
-          })) || [],
+          data.notifications?.map((notification) => {
+            console.log("🚀 ~ useNotifications ~ notification:", notification)
+            return {
+              ...notification,
+              timeAgo: formatTimeAgo(notification.scheduledAt),
+              navigationPath: getNavigationPath(notification.referenceType, notification.referenceId),
+            }
+          }) || [],
       }
     },
   })

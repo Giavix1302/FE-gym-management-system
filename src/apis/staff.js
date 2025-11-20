@@ -42,6 +42,11 @@ export const hardDeleteStaffAPI = async (staffId) => {
   return rep.data
 }
 
+export const handleLogoutStaff = async (staffId) => {
+  const rep = await axiosInstance.put("/staffs/" + staffId + "/logout")
+  return rep.data
+}
+
 // Helper function để format dữ liệu khi tạo nhân viên mới
 export const formatStaffData = (formData) => {
   return {

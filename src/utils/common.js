@@ -366,3 +366,14 @@ export function getHoursBetween(startTime, endTime) {
 
   return diffHours
 }
+
+export function countRemainingDays(endISO) {
+  const now = new Date()
+  const end = new Date(endISO)
+
+  const diffMs = end.getTime() - now.getTime()
+
+  if (diffMs <= 0) return 0
+
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+}

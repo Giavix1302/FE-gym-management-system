@@ -26,3 +26,37 @@ export const getListTrainerForAdminAPI = async () => {
   const res = await axiosInstance.get(`/trainers/admin`)
   return res.data
 }
+
+// Lấy danh sách booking completed của trainer
+export const getListBookingByTrainerIdAPI = async (userId, page = 1, limit = 10) => {
+  const res = await axiosInstance.get(`/trainers/${userId}/bookings`, {
+    params: {
+      page,
+      limit,
+    },
+  })
+  return res.data
+}
+
+// Hoặc có thể viết với options object để linh hoạt hơn
+export const getTrainerBookingsAPI = async (userId, options = {}) => {
+  const { page = 1, limit = 10 } = options
+
+  const res = await axiosInstance.get(`/trainers/${userId}/bookings`, {
+    params: {
+      page,
+      limit,
+    },
+  })
+  return res.data
+}
+
+export const getTrainerDashboardStatsAPI = async (userId) => {
+  const res = await axiosInstance.get(`/trainers/${userId}/dashboard-stats`)
+  return res.data
+}
+
+export const getTrainerEventsForThreeMonthsAPI = async (userId) => {
+  const res = await axiosInstance.get(`/trainers/${userId}/events`)
+  return res.data
+}

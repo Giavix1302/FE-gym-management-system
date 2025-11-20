@@ -53,6 +53,11 @@ import StaffRoomPage from "~/pages/staff/staffRoom/StaffRoomPage"
 import AdminLocationPage from "~/pages/admin/adminLocation/AdminLocationPage"
 import AdminChatbotPage from "~/pages/admin/adminChatbot/AdminChatbotPage"
 import ForgotPassword from "~/pages/homeUnsigned/ForgotPassword"
+import ChangePassword from "~/pages/ChangePassword"
+import PaymentHistoryPage from "~/pages/PaymentHistoryPage"
+import TrainerRevenuePage from "~/pages/trainer/TrainerRevenuePage"
+import UserProfilePage from "~/pages/user/UserProfilePage"
+import UserProgressPage from "~/pages/user/UserProgressPage"
 
 // ✅ Loading Component
 const LoadingScreen = () => (
@@ -160,13 +165,11 @@ export default function AppRoutes() {
         <Route element={<DefaultLayout />}>
           <Route path="/" element={<Home />} />
         </Route>
-
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Route>
-
         {/* User Private Routes */}
         <Route element={<PrivateRoute roles={["user"]} />}>
           <Route element={<UserLayout />}>
@@ -176,9 +179,12 @@ export default function AppRoutes() {
             <Route path="/user/class" element={<ClassEnrollmentPage />} />
             <Route path="/user/payment/success" element={<ResultPaymentPage />} />
             <Route path="/user/checkin" element={<UserCheckinPage />} />
+            <Route path="/user/change-password" element={<ChangePassword />} />
+            <Route path="/user/payment-history" element={<PaymentHistoryPage />} />
+            <Route path="/user/profile" element={<UserProfilePage />} />
+            <Route path="/user/progress" element={<UserProgressPage />} />
           </Route>
         </Route>
-
         {/* Trainer Private Routes */}
         <Route element={<PrivateRoute roles={["pt"]} />}>
           <Route element={<UserLayout />}>
@@ -189,9 +195,12 @@ export default function AppRoutes() {
             <Route path="/pt/class" element={<TrainerClassesPage />} />
             <Route path="/pt/payment/success" element={<ResultPaymentPage />} />
             <Route path="/pt/checkin" element={<UserCheckinPage />} />
+            <Route path="/pt/change-password" element={<ChangePassword />} />
+            <Route path="/pt/payment-history" element={<PaymentHistoryPage />} />
+            <Route path="/pt/revenue" element={<TrainerRevenuePage />} />
           </Route>
         </Route>
-
+        TrainerRevenuePage
         {/* Admin Private Routes */}
         <Route element={<PrivateRoute roles={["admin"]} />}>
           <Route element={<AdminLayout />}>
@@ -208,7 +217,6 @@ export default function AppRoutes() {
             <Route path="/admin/report/user" element={<AdminReportMemberPage />} />
           </Route>
         </Route>
-
         {/* Staff Routes */}
         <Route element={<PrivateRoute roles={["staff"]} />}>
           <Route element={<AdminLayout />}>
@@ -222,9 +230,7 @@ export default function AppRoutes() {
             <Route path="/staff/info" element={<StaffLocationInfoPage />} />
           </Route>
         </Route>
-
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
         {/* 404 Not Found */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

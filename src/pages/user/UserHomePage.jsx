@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useEffect } from "react"
 import {
   Box,
   Container,
@@ -23,6 +23,10 @@ import {
   LinearProgress,
   Divider,
   IconButton,
+  CircularProgress,
+  Modal,
+  Backdrop,
+  Fade,
 } from "@mui/material"
 // icon
 import {
@@ -45,27 +49,12 @@ import { LineChart } from "@mui/x-charts/LineChart"
 import GymCalendar from "~/components/Calendar"
 //react
 import { useState } from "react"
-
-// Mock data
-const mockUser = {
-  fullName: "Nguyễn Hoàng Gia Vĩ",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-  age: 25,
-  gender: "Nam",
-  phone: "0123456789",
-  address: "123 Nguyễn Văn Linh, Quận 7, TP.HCM",
-  membershipStatus: "Inactive",
-}
-
-const mockMembership = {
-  packageName: "Premium Plus",
-  startDate: "01/08/2025",
-  endDate: "01/02/2026",
-  status: "active",
-  sessionsUsed: 15,
-  totalSessions: 30,
-  daysLeft: 92,
-}
+import useUserStore from "~/stores/useUserStore"
+import useMyMembershipStore from "~/stores/useMyMembershipStore"
+import { calculateProgressPercent, convertISOToVNTime, countRemainingDays } from "~/utils/common"
+import { getPaymentsByUserIdAPI } from "~/apis/payment"
+import { getListAttendanceByUserIdAPI } from "~/apis/attendance"
+import { getUserEventsForThreeMonthsAPI } from "~/apis/user"
 
 const mockProgressData = [
   { month: "Tháng 1", weight: 70, bmi: 23, bodyFat: 18 },
@@ -82,89 +71,264 @@ const mockProgressData = [
   { month: "Tháng 12", weight: 62, bmi: 20.4, bodyFat: 14.5 },
 ]
 
-const mockBookings = [
-  { id: 1, type: "PT", trainer: "Nguyễn Minh Tâm", date: "03/09/2025", time: "18:00", status: "upcoming" },
-  { id: 2, type: "Class", name: "Yoga Buổi Sáng", date: "05/09/2025", time: "07:00", status: "upcoming" },
-  { id: 3, type: "PT", trainer: "Trần Việt Anh", date: "01/09/2025", time: "19:00", status: "completed" },
-  { id: 1, type: "PT", trainer: "Nguyễn Minh Tâm", date: "03/09/2025", time: "18:00", status: "upcoming" },
-  { id: 2, type: "Class", name: "Yoga Buổi Sáng", date: "05/09/2025", time: "07:00", status: "upcoming" },
-  { id: 3, type: "PT", trainer: "Trần Việt Anh", date: "01/09/2025", time: "19:00", status: "completed" },
-  { id: 1, type: "PT", trainer: "Nguyễn Minh Tâm", date: "03/09/2025", time: "18:00", status: "upcoming" },
-  { id: 2, type: "Class", name: "Yoga Buổi Sáng", date: "05/09/2025", time: "07:00", status: "upcoming" },
-  { id: 3, type: "PT", trainer: "Trần Việt Anh", date: "01/09/2025", time: "19:00", status: "completed" },
-  { id: 1, type: "PT", trainer: "Nguyễn Minh Tâm", date: "03/09/2025", time: "18:00", status: "upcoming" },
-  { id: 2, type: "Class", name: "Yoga Buổi Sáng", date: "05/09/2025", time: "07:00", status: "upcoming" },
-  { id: 3, type: "PT", trainer: "Trần Việt Anh", date: "01/09/2025", time: "19:00", status: "completed" },
-  { id: 1, type: "PT", trainer: "Nguyễn Minh Tâm", date: "03/09/2025", time: "18:00", status: "upcoming" },
-  { id: 2, type: "Class", name: "Yoga Buổi Sáng", date: "05/09/2025", time: "07:00", status: "upcoming" },
-  { id: 3, type: "PT", trainer: "Trần Việt Anh", date: "01/09/2025", time: "19:00", status: "completed" },
-]
+// Utility function to format amount
+const formatAmount = (amount) => {
+  return new Intl.NumberFormat("vi-VN").format(amount) + "đ"
+}
 
-const mockPayments = [
-  { id: "PAY001", package: "Premium Plus", amount: "2,500,000", date: "01/08/2025", status: "Thành công" },
-  { id: "PAY002", package: "Basic", amount: "1,200,000", date: "01/05/2025", status: "Thành công" },
-  { id: "PAY003", package: "Premium", amount: "1,800,000", date: "01/02/2025", status: "Thành công" },
-  { id: "PAY004", package: "Premium Plus", amount: "2,500,000", date: "01/08/2025", status: "Thành công" },
-  { id: "PAY005", package: "Basic", amount: "1,200,000", date: "01/05/2025", status: "Thành công" },
-  { id: "PAY006", package: "Premium", amount: "1,800,000", date: "01/02/2025", status: "Thành công" },
-  { id: "PAY007", package: "Premium Plus", amount: "2,500,000", date: "01/08/2025", status: "Thành công" },
-  { id: "PAY008", package: "Basic", amount: "1,200,000", date: "01/05/2025", status: "Thành công" },
-  { id: "PAY009", package: "Premium", amount: "1,800,000", date: "01/02/2025", status: "Thành công" },
-  { id: "PAY0010", package: "Premium Plus", amount: "2,500,000", date: "01/08/2025", status: "Thành công" },
-  { id: "PAY0011", package: "Basic", amount: "1,200,000", date: "01/05/2025", status: "Thành công" },
-  { id: "PAY0012", package: "Premium", amount: "1,800,000", date: "01/02/2025", status: "Thành công" },
-  { id: "PAY0013", package: "Premium Plus", amount: "2,500,000", date: "01/08/2025", status: "Thành công" },
-  { id: "PAY0014", package: "Basic", amount: "1,200,000", date: "01/05/2025", status: "Thành công" },
-  { id: "PAY0015", package: "Premium", amount: "1,800,000", date: "01/02/2025", status: "Thành công" },
-]
+// Utility function to get payment type display
+const getPaymentTypeDisplay = (paymentType) => {
+  switch (paymentType) {
+    case "membership":
+      return "Gói tập"
+    case "booking":
+      return "Đặt lịch PT"
+    default:
+      return paymentType
+  }
+}
 
-const mockCheckins = [
-  { date: "02/09/2025", time: "18:30", location: "Gym Tân Bình" },
-  { date: "30/08/2025", time: "19:15", location: "Gym Tân Bình" },
-  { date: "28/08/2025", time: "17:45", location: "Gym Quận 7" },
-  { date: "26/08/2025", time: "18:00", location: "Gym Tân Bình" },
-  { date: "24/08/2025", time: "20:00", location: "Gym Quận 1" },
-  { date: "02/09/2025", time: "18:30", location: "Gym Tân Bình" },
-  { date: "30/08/2025", time: "19:15", location: "Gym Tân Bình" },
-  { date: "28/08/2025", time: "17:45", location: "Gym Quận 7" },
-  { date: "26/08/2025", time: "18:00", location: "Gym Tân Bình" },
-  { date: "24/08/2025", time: "20:00", location: "Gym Quận 1" },
-  { date: "02/09/2025", time: "18:30", location: "Gym Tân Bình" },
-  { date: "30/08/2025", time: "19:15", location: "Gym Tân Bình" },
-  { date: "28/08/2025", time: "17:45", location: "Gym Quận 7" },
-  { date: "26/08/2025", time: "18:00", location: "Gym Tân Bình" },
-  { date: "24/08/2025", time: "20:00", location: "Gym Quận 1" },
-  { date: "02/09/2025", time: "18:30", location: "Gym Tân Bình" },
-  { date: "30/08/2025", time: "19:15", location: "Gym Tân Bình" },
-  { date: "28/08/2025", time: "17:45", location: "Gym Quận 7" },
-  { date: "26/08/2025", time: "18:00", location: "Gym Tân Bình" },
-  { date: "24/08/2025", time: "20:00", location: "Gym Quận 1" },
-  { date: "02/09/2025", time: "18:30", location: "Gym Tân Bình" },
-  { date: "30/08/2025", time: "19:15", location: "Gym Tân Bình" },
-  { date: "28/08/2025", time: "17:45", location: "Gym Quận 7" },
-  { date: "26/08/2025", time: "18:00", location: "Gym Tân Bình" },
-  { date: "24/08/2025", time: "20:00", location: "Gym Quận 1" },
-]
+// Event Modal Component
+function EventModal({ open, event, onClose }) {
+  if (!event) return null
+
+  const formatTime = (isoString) => {
+    return new Date(isoString).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Ho_Chi_Minh",
+    })
+  }
+
+  const formatDate = (isoString) => {
+    return new Date(isoString).toLocaleDateString("vi-VN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Ho_Chi_Minh",
+    })
+  }
+
+  const getEventTypeDisplay = (eventType) => {
+    switch (eventType) {
+      case "booking":
+        return "Đặt lịch PT"
+      case "classSession":
+        return "Lớp học"
+      default:
+        return eventType
+    }
+  }
+
+  const getEventTypeColor = (eventType) => {
+    switch (eventType) {
+      case "booking":
+        return "primary"
+      case "classSession":
+        return "secondary"
+      default:
+        return "default"
+    }
+  }
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      closeAfterTransition
+      BackdropComponent={Backdrop}
+      BackdropProps={{
+        timeout: 500,
+      }}
+    >
+      <Fade in={open}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: { xs: "90%", sm: 600 },
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 4,
+            maxHeight: "90vh",
+            overflow: "auto",
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+            <Typography variant="h5" fontWeight="bold" color="primary">
+              Chi tiết sự kiện
+            </Typography>
+            <IconButton onClick={onClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Event Type */}
+            <Box>
+              <Chip
+                label={getEventTypeDisplay(event.eventType)}
+                color={getEventTypeColor(event.eventType)}
+                sx={{ mb: 2 }}
+              />
+              <Typography variant="h6" fontWeight="bold">
+                {event.title}
+              </Typography>
+            </Box>
+
+            {/* Date and Time */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <ScheduleIcon color="action" />
+              <Box>
+                <Typography variant="body1" fontWeight="bold">
+                  {formatDate(event.startTime)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {formatTime(event.startTime)} - {formatTime(event.endTime)}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Location */}
+            {event.locationName && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <LocationIcon color="action" />
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">
+                    Địa điểm
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {event.locationName}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Room (for class sessions) */}
+            {event.roomName && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <FitnessCenterIcon color="action" />
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">
+                    Phòng tập
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {event.roomName}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Trainer */}
+            {event.trainerName && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <PersonIcon color="action" />
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">
+                    Huấn luyện viên
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {Array.isArray(event.trainerName) ? event.trainerName.join(", ") : event.trainerName}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Fade>
+    </Modal>
+  )
+}
 
 function UserHomePage() {
-  const progressPercentage = (mockMembership.sessionsUsed / mockMembership.totalSessions) * 100
+  const { user } = useUserStore()
+  const { myMembership } = useMyMembershipStore()
 
-  const [events, setEvents] = useState([
-    {
-      title: "Yoga buổi sáng",
-      start: new Date(2025, 8, 1, 8, 0),
-      end: new Date(2025, 8, 1, 12, 30),
-      coach: "HLV Anna",
-      room: "Phòng 101",
-    },
-    {
-      title: "PT - Cardio Training",
-      start: new Date(2025, 8, 2, 14, 0),
-      end: new Date(2025, 8, 2, 22, 0),
-      coach: "HLV Minh",
-      room: "Phòng 202",
-    },
-  ])
+  // State for real data
+  const [payments, setPayments] = useState([])
+  const [attendances, setAttendances] = useState([])
+  const [events, setEvents] = useState([])
+  const [loadingPayments, setLoadingPayments] = useState(true)
+  const [loadingAttendances, setLoadingAttendances] = useState(true)
+  const [loadingEvents, setLoadingEvents] = useState(true)
+
+  // Modal state
+  const [selectedEvent, setSelectedEvent] = useState(null)
+  const [modalOpen, setModalOpen] = useState(false)
+
+  // Transform API events to GymCalendar format
+  const transformEventsForCalendar = (apiEvents) => {
+    return apiEvents.map((event) => ({
+      _id: event._id,
+      title: event.title,
+      startTime: event.startTime, // Already in ISO format
+      endTime: event.endTime, // Already in ISO format
+      locationName: event.locationName,
+      trainerName: event.trainerName,
+      eventType: event.eventType,
+      // Add roomName if it's a class session
+      roomName: event.roomName || null,
+    }))
+  }
+
+  // Handle event click
+  const handleEventClick = (event) => {
+    setSelectedEvent(event)
+    setModalOpen(true)
+  }
+
+  // Handle modal close
+  const handleModalClose = () => {
+    setModalOpen(false)
+    setSelectedEvent(null)
+  }
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        // Load payments
+        setLoadingPayments(true)
+        const dataPayment = await getPaymentsByUserIdAPI(user._id)
+        if (dataPayment?.success && dataPayment?.payments) {
+          setPayments(dataPayment.payments)
+        }
+        setLoadingPayments(false)
+
+        // Load attendances
+        setLoadingAttendances(true)
+        const dataAttendance = await getListAttendanceByUserIdAPI(user._id)
+        if (dataAttendance?.success && dataAttendance?.attendances) {
+          setAttendances(dataAttendance.attendances)
+        }
+        setLoadingAttendances(false)
+
+        // Load events
+        setLoadingEvents(true)
+        const eventsResponse = await getUserEventsForThreeMonthsAPI(user._id)
+        console.log("🚀 ~ init ~ events:", eventsResponse)
+
+        if (eventsResponse?.success && eventsResponse?.data?.events) {
+          const transformedEvents = transformEventsForCalendar(eventsResponse.data.events)
+          setEvents(transformedEvents)
+        }
+        setLoadingEvents(false)
+      } catch (error) {
+        console.error("Error loading data:", error)
+        setLoadingPayments(false)
+        setLoadingAttendances(false)
+        setLoadingEvents(false)
+      }
+    }
+
+    if (user?._id) {
+      init()
+    }
+  }, [user._id])
 
   return (
     <Container sx={{ py: 3 }}>
@@ -172,17 +336,17 @@ function UserHomePage() {
       <Card sx={{ mb: 3, background: "linear-gradient(135deg, #16697A 0%, #1A7A8A 100%)", color: "white" }}>
         <CardContent sx={{ py: 4 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <Avatar src={mockUser.avatar} sx={{ width: 100, height: 100, border: "3px solid white" }} />
+            <Avatar src={user.avatar} sx={{ width: 100, height: 100, border: "3px solid white" }} />
             <Box>
               <Typography variant="h4" fontWeight="bold" gutterBottom>
-                {mockUser.fullName}
+                {user.fullName}
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Typography variant="h6">Trạng thái:</Typography>
                 <Chip
-                  label={mockUser.membershipStatus === "active" ? "Active" : "Inactive"}
-                  color={mockUser.membershipStatus === "active" ? "success" : "error"}
-                  icon={mockUser.membershipStatus === "active" && <CheckCircleIcon />}
+                  label={user.status === "active" ? "Active" : "Inactive"}
+                  color={user.status === "active" ? "success" : "error"}
+                  icon={user.status === "active" && <CheckCircleIcon />}
                   sx={{ color: "white", fontWeight: "bold" }}
                 />
               </Box>
@@ -209,20 +373,20 @@ function UserHomePage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <CakeIcon color="action" fontSize="small" />
-                  <Typography variant="body2">Tuổi: {mockUser.age}</Typography>
+                  <Typography variant="body2">Tuổi: {user.age}</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <PersonIcon color="action" fontSize="small" />
-                  <Typography variant="body2">Giới tính: {mockUser.gender}</Typography>
+                  <Typography variant="body2">Giới tính: {user.gender === "male" ? "nam" : "nữ"}</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <PhoneIcon color="action" fontSize="small" />
-                  <Typography variant="body2">SĐT: {mockUser.phone}</Typography>
+                  <Typography variant="body2">SĐT: {user.phone}</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <LocationIcon color="action" fontSize="small" />
                   <Typography variant="body2" sx={{ lineHeight: 1.4 }}>
-                    Địa chỉ: {mockUser.address}
+                    Địa chỉ: {user.address}
                   </Typography>
                 </Box>
               </Box>
@@ -244,29 +408,39 @@ function UserHomePage() {
 
               <Box sx={{ textAlign: "center", mb: 2 }}>
                 <Typography variant="h5" fontWeight="bold" color="primary">
-                  {mockMembership.packageName}
+                  {myMembership?.name || "Chưa có gói"}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {mockMembership.startDate} - {mockMembership.endDate}
-                </Typography>
-              </Box>
-
-              <Box sx={{ mb: 2 }}>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                  <Typography variant="body2">Buổi tập đã dùng</Typography>
-                  <Typography variant="body2" fontWeight="bold">
-                    {mockMembership.sessionsUsed}/{mockMembership.totalSessions}
+                {myMembership?.startDate && myMembership?.endDate && (
+                  <Typography variant="body2" color="text.secondary">
+                    {convertISOToVNTime(myMembership.startDate)} - {convertISOToVNTime(myMembership.endDate)}
                   </Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={progressPercentage} sx={{ height: 8, borderRadius: 4 }} />
+                )}
               </Box>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Còn lại: {mockMembership.daysLeft} ngày
-                </Typography>
-                <Chip label="Còn hạn" color="success" size="small" />
-              </Box>
+              {myMembership?.startDate && myMembership?.endDate && (
+                <>
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                      <Typography variant="body2">Thời hạn gói tập</Typography>
+                      <Typography variant="body2">
+                        {calculateProgressPercent(myMembership.startDate, myMembership.endDate)} %
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={calculateProgressPercent(myMembership.startDate, myMembership.endDate)}
+                      sx={{ height: 8, borderRadius: 4 }}
+                    />
+                  </Box>
+
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Còn lại: {countRemainingDays(myMembership.endDate)} ngày
+                    </Typography>
+                    <Chip label="Còn hạn" color="success" size="small" />
+                  </Box>
+                </>
+              )}
 
               <Button variant="contained" fullWidth sx={{ mt: 1 }}>
                 Gia hạn gói
@@ -314,36 +488,20 @@ function UserHomePage() {
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
             <Typography variant="h6" fontWeight="bold" color="primary">
               Lịch đặt PT & Lớp học
+              {loadingEvents && <CircularProgress size={20} sx={{ ml: 2 }} />}
             </Typography>
             <Button variant="outlined" startIcon={<CalendarIcon />}>
               Đặt thêm
             </Button>
           </Box>
-          <GymCalendar />
-          {/* <Grid container spacing={2}>
-            {mockBookings.map((booking) => (
-              <Grid item xs={12} md={4} key={booking.id}>
-                <Card variant="outlined">
-                  <CardContent sx={{ py: 2 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                      <FitnessCenterIcon color="primary" fontSize="small" />
-                      <Typography variant="subtitle2" fontWeight="bold">
-                        {booking.type === "PT" ? booking.trainer : booking.name}
-                      </Typography>
-                      <Chip
-                        label={booking.status === "upcoming" ? "Sắp tới" : "Đã xong"}
-                        color={booking.status === "upcoming" ? "warning" : "success"}
-                        size="small"
-                      />
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {booking.date} - {booking.time}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid> */}
+
+          {loadingEvents ? (
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 400 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <GymCalendar events={events} onEventClick={handleEventClick} />
+          )}
         </CardContent>
       </Card>
 
@@ -352,38 +510,58 @@ function UserHomePage() {
         {/* Payments History */}
         <Grid item size={{ xs: 12, md: 7 }}>
           <Card sx={{ height: 500, display: "flex", flexDirection: "column" }}>
-            {/* bỏ padding mặc định, tự quản lý */}
             <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2, minHeight: 0 }}>
               <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
                 Lịch sử thanh toán
               </Typography>
 
-              <TableContainer sx={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Mã GD</TableCell>
-                      <TableCell>Gói tập</TableCell>
-                      <TableCell align="right">Số tiền</TableCell>
-                      <TableCell>Ngày</TableCell>
-                      <TableCell>Trạng thái</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {mockPayments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell>{payment.id}</TableCell>
-                        <TableCell>{payment.package}</TableCell>
-                        <TableCell align="right">{payment.amount}đ</TableCell>
-                        <TableCell>{payment.date}</TableCell>
-                        <TableCell>
-                          <Chip label={payment.status} color="success" size="small" />
-                        </TableCell>
+              {loadingPayments ? (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <TableContainer sx={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Mã GD</TableCell>
+                        <TableCell>Loại thanh toán</TableCell>
+                        <TableCell align="right">Số tiền</TableCell>
+                        <TableCell>Ngày</TableCell>
+                        <TableCell>Phương thức</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {payments.map((payment) => (
+                        <TableRow key={payment._id} sx={{ py: 6 }}>
+                          <TableCell sx={{ fontSize: "0.75rem" }}>{payment._id.slice(-8).toUpperCase()}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={getPaymentTypeDisplay(payment.paymentType)}
+                              color={payment.paymentType === "membership" ? "primary" : "secondary"}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                            {formatAmount(payment.amount)}
+                          </TableCell>
+                          <TableCell>{convertISOToVNTime(payment.paymentDate)}</TableCell>
+                          <TableCell>
+                            <Chip label={payment.paymentMethod.toUpperCase()} color="success" size="small" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {payments.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                            <Typography color="text.secondary">Chưa có lịch sử thanh toán</Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -396,26 +574,71 @@ function UserHomePage() {
                 Lịch sử check-in
               </Typography>
 
-              {/* Danh sách cuộn */}
-              <Box sx={{ flex: 1, overflowY: "auto" }}>
-                <List dense>
-                  {mockCheckins.map((checkin, index) => (
-                    <React.Fragment key={index}>
-                      <ListItem sx={{ px: 0 }}>
-                        <ListItemIcon>
-                          <CheckCircleIcon color="success" fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText primary={`${checkin.date} - ${checkin.time}`} secondary={checkin.location} />
+              {loadingAttendances ? (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <Box sx={{ flex: 1, overflowY: "auto" }}>
+                  <List dense>
+                    {attendances.map((attendance, index) => (
+                      <React.Fragment key={attendance._id}>
+                        <ListItem sx={{ px: 0 }}>
+                          <ListItemIcon>
+                            <CheckCircleIcon color="success" fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Box>
+                                <Typography variant="body2" fontWeight="bold">
+                                  {convertISOToVNTime(attendance.checkinTime)}
+                                </Typography>
+                                {attendance.checkoutTime && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Checkout: {convertISOToVNTime(attendance.checkoutTime)}
+                                  </Typography>
+                                )}
+                              </Box>
+                            }
+                            secondary={
+                              <Box>
+                                <Typography variant="body2">{attendance.location?.name}</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {attendance.location?.address?.street}, {attendance.location?.address?.ward}
+                                </Typography>
+                                {attendance.hours > 0 && (
+                                  <Typography variant="caption" display="block" color="primary">
+                                    Thời gian tập: {attendance.hours.toFixed(1)} giờ
+                                  </Typography>
+                                )}
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        {index < attendances.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
+                    {attendances.length === 0 && (
+                      <ListItem>
+                        <ListItemText
+                          primary={
+                            <Typography align="center" color="text.secondary">
+                              Chưa có lịch sử check-in
+                            </Typography>
+                          }
+                        />
                       </ListItem>
-                      {index < mockCheckins.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              </Box>
+                    )}
+                  </List>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
       </Grid>
+
+      {/* Event Modal */}
+      <EventModal open={modalOpen} event={selectedEvent} onClose={handleModalClose} />
     </Container>
   )
 }

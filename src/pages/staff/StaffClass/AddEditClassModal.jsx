@@ -31,11 +31,14 @@ import {
   PhotoCamera as PhotoCameraIcon,
   AttachMoney as MoneyIcon,
   LocationOn as LocationIcon,
+  Payment as PaymentIcon,
 } from "@mui/icons-material"
 import TimeField from "~/components/TimeField"
 import dayjs from "dayjs"
 import { createClassAPI, updateClassInfoAPI } from "~/apis/class"
 import { toast } from "react-toastify"
+import useCurrentLocation from "~/stores/useCurrentLocationStore"
+import useRoomsStore from "~/stores/useRoomsStore"
 
 const DAYS_OF_WEEK = [
   { value: 1, label: "Thứ 2" },
@@ -55,17 +58,13 @@ const CLASS_TYPES = [
   { value: "strength", label: "Strength" },
 ]
 
-export default function AddEditClassModal({
-  open,
-  onClose,
-  onSubmit,
-  classData,
-  trainers = [],
-  rooms = [],
-  locations = [],
-}) {
+export default function AddEditClassModal({ open, onClose, onSubmit, classData, trainers = [], locations = [] }) {
   const isEditMode = Boolean(classData)
   const fileInputRef = useRef(null)
+  const { currentLocation } = useCurrentLocation()
+  const { rooms } = useRoomsStore()
+
+  console.log("🚀 ~ AddEditClassModal ~ rooms:", rooms)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -73,13 +72,14 @@ export default function AddEditClassModal({
     classType: "",
     capacity: "",
     price: "",
+    ratePerClassSession: "",
     startDate: "",
     endDate: "",
     trainers: [],
     recurrence: [],
     image: "",
     imageFile: null,
-    locationId: "", // Change back to locationId for selection
+    locationId: "", // Will be set to currentLocation._id
   })
 
   const [errors, setErrors] = useState({})
@@ -92,10 +92,8 @@ export default function AddEditClassModal({
   const [imagePreview, setImagePreview] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Filter rooms based on selected location
-  const availableRooms = formData.locationId
-    ? rooms.filter((room) => room.locationId === formData.locationId || room.location?._id === formData.locationId)
-    : rooms
+  // Use rooms from store (already filtered for current location)
+  const availableRooms = rooms || []
 
   useEffect(() => {
     if (classData) {
@@ -105,6 +103,7 @@ export default function AddEditClassModal({
         classType: classData.classType || "",
         capacity: classData.capacity || "",
         price: classData.price || "",
+        ratePerClassSession: classData.ratePerClassSession || "",
         startDate: classData.startDate ? classData.startDate.split("T")[0] : "",
         endDate: classData.endDate ? classData.endDate.split("T")[0] : "",
         trainers: classData.trainers || [],
@@ -124,18 +123,19 @@ export default function AddEditClassModal({
         classType: "",
         capacity: "",
         price: "",
+        ratePerClassSession: "",
         startDate: "",
         endDate: "",
         trainers: [],
         recurrence: [],
         image: "",
         imageFile: null,
-        locationId: "",
+        locationId: currentLocation?._id || "", // Set current location by default
       })
       setImagePreview(null)
     }
     setErrors({})
-  }, [classData, open])
+  }, [classData, open, currentLocation])
 
   const handleChange = (field) => (event) => {
     const value = event.target.value
@@ -144,21 +144,6 @@ export default function AddEditClassModal({
       ...prev,
       [field]: value,
     }))
-
-    // Clear location-dependent data when location changes
-    if (field === "locationId") {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-        recurrence: [], // Clear existing schedules when location changes
-      }))
-      setNewRecurrence({
-        dayOfWeek: "",
-        startTime: { hour: 0, minute: 0 },
-        endTime: { hour: 0, minute: 0 },
-        roomId: "",
-      })
-    }
 
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: null }))
@@ -313,6 +298,10 @@ export default function AddEditClassModal({
         newErrors.price = "Giá học phí phải lớn hơn 0"
       }
 
+      if (!formData.ratePerClassSession || formData.ratePerClassSession < 10000) {
+        newErrors.ratePerClassSession = "Lương mỗi buổi dạy phải từ 10,000 VNĐ trở lên"
+      }
+
       if (!formData.startDate) {
         newErrors.startDate = "Ngày bắt đầu là bắt buộc"
       }
@@ -325,8 +314,8 @@ export default function AddEditClassModal({
         newErrors.endDate = "Ngày kết thúc phải sau ngày bắt đầu"
       }
 
-      if (!formData.locationId) {
-        newErrors.locationId = "Vui lòng chọn địa điểm"
+      if (!currentLocation) {
+        newErrors.locationId = "Không tìm thấy cơ sở hiện tại"
       }
 
       if (formData.recurrence.length === 0) {
@@ -358,8 +347,8 @@ export default function AddEditClassModal({
       const submitData = new FormData()
 
       // Basic fields
-      submitData.append("name", formData.name)
-      submitData.append("description", formData.description)
+      submitData.append("name", formData.name.trim())
+      submitData.append("description", formData.description.trim())
       submitData.append("capacity", parseInt(formData.capacity))
 
       // Handle image - either file upload or URL
@@ -375,7 +364,8 @@ export default function AddEditClassModal({
       if (!isEditMode) {
         submitData.append("classType", formData.classType)
         submitData.append("price", parseFloat(formData.price))
-        submitData.append("locationId", formData.locationId)
+        submitData.append("ratePerClassSession", parseFloat(formData.ratePerClassSession))
+        submitData.append("locationId", currentLocation._id)
 
         // Format dates to ISO string (matching your data structure)
         const startDate = new Date(formData.startDate + "T00:00:00.000Z").toISOString()
@@ -426,13 +416,14 @@ export default function AddEditClassModal({
       classType: "",
       capacity: "",
       price: "",
+      ratePerClassSession: "",
       startDate: "",
       endDate: "",
       trainers: [],
       recurrence: [],
       image: "",
       imageFile: null,
-      locationId: "",
+      locationId: currentLocation?._id || "",
     })
     setErrors({})
     setNewRecurrence({
@@ -454,7 +445,7 @@ export default function AddEditClassModal({
   }
 
   const getRoomName = (roomId) => {
-    const room = availableRooms.find((r) => (r._id || r.id) === roomId)
+    const room = availableRooms.find((r) => r._id === roomId)
     return room?.name || `Room ${roomId}`
   }
 
@@ -595,39 +586,69 @@ export default function AddEditClassModal({
                 />
               </Grid>
 
-              {/* Location Selection */}
               <Grid item size={{ xs: 12 }}>
-                <FormControl size="small" fullWidth error={Boolean(errors.locationId)} required>
-                  <InputLabel>Địa điểm</InputLabel>
-                  <Select
-                    value={formData.locationId}
-                    onChange={handleChange("locationId")}
-                    label="Địa điểm"
-                    startAdornment={
+                <TextField
+                  fullWidth
+                  label="Lương mỗi buổi dạy (VNĐ)"
+                  type="number"
+                  value={formData.ratePerClassSession}
+                  onChange={handleChange("ratePerClassSession")}
+                  error={Boolean(errors.ratePerClassSession)}
+                  helperText={errors.ratePerClassSession}
+                  InputProps={{
+                    inputProps: { min: 10000, step: 1000 },
+                    startAdornment: (
                       <InputAdornment position="start">
-                        <LocationIcon />
+                        <PaymentIcon />
                       </InputAdornment>
-                    }
-                  >
-                    {locations.map((location) => (
-                      <MenuItem key={location._id} value={location._id}>
-                        <Box>
-                          <Typography variant="body2" fontWeight="medium">
-                            {location.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {location.address.street}, {location.address.ward}, {location.address.province}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.locationId && (
-                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
-                      {errors.locationId}
+                    ),
+                  }}
+                  required
+                  size="small"
+                />
+              </Grid>
+
+              {/* Current Location Display */}
+              <Grid item size={{ xs: 12 }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    border: 1,
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    bgcolor: "grey.50",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                    <LocationIcon color="primary" />
+                    <Typography variant="subtitle2" fontWeight="medium" color="primary.main">
+                      Cơ sở hiện tại
+                    </Typography>
+                  </Box>
+                  {currentLocation ? (
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {currentLocation.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {currentLocation.address.street}, {currentLocation.address.ward},{" "}
+                        {currentLocation.address.province}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                        📞 {currentLocation.phone}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="error">
+                      Không tìm thấy thông tin cơ sở hiện tại
                     </Typography>
                   )}
-                </FormControl>
+                </Box>
+                {errors.locationId && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: "block" }}>
+                    {errors.locationId}
+                  </Typography>
+                )}
               </Grid>
 
               {/* Date Range */}
@@ -674,21 +695,31 @@ export default function AddEditClassModal({
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ mt: 2 }}>
                   Lịch học
                 </Typography>
-                {!formData.locationId && (
+                {!currentLocation && (
+                  <Typography variant="body2" color="error" sx={{ mb: 2 }}>
+                    Không tìm thấy cơ sở hiện tại để xem danh sách phòng học
+                  </Typography>
+                )}
+                {currentLocation && availableRooms.length === 0 && (
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Vui lòng chọn địa điểm trước để xem danh sách phòng học
+                    Không có phòng học nào khả dụng tại cơ sở này
+                  </Typography>
+                )}
+                {currentLocation && availableRooms.length > 0 && (
+                  <Typography variant="body2" color="success.main" sx={{ mb: 2 }}>
+                    {availableRooms.length} phòng học khả dụng
                   </Typography>
                 )}
               </Grid>
 
               <Grid item size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth size="small">
+                <FormControl fullWidth>
                   <InputLabel>Ngày trong tuần</InputLabel>
                   <Select
                     value={newRecurrence.dayOfWeek}
                     onChange={(e) => setNewRecurrence((prev) => ({ ...prev, dayOfWeek: e.target.value }))}
                     label="Ngày trong tuần"
-                    disabled={!formData.locationId}
+                    disabled={!currentLocation || availableRooms.length === 0}
                   >
                     {DAYS_OF_WEEK.map((day) => (
                       <MenuItem key={day.value} value={day.value}>
@@ -700,17 +731,29 @@ export default function AddEditClassModal({
               </Grid>
 
               <Grid item size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth size="small">
+                <FormControl fullWidth>
                   <InputLabel>Phòng học</InputLabel>
                   <Select
                     value={newRecurrence.roomId}
                     onChange={(e) => setNewRecurrence((prev) => ({ ...prev, roomId: e.target.value }))}
                     label="Phòng học"
-                    disabled={!formData.locationId}
+                    disabled={!currentLocation || availableRooms.length === 0}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <RoomIcon />
+                      </InputAdornment>
+                    }
                   >
                     {availableRooms.map((room) => (
-                      <MenuItem key={room._id || room.id} value={room._id || room.id}>
-                        {room.name}
+                      <MenuItem key={room._id} value={room._id}>
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {room.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Sức chứa: {room.capacity} người
+                          </Typography>
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
@@ -727,7 +770,7 @@ export default function AddEditClassModal({
                       startTime: updater(prev.startTime),
                     }))
                   }
-                  disabled={!formData.locationId}
+                  disabled={!currentLocation || availableRooms.length === 0}
                 />
               </Grid>
 
@@ -741,7 +784,7 @@ export default function AddEditClassModal({
                       endTime: updater(prev.endTime),
                     }))
                   }
-                  disabled={!formData.locationId}
+                  disabled={!currentLocation || availableRooms.length === 0}
                 />
               </Grid>
 
@@ -751,7 +794,8 @@ export default function AddEditClassModal({
                   variant="contained"
                   onClick={handleAddRecurrence}
                   disabled={
-                    !formData.locationId ||
+                    !currentLocation ||
+                    availableRooms.length === 0 ||
                     !newRecurrence.dayOfWeek ||
                     !newRecurrence.startTime ||
                     !newRecurrence.endTime ||

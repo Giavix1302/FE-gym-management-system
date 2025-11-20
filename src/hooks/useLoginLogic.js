@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import { loginAPI } from "~/apis/auth"
 import { getListLocationAPI } from "~/apis/location"
-import { getListRoomAPI } from "~/apis/room"
+import { getListRoomAPI, getListRoomByLocationIdAPI } from "~/apis/room"
 import { getListTrainerForAdminAPI } from "~/apis/trainer"
 import { getListScheduleByTrainerIdAPI } from "~/apis/schedule"
 import { getListMembershipAPI } from "~/apis/membership"
@@ -102,6 +102,10 @@ export const useLoginLogic = () => {
           updateUser(user)
           setCurrentLocation(data?.locationInfo)
           setStaff(data?.staffInfo)
+
+          const resultRoom = await getListRoomByLocationIdAPI(data?.locationInfo?._id)
+          console.log("🚀 ~ handleLogin ~ resultRoom:", resultRoom)
+          if (resultRoom.success) setRooms(resultRoom.data)
 
           // trainer
           const response = await getListTrainerForAdminAPI()

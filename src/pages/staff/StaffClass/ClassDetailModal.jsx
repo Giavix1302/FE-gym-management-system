@@ -39,6 +39,7 @@ import {
   LocationOn as LocationIcon,
   TableView as TableViewIcon,
   CalendarMonth as CalendarViewIcon,
+  Payment as PaymentIcon,
 } from "@mui/icons-material"
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney"
 import useRoomsStore from "~/stores/useRoomsStore"
@@ -403,6 +404,43 @@ export default function ClassDetailModal({ open, onClose, classData, onEdit, onD
                 <Typography variant="body2" color="text.secondary">
                   {classData.description}
                 </Typography>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Pricing Information */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Thông tin giá:
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item size={{ xs: 6 }}>
+                    <Card variant="outlined" sx={{ p: 2, textAlign: "center" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
+                        <AttachMoneyIcon color="primary" />
+                        <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                          Học phí
+                        </Typography>
+                      </Box>
+                      <Typography variant="h5" fontWeight="bold" color="primary.main">
+                        {formatCurrency(classData.price || 0)}
+                      </Typography>
+                    </Card>
+                  </Grid>
+                  <Grid item size={{ xs: 6 }}>
+                    <Card variant="outlined" sx={{ p: 2, textAlign: "center" }}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 1 }}>
+                        <PaymentIcon color="success" />
+                        <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                          Lương mỗi buổi dạy
+                        </Typography>
+                      </Box>
+                      <Typography variant="h5" fontWeight="bold" color="success.main">
+                        {formatCurrency(classData.ratePerClassSession || 0)}
+                      </Typography>
+                    </Card>
+                  </Grid>
+                </Grid>
               </Box>
 
               <Divider sx={{ my: 2 }} />
