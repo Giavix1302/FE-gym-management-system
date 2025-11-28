@@ -25,7 +25,7 @@ export function useLogout() {
   const { resetMyMembership } = useMyMembershipStore()
   const { resetRooms } = useRoomsStore()
   const { resetTrainerInfo } = useTrainerInfoStore()
-  const { resetUser } = useUserStore()
+  const { user, resetUser } = useUserStore()
   const { clearStore } = useEquipmentForAdminStore()
   const { staff, resetStaff } = useStaffStore()
 
@@ -33,6 +33,25 @@ export function useLogout() {
 
   const logout = async () => {
     try {
+      // 🔥 THÊM: Nếu user là staff thì gọi API logout staff trước
+      if (user?.role === "staff" && staff?._id) {
+        try {
+          console.log("🚀 Logging out staff:", staff._id)
+          const staffLogoutResult = await handleLogoutStaff(staff._id)
+
+          if (staffLogoutResult.success) {
+            console.log("✅ Staff logged out successfully. Hours worked:", staffLogoutResult.hours)
+            // Có thể hiện thông báo cho user biết số giờ đã làm
+            // alert(`Bạn đã làm việc ${staffLogoutResult.hours} giờ hôm nay!`)
+          } else {
+            console.error("❌ Staff logout failed:", staffLogoutResult.message)
+          }
+        } catch (staffLogoutError) {
+          console.error("❌ Error during staff logout:", staffLogoutError)
+          // Vẫn tiếp tục logout dù có lỗi
+        }
+      }
+
       // xóa accessToken
       removeFromLocalStorage("accessToken")
       // xóa store

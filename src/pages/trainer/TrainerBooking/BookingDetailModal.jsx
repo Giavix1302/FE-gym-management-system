@@ -430,7 +430,7 @@ export default function BookingDetailModal({ booking, isOpen, onClose, onSaveAdv
               {bookingData.trainerAdvice && bookingData.trainerAdvice.length > 0 ? (
                 <Stack spacing={2} sx={{ mb: 2 }}>
                   {bookingData.trainerAdvice.map((advice, index) => (
-                    <Card key={index} variant="outlined" sx={{ bgcolor: "success.light", borderColor: "success.main" }}>
+                    <Card key={index} variant="outlined" sx={{ borderColor: "success.main" }}>
                       <CardContent>
                         <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                           {advice.title}

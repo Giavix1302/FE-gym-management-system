@@ -43,11 +43,10 @@ import {
 } from "@mui/icons-material"
 import GymCalendar from "~/components/Calendar"
 import BookingDetailModal from "./BookingDetailModal"
-import { getBookingsByTrainerIdAPI } from "~/apis/booking"
+import { updateTrainerAdviceAPI } from "~/apis/booking"
 import { theme } from "~/theme"
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import dayjs from "dayjs"
-import { convertToISODateRange } from "~/utils/common"
 import { createScheduleForPtAPI } from "~/apis/schedule"
 import { toast } from "react-toastify"
 import DateField from "~/components/DateField"
@@ -224,7 +223,8 @@ function BookingListItem({ booking, onViewDetails, onAddAdvice }) {
 export default function TrainerBookingPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const { trainerInfo } = useTrainerInfoStore()
-  const { listSchedule, setListSchedule } = useListScheduleForPTStore()
+  const { listSchedule, setListSchedule, updateSchedule } = useListScheduleForPTStore()
+  console.log("🚀 ~ TrainerBookingPage ~ listSchedule:", listSchedule)
 
   // States
   const [tabValue, setTabValue] = useState(0)
@@ -374,10 +374,47 @@ export default function TrainerBookingPage() {
     setSelectedBooking(null)
   }
 
-  const handleSaveAdvice = (bookingId, advice) => {
-    // Handle save advice logic
-    console.log("Save advice for booking:", bookingId, advice)
-    handleCloseModal()
+  // const handleSaveAdvice = (bookingId, advice) => {
+  //   // Handle save advice logic
+  //   console.log("Save advice for booking:", bookingId, advice)
+
+  //   updateTrainerAdviceAPI
+  //   handleCloseModal()
+  // }
+
+  const handleSaveAdvice = async (scheduleId, advice) => {
+    try {
+      // Tìm schedule bằng scheduleId để lấy bookingId
+      const scheduleToUpdate = listSchedule.find((schedule) => schedule._id === scheduleId)
+
+      if (!scheduleToUpdate || !scheduleToUpdate.booking?.bookingId) {
+        toast.error("Không tìm thấy booking để cập nhật")
+        return
+      }
+
+      const bookingId = scheduleToUpdate.booking.bookingId
+
+      // Gọi API với bookingId
+      const result = await updateTrainerAdviceAPI(bookingId, advice)
+
+      if (result.success) {
+        // Cập nhật schedule với trainerAdvice mới
+        updateSchedule(scheduleToUpdate._id, {
+          booking: {
+            ...scheduleToUpdate.booking,
+            trainerAdvice: result.booking.trainerAdvice,
+          },
+        })
+
+        toast.success("Đã lưu lời khuyên thành công!")
+        handleCloseModal()
+      } else {
+        toast.error(result.message || "Không thể lưu lời khuyên")
+      }
+    } catch (error) {
+      console.error("Failed to save advice:", error)
+      toast.error("Có lỗi xảy ra khi lưu lời khuyên")
+    }
   }
 
   const handleDeleteSlot = (bookingId) => {

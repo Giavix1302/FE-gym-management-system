@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react"
 import { Box, CircularProgress } from "@mui/material"
 import { BrowserRouter as Router } from "react-router-dom"
-import ChatbotProvider from "~/components/ChatbotProvider" // ✅ THÊM
+import ChatbotProvider from "~/components/ChatbotProvider"
 
 const AppRoutes = lazy(() => import("./routers"))
 
@@ -23,8 +23,6 @@ function App() {
     >
       <Router>
         <ChatbotProvider>
-          {" "}
-          {/* ✅ WRAP */}
           <AppRoutes />
         </ChatbotProvider>
       </Router>

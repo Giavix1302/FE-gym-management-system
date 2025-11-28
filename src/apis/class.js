@@ -25,6 +25,11 @@ export const getListClassForTrainerAPI = async (trainerId) => {
   return rep.data
 }
 
+export const getListClassByLocationIdAPI = async (locationId) => {
+  const rep = await axiosInstance.get("/classes/location/" + locationId)
+  return rep.data
+}
+
 export const updateClassInfoAPI = async (classId, updateData) => {
   const rep = await axiosInstance.put("/classes/" + classId, updateData, {
     headers: { "Content-Type": "multipart/form-data" },

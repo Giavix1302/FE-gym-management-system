@@ -97,6 +97,46 @@ const convertToISODate = (dateStr) => {
   }
 }
 
+// Helper function to calculate age from date of birth
+const calculateAge = (dateOfBirth) => {
+  if (!dateOfBirth) return null
+
+  try {
+    let birthDate
+
+    // Handle different date formats
+    if (typeof dateOfBirth === "string") {
+      if (dateOfBirth.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // YYYY-MM-DD format
+        birthDate = new Date(dateOfBirth)
+      } else {
+        // ISO string or other formats
+        birthDate = new Date(dateOfBirth)
+      }
+    } else {
+      birthDate = new Date(dateOfBirth)
+    }
+
+    if (isNaN(birthDate.getTime())) {
+      return null
+    }
+
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+
+    return age >= 0 ? age : null
+  } catch (error) {
+    console.error("Error calculating age:", error)
+    return null
+  }
+}
+
 export default function UserProfilePage() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
@@ -126,6 +166,7 @@ export default function UserProfilePage() {
       gender: user.gender || "",
       dateOfBirth: user.dateOfBirth ? convertISOToInputDate(user.dateOfBirth) : "",
       address: user.address || "",
+      age: user.age || "",
       // Read-only fields
       role: user.role || "",
       status: user.status || "",
@@ -146,10 +187,22 @@ export default function UserProfilePage() {
 
   // Handlers
   const handleFieldChange = (field, value) => {
-    setEditData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setEditData((prev) => {
+      const newEditData = {
+        ...prev,
+        [field]: value,
+      }
+
+      // If dateOfBirth is changed, automatically calculate and update age
+      if (field === "dateOfBirth" && value) {
+        const calculatedAge = calculateAge(value)
+        if (calculatedAge !== null) {
+          newEditData.age = calculatedAge
+        }
+      }
+
+      return newEditData
+    })
 
     // Clear error when user types
     if (errors[field]) {
@@ -239,12 +292,18 @@ export default function UserProfilePage() {
         gender: getCurrentValue("gender") || null,
       }
 
-      // Add dateOfBirth if provided
+      // Add dateOfBirth and age if provided
       const dateOfBirth = getCurrentValue("dateOfBirth")
       if (dateOfBirth && dateOfBirth.trim() !== "") {
         const isoDate = convertToISODate(dateOfBirth)
         if (isoDate) {
           updateData.dateOfBirth = isoDate
+
+          // Calculate and include age
+          const calculatedAge = calculateAge(dateOfBirth)
+          if (calculatedAge !== null) {
+            updateData.age = calculatedAge
+          }
         } else {
           setSnackbarMessage("Ngày sinh không hợp lệ, vui lòng kiểm tra lại")
           setSnackbarSeverity("error")
@@ -299,6 +358,15 @@ export default function UserProfilePage() {
     }
   }
 
+  // Calculate current age for display
+  const currentAge = useMemo(() => {
+    const dateOfBirth = getCurrentValue("dateOfBirth")
+    if (!dateOfBirth) return userData.age || ""
+
+    const calculatedAge = calculateAge(dateOfBirth)
+    return calculatedAge !== null ? calculatedAge : userData.age || ""
+  }, [getCurrentValue, userData.age])
+
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
@@ -352,6 +420,11 @@ export default function UserProfilePage() {
           <Typography variant="body2" color="text.secondary">
             {userData.email}
           </Typography>
+          {currentAge && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Tuổi: {currentAge}
+            </Typography>
+          )}
         </Box>
 
         {/* Action Buttons */}
@@ -454,7 +527,10 @@ export default function UserProfilePage() {
               onChange={(e) => handleFieldChange("dateOfBirth", e.target.value)}
               disabled={!isEditing}
               error={!!errors.dateOfBirth}
-              helperText={errors.dateOfBirth}
+              helperText={
+                errors.dateOfBirth ||
+                (isEditing && getCurrentValue("dateOfBirth") ? `Tuổi tự động tính: ${currentAge}` : "")
+              }
               InputLabelProps={{ shrink: true }}
               InputProps={{
                 startAdornment: (
@@ -463,6 +539,17 @@ export default function UserProfilePage() {
                   </InputAdornment>
                 ),
               }}
+            />
+          </Grid>
+
+          {/* Age (Read-only, auto-calculated) */}
+          <Grid item size={{ xs: 12, md: 6 }}>
+            <TextField
+              fullWidth
+              label="Tuổi"
+              value={currentAge}
+              disabled
+              helperText="Tuổi được tính tự động từ ngày sinh"
             />
           </Grid>
 
@@ -533,6 +620,8 @@ export default function UserProfilePage() {
               • Số điện thoại không thể thay đổi vì đây là thông tin đăng nhập
               <br />
               • Avatar hỗ trợ các định dạng: JPG, PNG, GIF
+              <br />
+              • Tuổi sẽ được tính tự động khi bạn nhập ngày sinh
               <br />• Thông tin sẽ được cập nhật ngay lập tức sau khi lưu
             </Typography>
           </Alert>

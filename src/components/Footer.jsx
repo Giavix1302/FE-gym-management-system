@@ -1,8 +1,8 @@
-import React from "react";
-import { Box, Grid, Typography, Link, IconButton } from "@mui/material";
-import { Facebook, Instagram, YouTube } from "@mui/icons-material";
-import logo from "~/assets/logo.png";
-import { theme } from "~/theme";
+import React from "react"
+import { Box, Grid, Typography, Link, IconButton } from "@mui/material"
+import { Facebook, Instagram, YouTube } from "@mui/icons-material"
+import logo from "~/assets/logo.png"
+import { theme } from "~/theme"
 
 export default function Footer() {
   return (
@@ -11,26 +11,17 @@ export default function Footer() {
       sx={{
         backgroundColor: "#16697A",
         color: "#EDE7E3",
-        mt: 5,
+        // mt: 5,
         pt: 5,
         pb: 2,
         px: { xs: 3, md: 10 },
       }}
     >
-      <Grid
-        container
-        spacing={4}
-        alignItems="flex-start"
-        justifyContent="space-between"
-      >
+      <Grid container spacing={4} alignItems="flex-start" justifyContent="space-between">
         {/* Logo + Giới thiệu */}
         <Grid item xs={12} md={3}>
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <img
-              src={logo}
-              alt="The Gym Logo"
-              style={{ height: 50, width: "auto" }}
-            />
+            <img src={logo} alt="The Gym Logo" style={{ height: 50, width: "auto" }} />
           </Box>
         </Grid>
 
@@ -46,13 +37,7 @@ export default function Footer() {
           >
             Liên kết nhanh
           </Typography>
-          {[
-            "Về THE GYM",
-            "Hệ thống phòng tập",
-            "Gói thuê PT",
-            "Lớp tập nhóm",
-            "Liên hệ",
-          ].map((text, i) => (
+          {["Về THE GYM", "Hệ thống phòng tập", "Gói thuê PT", "Lớp tập nhóm", "Liên hệ"].map((text, i) => (
             <Typography key={i} variant="body1" sx={{ mb: 1 }}>
               <Link href="#" underline="hover" color="inherit">
                 {text}
@@ -122,10 +107,8 @@ export default function Footer() {
           pt: 2,
         }}
       >
-        <Typography variant="body2">
-          © {new Date().getFullYear()} THE GYM. All rights reserved.
-        </Typography>
+        <Typography variant="body2">© {new Date().getFullYear()} THE GYM. All rights reserved.</Typography>
       </Box>
     </Box>
-  );
+  )
 }

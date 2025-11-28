@@ -27,7 +27,6 @@ export const useNotifications = (params = {}) => {
         ...data,
         notifications:
           data.notifications?.map((notification) => {
-            console.log("🚀 ~ useNotifications ~ notification:", notification)
             return {
               ...notification,
               timeAgo: formatTimeAgo(notification.scheduledAt),

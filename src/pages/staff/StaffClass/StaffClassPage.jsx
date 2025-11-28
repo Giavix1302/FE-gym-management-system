@@ -42,14 +42,16 @@ import ClassDetailModal from "./ClassDetailModal"
 import ConfirmDialog from "~/components/ConfirmDialog"
 import useRoomsStore from "~/stores/useRoomsStore"
 import useListTrainerInfoForAdmin from "~/stores/useListTrainerInfoForAdmin"
-import { deleteClassAPI, getListClassForAdminAPI } from "~/apis/class"
+import { deleteClassAPI, getListClassByLocationIdAPI } from "~/apis/class"
 import useLocationStore from "~/stores/useLocationStore"
+import useCurrentLocation from "~/stores/useCurrentLocationStore"
 
 // Main Component
 export default function StaffClassPage() {
   const { rooms } = useRoomsStore()
   const { listTrainerInfo } = useListTrainerInfoForAdmin()
   const { locations } = useLocationStore()
+  const { currentLocation } = useCurrentLocation()
 
   const [classes, setClasses] = useState([])
   console.log("🚀 ~ StaffClassPage ~ classes:", classes)
@@ -72,7 +74,7 @@ export default function StaffClassPage() {
 
   useEffect(() => {
     const init = async () => {
-      const data = await getListClassForAdminAPI()
+      const data = await getListClassByLocationIdAPI(currentLocation._id)
       setClasses(data.classes)
     }
     init()

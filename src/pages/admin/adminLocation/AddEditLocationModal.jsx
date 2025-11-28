@@ -353,11 +353,11 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
         </IconButton>
       </DialogTitle>
 
-      <form onSubmit={handleSubmit}>
+      <Box component="form" onSubmit={handleSubmit} sx={{ overflowY: "auto" }}>
         <DialogContent dividers>
           <Grid container spacing={3}>
             {/* Basic Information */}
-            <Grid item xs={12}>
+            <Grid item size={{ xs: 12 }}>
               <Typography
                 variant="h6"
                 fontWeight="bold"
@@ -369,7 +369,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
               </Typography>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Tên Location *"
@@ -382,7 +382,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <TextField
                 fullWidth
                 label="Số điện thoại *"
@@ -399,7 +399,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
             </Grid>
 
             {/* Address Information */}
-            <Grid item xs={12}>
+            <Grid item size={{ xs: 12 }}>
               <Typography
                 variant="h6"
                 fontWeight="bold"
@@ -411,7 +411,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
               </Typography>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item size={{ xs: 12 }}>
               <TextField
                 fullWidth
                 label="Đường/Số nhà *"
@@ -424,7 +424,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
               />
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth variant="outlined" error={!!errors.province}>
                 <InputLabel>Tỉnh/Thành phố *</InputLabel>
                 <Select
@@ -449,7 +449,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <FormControl fullWidth variant="outlined" error={!!errors.ward} disabled={!selectedProvinceCode}>
                 <InputLabel>Phường/Xã/Thị trấn *</InputLabel>
                 <Select
@@ -476,7 +476,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
             </Grid>
 
             {/* Images */}
-            <Grid item xs={12}>
+            <Grid item size={{ xs: 12 }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                 <Typography variant="h6" fontWeight="bold">
                   Hình ảnh Location ({images.length + newImages.length}/6)
@@ -669,22 +669,22 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
             </Alert>
           )}
         </DialogContent>
+      </Box>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleClose} disabled={loading} color="inherit">
-            Hủy
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={loading}
-            startIcon={isEditing ? <BusinessIcon /> : <AddIcon />}
-            sx={{ minWidth: 120 }}
-          >
-            {loading ? "Đang xử lý..." : isEditing ? "Cập nhật" : "Thêm mới"}
-          </Button>
-        </DialogActions>
-      </form>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button onClick={handleClose} disabled={loading} color="inherit">
+          Hủy
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={loading}
+          startIcon={isEditing ? <BusinessIcon /> : <AddIcon />}
+          sx={{ minWidth: 120 }}
+        >
+          {loading ? "Đang xử lý..." : isEditing ? "Cập nhật" : "Thêm mới"}
+        </Button>
+      </DialogActions>
 
       {/* Image Preview Dialog */}
       <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="md" fullWidth>

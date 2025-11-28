@@ -27,6 +27,7 @@ import HomeWorkIcon from "@mui/icons-material/HomeWork"
 import LocationOnIcon from "@mui/icons-material/LocationOn"
 import PeopleIcon from "@mui/icons-material/People"
 import SmartToyIcon from "@mui/icons-material/SmartToy"
+import QueryBuilderIcon from "@mui/icons-material/QueryBuilder"
 
 import { AppProvider } from "@toolpad/core/AppProvider"
 import { DashboardLayout } from "@toolpad/core/DashboardLayout"
@@ -72,7 +73,7 @@ const NAVIGATION_ADMIN = [
   },
   {
     segment: "admin/pt",
-    title: "Huấn luyện viên (PT)",
+    title: "Huấn luyện viên",
     icon: <SportsKabaddiIcon />,
   },
   {
@@ -123,17 +124,26 @@ const NAVIGATION_ADMIN = [
         icon: <PersonIcon />,
       },
       {
-        segment: "traffic",
-        title: "Traffic",
-        icon: <DescriptionIcon />,
+        segment: "pt",
+        title: "Huấn luyện viên",
+        icon: <SportsKabaddiIcon />,
+      },
+      {
+        segment: "staff",
+        title: "Nhân viên",
+        icon: <PeopleIcon />,
+      },
+      {
+        segment: "membership",
+        title: "Gói tập",
+        icon: <CardMembershipIcon />,
+      },
+      {
+        segment: "payment",
+        title: "Thanh toán",
+        icon: <AttachMoneyIcon />,
       },
     ],
-  },
-
-  {
-    segment: "admin/integrations",
-    title: "Tích hợp",
-    icon: <LayersIcon />,
   },
 ]
 
@@ -188,6 +198,18 @@ const NAVIGATION_STAFF = [
     segment: "staff/info",
     title: "Thông tin phòng gym",
     icon: <HomeWorkIcon />,
+  },
+  {
+    kind: "divider",
+  },
+  {
+    kind: "header",
+    title: "Thông kê",
+  },
+  {
+    segment: "staff/working-hours",
+    title: "Giờ làm việc",
+    icon: <QueryBuilderIcon />,
   },
 ]
 

@@ -50,7 +50,6 @@ const NotificationPanel = () => {
   const deleteNotification = useDeleteNotification()
 
   const notifications = notificationsData?.notifications || []
-  console.log("🚀 ~ NotificationPanel ~ notifications:", notifications)
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget)

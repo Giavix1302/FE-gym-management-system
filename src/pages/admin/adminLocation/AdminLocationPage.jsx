@@ -21,6 +21,8 @@ import {
   InputAdornment,
   Alert,
   Snackbar,
+  CardContent,
+  Card,
 } from "@mui/material"
 import {
   Add as AddIcon,
@@ -32,6 +34,7 @@ import {
   MeetingRoom as RoomIcon,
   FitnessCenter as EquipmentIcon,
 } from "@mui/icons-material"
+import HomeWorkIcon from "@mui/icons-material/HomeWork"
 
 import { getListLocationForAdminAPI, createLocationAPI, updateLocationAPI, deleteLocationAPI } from "~/apis/location"
 import LocationDetailModal from "./LocationDetailModal"
@@ -81,6 +84,7 @@ function AdminLocationPage() {
       const response = await getListLocationForAdminAPI(pageNum, limit)
       if (response.success) {
         setLocations(response.locations)
+        console.log("🚀 ~ fetchLocations ~ response.locations:", response.locations)
         setPagination(response.pagination)
       } else {
         setError(response.message || "Lỗi khi tải danh sách location")
@@ -211,22 +215,27 @@ function AdminLocationPage() {
   }, [locations])
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <BusinessIcon sx={{ fontSize: 32, color: "primary.main" }} />
-          <Typography variant="h4" fontWeight="bold">
-            Quản lý Location
-          </Typography>
-        </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddNew}>
-          Thêm Location
-        </Button>
-      </Box>
+    <Box sx={{ p: 1, height: "100%" }}>
+      <Card sx={{ mb: 1 }}>
+        <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <HomeWorkIcon sx={{ fontSize: 32, color: "primary.main" }} />
+              <Typography variant="h4" fontWeight="bold">
+                Quản lý Location
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddNew}>
+                Thêm Location
+              </Button>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Search and Filter Toolbar */}
-      <Paper sx={{ p: 2, mb: 3 }}>
+      <Paper sx={{ p: 1, mb: 1 }}>
         <Toolbar sx={{ px: 0 }}>
           <TextField
             placeholder="Tìm kiếm theo tên, địa chỉ, số điện thoại..."
@@ -250,7 +259,7 @@ function AdminLocationPage() {
             onChange={(e) => setSelectedProvince(e.target.value)}
             variant="outlined"
             size="small"
-            sx={{ minWidth: 200 }}
+            sx={{ minWidth: 300 }}
           >
             <MenuItem value="">Tất cả</MenuItem>
             {uniqueProvinces.map((province) => (
@@ -270,9 +279,9 @@ function AdminLocationPage() {
       )}
 
       {/* Main Table */}
-      <Paper>
-        <TableContainer>
-          <Table>
+      <Paper sx={{ display: "flex", flexDirection: "column", flex: 1, height: "67vh" }}>
+        <TableContainer sx={{ flex: 1 }}>
+          <Table stickyHeader>
             <TableHead>
               <TableRow>
                 <TableCell>Tên Location</TableCell>

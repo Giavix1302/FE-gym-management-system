@@ -130,8 +130,7 @@ export default function Header() {
                 key={item.title}
                 sx={{
                   color: "#EDE7E3",
-                  textTransform: "uppercase",
-                  fontSize: "1rem",
+                  fontSize: "1.125rem",
                   position: "relative",
                   "&:hover": {
                     color: "#FFA62B",

@@ -7,13 +7,13 @@ export default function NotFoundPage() {
   const navigate = useNavigate()
 
   const handleBackHome = () => {
-    if (user.role === "user") {
+    if (user?.role === "user") {
       navigate("/user/home")
-    } else if (user.role === "pt") {
+    } else if (user?.role === "pt") {
       navigate("/pt/home")
-    } else if (user.role === "staff") {
+    } else if (user?.role === "staff") {
       navigate("/staff/dashboard")
-    } else if (user.role === "admin") {
+    } else if (user?.role === "admin") {
       navigate("/admin/dashboard")
     } else {
       navigate("/")

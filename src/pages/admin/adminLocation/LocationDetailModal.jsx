@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import {
   Dialog,
   DialogTitle,
@@ -24,12 +24,14 @@ import {
   Divider,
   ImageList,
   ImageListItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material"
 import {
   Close as CloseIcon,
   LocationOn as LocationIcon,
   Phone as PhoneIcon,
-  Business as BusinessIcon,
   Group as GroupIcon,
   MeetingRoom as RoomIcon,
   FitnessCenter as EquipmentIcon,
@@ -39,7 +41,12 @@ import {
   Error as ErrorIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  ExpandMore as ExpandMoreIcon,
+  QrCode as QrCodeIcon,
+  Face as FaceIcon,
+  EventNote as EventNoteIcon,
 } from "@mui/icons-material"
+import HomeWorkIcon from "@mui/icons-material/HomeWork"
 
 import { formatCurrencyVND } from "~/utils/common"
 import EquipmentDetailModal from "~/pages/staff/staffEquipment/EquipmentDetailModal"
@@ -59,10 +66,45 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 export default function LocationDetailModal({ open, onClose, location, onEdit, onDelete }) {
+  console.log("🚀 ~ LocationDetailModal ~ location:", location)
+
   const [tabValue, setTabValue] = useState(0)
   const [selectedEquipment, setSelectedEquipment] = useState(null)
   const [equipmentDetailOpen, setEquipmentDetailOpen] = useState(false)
 
+  // Group attendances by date - MUST be before early return
+  const groupedAttendances = useMemo(() => {
+    if (!location || !location.attendances || location.attendances.length === 0) return []
+
+    const groups = {}
+
+    location.attendances.forEach((attendance) => {
+      if (!attendance.checkinTime) return
+
+      const date = new Date(attendance.checkinTime)
+      const dateKey = date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+
+      if (!groups[dateKey]) {
+        groups[dateKey] = {
+          date: dateKey,
+          fullDate: date,
+          dayOfWeek: date.toLocaleDateString("vi-VN", { weekday: "long" }),
+          attendances: [],
+        }
+      }
+
+      groups[dateKey].attendances.push(attendance)
+    })
+
+    // Convert to array and sort by date descending (newest first)
+    return Object.values(groups).sort((a, b) => b.fullDate - a.fullDate)
+  }, [location])
+
+  // Early return AFTER all hooks
   if (!location) return null
 
   const handleTabChange = (event, newValue) => {
@@ -117,13 +159,58 @@ export default function LocationDetailModal({ open, onClose, location, onEdit, o
     setEquipmentDetailOpen(true)
   }
 
+  // Format datetime to display format: 13:00 - 13:20 26/11/2025
+  const formatAttendanceTime = (checkinTime, checkoutTime) => {
+    if (!checkinTime || !checkoutTime) return "N/A"
+
+    const checkin = new Date(checkinTime)
+    const checkout = new Date(checkoutTime)
+
+    const checkinTimeStr = checkin.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    const checkoutTimeStr = checkout.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    })
+    const dateStr = checkin.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })
+
+    return `${checkinTimeStr} - ${checkoutTimeStr} ${dateStr}`
+  }
+
+  // Format method display
+  const formatMethod = (method) => {
+    if (method === "qrCode") {
+      return {
+        text: "QR Code",
+        icon: <QrCodeIcon fontSize="small" />,
+      }
+    } else if (method === "face") {
+      return {
+        text: "Face Recognition",
+        icon: <FaceIcon fontSize="small" />,
+      }
+    }
+    return {
+      text: method,
+      icon: <QrCodeIcon fontSize="small" />,
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ m: 0, p: 2, display: "flex", alignItems: "center", gap: 1 }}>
-          <BusinessIcon color="primary" />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Chi tiết Location: {location.name}
+        <DialogTitle sx={{ m: 0, p: 2, display: "flex", alignItems: "center", gap: 1, backgroundColor: "primary" }}>
+          <HomeWorkIcon color="primary" />
+          <Typography variant="h6" fontWeight="bold" component="div" sx={{ flexGrow: 1 }}>
+            {location.name}
           </Typography>
           <IconButton aria-label="close" onClick={onClose} sx={{ color: (theme) => theme.palette.grey[500] }}>
             <CloseIcon />
@@ -132,18 +219,23 @@ export default function LocationDetailModal({ open, onClose, location, onEdit, o
 
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs value={tabValue} onChange={handleTabChange} aria-label="location detail tabs">
-            <Tab label="Thông tin cơ bản" icon={<BusinessIcon />} iconPosition="start" />
+            <Tab label="Thông tin cơ bản" icon={<HomeWorkIcon />} iconPosition="start" />
             <Tab label={`Thiết bị (${location.equipmentCount || 0})`} icon={<EquipmentIcon />} iconPosition="start" />
+            <Tab
+              label={`Lịch sử tập (${location.attendances?.length || 0})`}
+              icon={<EventNoteIcon />}
+              iconPosition="start"
+            />
           </Tabs>
         </Box>
 
-        <DialogContent dividers sx={{ p: 0, minHeight: 500 }}>
+        <DialogContent dividers sx={{ p: 0, minHeight: 450 }}>
           {/* Tab 1: Basic Information */}
           <TabPanel value={tabValue} index={0}>
             <Box sx={{ px: 3 }}>
               <Grid container spacing={3}>
                 {/* Left Column - Basic Info */}
-                <Grid item xs={12} md={6}>
+                <Grid item size={{ xs: 12 }}>
                   <Typography
                     variant="h5"
                     fontWeight="bold"
@@ -217,7 +309,7 @@ export default function LocationDetailModal({ open, onClose, location, onEdit, o
                 </Grid>
 
                 {/* Right Column - Images */}
-                <Grid item xs={12} md={6}>
+                <Grid item size={{ xs: 12 }}>
                   <Typography
                     variant="h6"
                     fontWeight="bold"
@@ -229,7 +321,7 @@ export default function LocationDetailModal({ open, onClose, location, onEdit, o
                   </Typography>
 
                   {location.images && location.images.length > 0 ? (
-                    <ImageList sx={{ width: "100%", height: 400 }} cols={2} rowHeight={180}>
+                    <ImageList sx={{ width: "100%", height: 180 }} cols={6} rowHeight={180}>
                       {location.images.map((image, index) => (
                         <ImageListItem key={index}>
                           <img
@@ -360,6 +452,142 @@ export default function LocationDetailModal({ open, onClose, location, onEdit, o
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     Location này chưa có thiết bị nào được thêm vào
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </TabPanel>
+
+          {/* Tab 3: Attendance History */}
+          <TabPanel value={tabValue} index={2}>
+            <Box sx={{ px: 3 }}>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Lịch sử tập luyện 30 ngày gần nhất tại {location.name}
+              </Typography>
+
+              {groupedAttendances && groupedAttendances.length > 0 ? (
+                <Box sx={{ mt: 2 }}>
+                  {groupedAttendances.map((group, groupIndex) => (
+                    <Accordion key={groupIndex} defaultExpanded={groupIndex === 0} sx={{ mb: 1 }}>
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon />}
+                        aria-controls={`panel-${groupIndex}-content`}
+                        id={`panel-${groupIndex}-header`}
+                        sx={{
+                          backgroundColor: "primary.dark",
+                          color: "white",
+                          borderRadius: "4px",
+                          "&:hover": {
+                            backgroundColor: "primary.dark",
+                          },
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
+                          <EventNoteIcon />
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {group.dayOfWeek}, {group.date}
+                          </Typography>
+                          <Chip
+                            label={`${group.attendances.length} lượt tập`}
+                            size="small"
+                            sx={{
+                              ml: "auto",
+                              backgroundColor: "white",
+                              color: "primary.main",
+                              fontWeight: "bold",
+                            }}
+                          />
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ p: 0 }}>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell width="5%" align="center">
+                                  <strong>STT</strong>
+                                </TableCell>
+                                <TableCell width="25%">
+                                  <strong>Họ tên</strong>
+                                </TableCell>
+                                <TableCell width="15%">
+                                  <strong>Số điện thoại</strong>
+                                </TableCell>
+                                <TableCell width="30%">
+                                  <strong>Thời gian</strong>
+                                </TableCell>
+                                <TableCell width="10%" align="center">
+                                  <strong>Thời lượng</strong>
+                                </TableCell>
+                                <TableCell width="15%" align="center">
+                                  <strong>Phương thức</strong>
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {group.attendances.map((attendance, index) => {
+                                const methodInfo = formatMethod(attendance.method)
+                                return (
+                                  <TableRow key={attendance._id} hover>
+                                    <TableCell align="center">{index + 1}</TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" fontWeight="medium">
+                                        {attendance.fullName || "N/A"}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" color="text.secondary">
+                                        {attendance.phone || "N/A"}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2">
+                                        {formatAttendanceTime(attendance.checkinTime, attendance.checkoutTime)}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      <Chip
+                                        label={`${attendance.hours.toFixed(2)} giờ`}
+                                        size="small"
+                                        color="success"
+                                        variant="outlined"
+                                      />
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      <Chip
+                                        icon={methodInfo.icon}
+                                        label={methodInfo.text}
+                                        size="small"
+                                        color="info"
+                                        variant="outlined"
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              })}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      </AccordionDetails>
+                    </Accordion>
+                  ))}
+                </Box>
+              ) : (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    py: 6,
+                    border: "1px dashed #e0e0e0",
+                    borderRadius: 2,
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  <EventNoteIcon sx={{ fontSize: 48, color: "text.secondary", mb: 1 }} />
+                  <Typography variant="body1" color="text.secondary">
+                    Chưa có lịch sử tập luyện
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Không có dữ liệu attendance trong 30 ngày gần nhất
                   </Typography>
                 </Box>
               )}

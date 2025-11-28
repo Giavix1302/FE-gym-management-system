@@ -58,6 +58,16 @@ import PaymentHistoryPage from "~/pages/PaymentHistoryPage"
 import TrainerRevenuePage from "~/pages/trainer/TrainerRevenuePage"
 import UserProfilePage from "~/pages/user/UserProfilePage"
 import UserProgressPage from "~/pages/user/UserProgressPage"
+import AdminReportTrainerPage from "~/pages/admin/report/AdminReportTrainerPage"
+import AdminReportStaffPage from "~/pages/admin/report/AdminReportStaffPage"
+import AdminReportMembershipPage from "~/pages/admin/report/AdminReportMembershipPage"
+import AdminReportPaymentPage from "~/pages/admin/report/AdminReportPaymentPage"
+import StaffWorkingHourReportPage from "~/pages/staff/StaffWorkingHourReportPage"
+import ListLocationPage from "~/pages/homeUnsigned/ListLocationPage"
+import AboutPage from "~/pages/homeUnsigned/AboutPage"
+import PTPackagePage from "~/pages/homeUnsigned/PTPackagePage"
+import FitnessClassPage from "~/pages/homeUnsigned/FitnessClassPage"
+import ContactPage from "~/pages/homeUnsigned/ContactPage"
 
 // ✅ Loading Component
 const LoadingScreen = () => (
@@ -164,6 +174,11 @@ export default function AppRoutes() {
         {/* home unsigned */}
         <Route element={<DefaultLayout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/gym-system" element={<ListLocationPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/pt-package" element={<PTPackagePage />} />
+          <Route path="/fitness-class" element={<FitnessClassPage />} />
+          <Route path="/contact" element={<ContactPage />} />
         </Route>
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>
@@ -215,6 +230,10 @@ export default function AppRoutes() {
             <Route path="/admin/chatbot" element={<AdminChatbotPage />} />
 
             <Route path="/admin/report/user" element={<AdminReportMemberPage />} />
+            <Route path="/admin/report/pt" element={<AdminReportTrainerPage />} />
+            <Route path="/admin/report/staff" element={<AdminReportStaffPage />} />
+            <Route path="/admin/report/membership" element={<AdminReportMembershipPage />} />
+            <Route path="/admin/report/payment" element={<AdminReportPaymentPage />} />
           </Route>
         </Route>
         {/* Staff Routes */}
@@ -228,6 +247,7 @@ export default function AppRoutes() {
             <Route path="/staff/class" element={<StaffClassPage />} />
             <Route path="/staff/equipment" element={<StaffEquipmentPage />} />
             <Route path="/staff/info" element={<StaffLocationInfoPage />} />
+            <Route path="/staff/working-hours" element={<StaffWorkingHourReportPage />} />
           </Route>
         </Route>
         <Route path="/forgot-password" element={<ForgotPassword />} />
