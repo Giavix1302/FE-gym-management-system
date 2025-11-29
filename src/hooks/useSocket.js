@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { io } from "socket.io-client"
 
 const useSocket = () => {
@@ -7,25 +7,41 @@ const useSocket = () => {
   const socketRef = useRef(null)
   const callbacksRef = useRef({})
 
-  const connect = (token) => {
+  const disconnect = useCallback(() => {
     if (socketRef.current) {
-      disconnect()
+      socketRef.current.disconnect()
+      socketRef.current = null
+      setIsConnected(false)
+      setOnlineUsers([])
     }
+  }, [])
 
-    const serverUrl = import.meta.env.VITE_API_URL_BE || "http://localhost:3000"
+  const connect = useCallback(
+    (token) => {
+      if (socketRef.current) {
+        disconnect()
+      }
 
-    socketRef.current = io(serverUrl, {
-      auth: { token },
-      transports: ["polling", "websocket"],
-    })
-    setupEventListeners()
-  }
+      const cleanToken = token.replace(/^"|"$/g, "")
+      console.log("🚀 ~ connect ~ cleanToken:", cleanToken.substring(0, 50) + "...")
+
+      const serverUrl = import.meta.env.VITE_API_URL_BE || "http://localhost:3000"
+      console.log("🚀 ~ connect ~ serverUrl:", serverUrl)
+
+      socketRef.current = io(serverUrl, {
+        auth: { token: cleanToken },
+        transports: ["polling", "websocket"],
+      })
+      setupEventListeners()
+    },
+    [disconnect],
+  )
 
   const setupEventListeners = () => {
     const socket = socketRef.current
 
     socket.on("connect", () => {
-      console.log("✅ Connected to server")
+      console.log("✅ Connected to server, Socket ID:", socket.id)
       setIsConnected(true)
       emit("connected")
     })
@@ -44,17 +60,17 @@ const useSocket = () => {
     // Chat events
     socket.on("new_message", (message) => {
       console.log("📩 New message:", message)
-      emit("newMessage", message)
+      emit("new_message", message)
     })
 
     socket.on("messages_read", (data) => {
       console.log("👀 Messages read:", data)
-      emit("messagesRead", data)
+      emit("messages_read", data)
     })
 
     socket.on("user_typing", (data) => {
       console.log("⌨️ User typing:", data)
-      emit("userTyping", data)
+      emit("user_typing", data)
     })
 
     socket.on("user_status", (data) => {
@@ -70,40 +86,49 @@ const useSocket = () => {
     // Conversation events
     socket.on("new_conversation", (data) => {
       console.log("💬 New conversation:", data)
-      emit("newConversation", data)
+      emit("new_conversation", data)
     })
 
     socket.on("joined_conversation", (data) => {
       console.log("🚪 Joined conversation:", data)
-      emit("joinedConversation", data)
+      emit("joined_conversation", data)
     })
 
     // Booking events
     socket.on("new_booking", (data) => {
       console.log("📅 New booking:", data)
-      emit("newBooking", data)
+      emit("new_booking", data)
     })
 
     socket.on("booking_updated", (data) => {
       console.log("📝 Booking updated:", data)
-      emit("bookingUpdated", data)
+      emit("booking_updated", data)
     })
 
     socket.on("booking_cancelled", (data) => {
       console.log("❌ Booking cancelled:", data)
-      emit("bookingCancelled", data)
+      emit("booking_cancelled", data)
     })
   }
 
+  // ✅ FIX: Emit conversationId as STRING, not OBJECT
   const joinConversation = (conversationId) => {
+    console.log("🚪 joinConversation called with:", conversationId, "Type:", typeof conversationId)
     if (socketRef.current && isConnected) {
-      socketRef.current.emit("join_conversation", { conversationId })
+      console.log("✅ Emitting join_conversation to backend...")
+      socketRef.current.emit("join_conversation", conversationId) // ✅ STRING
+      console.log("✅ Emitted join_conversation:", conversationId)
+    } else {
+      console.log("❌ Cannot join - Socket:", !!socketRef.current, "Connected:", isConnected)
     }
   }
 
+  // ✅ FIX: Emit conversationId as STRING, not OBJECT
   const leaveConversation = (conversationId) => {
+    console.log("👋 leaveConversation called with:", conversationId)
     if (socketRef.current && isConnected) {
-      socketRef.current.emit("leave_conversation", { conversationId })
+      socketRef.current.emit("leave_conversation", conversationId) // ✅ STRING
+      console.log("✅ Emitted leave_conversation:", conversationId)
     }
   }
 
@@ -116,6 +141,7 @@ const useSocket = () => {
     }
   }
 
+  // ✅ CORRECT: Backend expects OBJECT { conversationId, isTyping }
   const setTyping = (conversationId, isTyping) => {
     if (socketRef.current && isConnected) {
       socketRef.current.emit("typing", {
@@ -153,15 +179,6 @@ const useSocket = () => {
     }
   }
 
-  const disconnect = () => {
-    if (socketRef.current) {
-      socketRef.current.disconnect()
-      socketRef.current = null
-      setIsConnected(false)
-      setOnlineUsers([])
-    }
-  }
-
   const isUserOnline = (userId) => {
     return onlineUsers.includes(userId)
   }
@@ -170,18 +187,24 @@ const useSocket = () => {
     return () => {
       disconnect()
     }
-  }, [])
+  }, [disconnect])
+
+  // ✅ Expose socket to window for debugging
+  useEffect(() => {
+    if (socketRef.current) {
+      window.__socket = socketRef.current
+      console.log("🔍 Socket exposed to window.__socket")
+    }
+  }, [socketRef.current?.connected])
 
   return {
+    socket: socketRef.current,
     isConnected,
-    onlineUsers,
     connect,
     disconnect,
     joinConversation,
     leaveConversation,
-    sendMessage,
-    setTyping,
-    markAsRead,
+    sendTyping: setTyping, // ✅ Export setTyping as sendTyping
     on,
     off,
     isUserOnline,

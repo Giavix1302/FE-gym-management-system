@@ -4,16 +4,15 @@ import { Chat as ChatIcon, SmartToy as SmartToyIcon, Close as CloseIcon } from "
 
 import FloatingChatWidget from "./FloatingChatWidget"
 import ChatbotWidget from "./ChatbotWidget"
-import useChatStore from "~/stores/useChatStore"
-import useChatbotStore from "~/stores/useChatbotStore"
 import useUserStore from "~/stores/useUserStore"
 
 const ChatSpeedDial = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [activeChat, setActiveChat] = useState(null) // 'human' | 'bot' | null
 
-  const { unreadCount } = useChatStore()
   const { user } = useUserStore()
+
+  const [unreadCount, setUnreadCount] = useState(0)
 
   // Don't render if user is not eligible for human chat
   const canUseHumanChat = user?._id && (user.role === "user" || user.role === "pt")

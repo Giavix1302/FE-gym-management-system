@@ -10,13 +10,11 @@ import useRoomsStore from "~/stores/useRoomsStore"
 import useListScheduleForPTStore from "~/stores/useListScheduleForPTStore"
 import useListTrainerInfoForUser from "~/stores/useListTrainerInfoForUser"
 import useLocationStore from "~/stores/useLocationStore"
-import useChatStore from "~/stores/useChatStore"
 import useEquipmentForAdminStore from "~/stores/useEquipmentForAdminStore"
 import { handleLogoutStaff } from "~/apis/staff"
 import useStaffStore from "~/stores/useStaffStore"
 
 export function useLogout() {
-  const { reset } = useChatStore()
   const { resetListSchedule } = useListScheduleForPTStore()
   const { resetListTrainerInfo } = useListTrainerInfoForAdmin()
   const { resetListTrainerInfo: resetListTrainerInfoForUser } = useListTrainerInfoForUser()
@@ -55,7 +53,6 @@ export function useLogout() {
       // xóa accessToken
       removeFromLocalStorage("accessToken")
       // xóa store
-      reset()
       resetListSchedule()
       resetListTrainerInfo()
       resetListTrainerInfoForUser()

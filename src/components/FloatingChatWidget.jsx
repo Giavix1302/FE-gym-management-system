@@ -24,35 +24,27 @@ import {
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material"
 
-import useChatStore from "~/stores/useChatStore"
 import useSocket from "~/hooks/useSocket"
 import useUserStore from "~/stores/useUserStore"
-import { getConversationsAPI, getMessagesAPI, sendMessageAPI, markMessagesAsReadAPI } from "~/apis/conversation"
+import {
+  getConversationsAPI,
+  getMessagesAPI,
+  sendMessageAPI,
+  markMessagesAsReadAPI,
+  getUnreadCountAPI,
+} from "~/apis/conversation"
 
 const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
-  const {
-    conversations,
-    setConversations,
-    currentConversation,
-    setCurrentConversation,
-    messages,
-    setMessages,
-    addMessage,
-    updateMessage,
-    markMessagesAsRead,
-    unreadCount,
-    setUnreadCount,
-    isUserOnline,
-    getTypingUsersInCurrentConversation,
-    getParticipant,
-  } = useChatStore()
+  // ✅ Local state instead of store
+  const [conversations, setConversations] = useState([])
+  const [currentConversation, setCurrentConversation] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
-  const { isConnected, connect, disconnect, sendMessage, setTyping, markAsRead, joinConversation, on, off } =
-    useSocket()
-
+  const { isConnected, connect, disconnect, joinConversation, on, off } = useSocket()
   const { user } = useUserStore()
 
-  const [isOpen, setIsOpen] = useState(true) // Start open when controlled by SpeedDial
+  const [isOpen, setIsOpen] = useState(true)
   const [isMinimized, setIsMinimized] = useState(false)
   const [showConversationList, setShowConversationList] = useState(true)
   const [messageInput, setMessageInput] = useState("")
@@ -72,52 +64,92 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
   useEffect(() => {
     const token = localStorage.getItem("accessToken")
     if (token && currentUserId) {
-      console.log("🔌 Connecting Socket.IO for user:", currentUserId)
       connect(token)
     }
 
     return () => {
       disconnect()
     }
-  }, [currentUserId])
+  }, [currentUserId, connect, disconnect])
 
-  // Load conversations when opened
+  // Load initial data
   useEffect(() => {
     if (isOpen && !isMinimized && showConversationList) {
       loadConversations()
+      loadUnreadCount()
     }
   }, [isOpen, isMinimized, showConversationList])
 
   // Socket event listeners
   useEffect(() => {
-    const handleNewMessage = (message) => {
-      console.log("📩 New message received:", message)
-      addMessage(message)
-      scrollToBottom()
+    if (!isConnected) return
 
+    const handleNewMessage = (message) => {
+      // ✅ CHECK: Validate message object
+      if (!message || !message.conversationId) {
+        return
+      }
+
+      // Add to messages if it's for current conversation
+      if (message.conversationId === currentConversation?._id) {
+        // ✅ FIX: Remove optimistic message if this is from current user
+        if (message.senderId === currentUserId) {
+          setMessages((prev) => {
+            // Remove any optimistic message with same content
+            const withoutOptimistic = prev.filter(
+              (msg) => !(msg.isOptimistic && msg.content === message.content && msg.senderId === currentUserId),
+            )
+            return [...withoutOptimistic, message]
+          })
+        } else {
+          setMessages((prev) => [...prev, message])
+        }
+        scrollToBottom()
+      }
+
+      // Update unread count if widget is closed or minimized
       if (!isOpen || isMinimized || message.conversationId !== currentConversation?._id) {
         setUnreadCount((prev) => prev + 1)
       }
+
+      // Update conversation last message
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv._id === message.conversationId
+            ? { ...conv, lastMessage: message.content, lastMessageAt: message.timestamp }
+            : conv,
+        ),
+      )
     }
 
-    if (isConnected) {
-      on("newMessage", handleNewMessage)
+    const handleMessagesRead = (data) => {
+      if (data.conversationId === currentConversation?._id) {
+        setMessages((prev) => prev.map((msg) => (data.messageIds.includes(msg._id) ? { ...msg, isRead: true } : msg)))
+      }
     }
+
+    const handleJoinedConversation = (data) => {}
+
+    on("new_message", handleNewMessage)
+    on("messages_read", handleMessagesRead)
+    on("joined_conversation", handleJoinedConversation)
 
     return () => {
-      off("newMessage", handleNewMessage)
+      off("new_message", handleNewMessage)
+      off("messages_read", handleMessagesRead)
+      off("joined_conversation", handleJoinedConversation)
     }
-  }, [isConnected, isOpen, isMinimized, currentConversation])
+  }, [isConnected, isOpen, isMinimized, currentConversation, on, off])
 
+  // ✅ Load conversations from API
   const loadConversations = async () => {
     try {
       setIsLoading(true)
-      console.log("📄 Loading conversations...")
-      const response = await getConversationsAPI(currentUserId, 1, 20, user?.role)
+      const userRole = user.role === "pt" ? "pt" : "user"
+      const response = await getConversationsAPI(currentUserId, 1, 20, userRole)
 
       if (response.success) {
         setConversations(response.data)
-        console.log("✅ Conversations loaded:", response.data.length)
       }
     } catch (error) {
       console.error("Error loading conversations:", error)
@@ -126,34 +158,50 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
     }
   }
 
+  // ✅ Load unread count from API
+  const loadUnreadCount = async () => {
+    try {
+      const response = await getUnreadCountAPI()
+      if (response.success) {
+        setUnreadCount(response.data.totalUnread)
+      }
+    } catch (error) {
+      console.error("Error loading unread count:", error)
+    }
+  }
+
   const loadMessages = async (conversationId) => {
     try {
       setIsLoading(true)
-      const response = await getMessagesAPI(conversationId, 1, 50, user?.role)
+      setMessages([]) // ✅ Clear messages immediately for clean loading state
+
+      const userRole = user.role === "pt" ? "pt" : "user"
+      const response = await getMessagesAPI(conversationId, 1, 50, userRole)
 
       if (response.success) {
-        setMessages(response.data.messages || [])
-        console.log("✅ Messages loaded:", response.data.messages?.length || 0)
+        const loadedMessages = response.data.messages || []
+        setMessages(loadedMessages)
 
-        const unreadMessages =
-          response.data.messages?.filter((msg) => !msg.isRead && msg.senderId !== currentUserId) || []
+        const unreadMessages = loadedMessages.filter((msg) => !msg.isRead && msg.senderId !== currentUserId)
 
         if (unreadMessages.length > 0) {
           const unreadIds = unreadMessages.map((msg) => msg._id)
           try {
-            await markMessagesAsReadAPI(conversationId, unreadIds, user?.role)
-            markMessagesAsRead(unreadIds)
+            await markMessagesAsReadAPI(conversationId, unreadIds, userRole)
+            setMessages((prev) => prev.map((msg) => (unreadIds.includes(msg._id) ? { ...msg, isRead: true } : msg)))
           } catch (error) {
             console.error("Failed to mark messages as read:", error)
           }
         }
-
-        setTimeout(scrollToBottom, 100)
       }
     } catch (error) {
       console.error("Error loading messages:", error)
     } finally {
       setIsLoading(false)
+      // ✅ Scroll after loading is complete and state is updated
+      setTimeout(() => {
+        scrollToBottom()
+      }, 50)
     }
   }
 
@@ -191,30 +239,30 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
       senderType: user.role === "pt" ? "trainer" : "user",
       content: content,
       isRead: false,
-      createdAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
       isOptimistic: true,
     }
 
-    addMessage(tempMessage)
+    setMessages((prev) => [...prev, tempMessage])
     scrollToBottom()
 
     try {
-      sendMessage(currentConversation._id, content)
-      const response = await sendMessageAPI(currentConversation._id, content, user?.role)
+      const userRole = user.role === "pt" ? "pt" : "user"
+      const response = await sendMessageAPI(currentConversation._id, content, userRole)
 
       if (response.success) {
         const realMessage = response.data
-        updateMessage(tempMessage._id, {
-          ...realMessage,
-          isOptimistic: false,
-        })
+        setMessages((prev) =>
+          prev.map((msg) => (msg._id === tempMessage._id ? { ...realMessage, isOptimistic: false } : msg)),
+        )
       }
     } catch (error) {
       console.error("Failed to send message:", error)
-      updateMessage(tempMessage._id, {
-        isError: true,
-        content: content + " (Gửi thất bại)",
-      })
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === tempMessage._id ? { ...msg, isError: true, content: content + " (Gửi thất bại)" } : msg,
+        ),
+      )
       setMessageInput(content)
     } finally {
       setIsSending(false)
@@ -252,33 +300,31 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
     }
   }
 
-  const handleTyping = (value) => {
-    setMessageInput(value)
-
-    if (value.trim() && currentConversation) {
-      setTyping(currentConversation._id, true)
-
-      clearTimeout(typingTimeout)
-      const timeout = setTimeout(() => {
-        setTyping(currentConversation._id, false)
-      }, 1000)
-      setTypingTimeout(timeout)
-    }
-  }
-
   const isMyMessage = (message) => {
     return message.senderId === currentUserId
   }
 
+  // ✅ Helper function to get participant (moved from store)
+  const getParticipant = (conversation) => {
+    if (!conversation || !conversation.userInfo || !conversation.trainerInfo) return null
+
+    if (user.role === "user") {
+      return {
+        _id: conversation.trainerInfo.trainerId,
+        fullName: conversation.trainerInfo.fullName,
+        avatar: conversation.trainerInfo.avatar,
+      }
+    } else {
+      return {
+        _id: conversation.userInfo.userId,
+        fullName: conversation.userInfo.fullName,
+        avatar: conversation.userInfo.avatar,
+      }
+    }
+  }
+
   const renderConversationList = () => (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ p: 2, borderBottom: "1px solid #e0e0e0" }}>
-        <Typography variant="h6">Tin nhắn</Typography>
-        <Typography variant="body2" color="text.secondary">
-          {conversations.length} cuộc trò chuyện
-        </Typography>
-      </Box>
-
       <Box sx={{ flex: 1, overflow: "auto" }}>
         {isLoading ? (
           <Box sx={{ p: 2 }}>
@@ -380,6 +426,37 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
           </Box>
         )}
 
+        {/* ✅ LOADING INDICATOR */}
+        {isLoading && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 4,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              Đang tải tin nhắn...
+            </Typography>
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                border: "2px solid #e0e0e0",
+                borderTop: "2px solid #1976d2",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+                "@keyframes spin": {
+                  "0%": { transform: "rotate(0deg)" },
+                  "100%": { transform: "rotate(360deg)" },
+                },
+              }}
+            />
+          </Box>
+        )}
+
         {messages.map((message, index) => (
           <Box
             key={message._id}
@@ -421,7 +498,7 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
                 }}
               >
                 <Typography variant="caption" sx={{ opacity: 0.7, fontSize: "0.625rem" }}>
-                  {formatTime(message.createdAt)}
+                  {formatTime(message.timestamp || message.createdAt)}
                 </Typography>
 
                 {isMyMessage(message) && (
@@ -446,7 +523,7 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
             variant="outlined"
             placeholder="Nhập tin nhắn..."
             value={messageInput}
-            onChange={(e) => handleTyping(e.target.value)}
+            onChange={(e) => setMessageInput(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
@@ -471,7 +548,7 @@ const FloatingChatWidget = ({ onClose, lowPosition = false }) => {
       <Card
         sx={{
           position: "fixed",
-          bottom: lowPosition ? 20 : 90, // Move down when SpeedDial is hidden
+          bottom: lowPosition ? 20 : 90,
           right: 20,
           width: 350,
           height: isMinimized ? 60 : 500,

@@ -504,12 +504,10 @@ const TrainerHomePage = () => {
 
         // Lấy thống kê dashboard
         const dataTrainerDashboardStats = await getTrainerDashboardStatsAPI(user._id)
-        console.log("🚀 ~ init ~ dataTrainerDashboardStats:", dataTrainerDashboardStats)
         setDataTrainerDashboardStats(dataTrainerDashboardStats?.stats)
 
         // Lấy events của trainer
         const trainerEvents = await getTrainerEventsForThreeMonthsAPI(user._id)
-        console.log("🚀 ~ init ~ trainerEvents:", trainerEvents)
 
         if (trainerEvents?.success && trainerEvents?.events) {
           // Chuyển đổi dữ liệu cho calendar
