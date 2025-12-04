@@ -55,21 +55,7 @@ import { calculateProgressPercent, convertISOToVNTime, countRemainingDays } from
 import { getPaymentsByUserIdAPI } from "~/apis/payment"
 import { getListAttendanceByUserIdAPI } from "~/apis/attendance"
 import { getUserEventsForThreeMonthsAPI } from "~/apis/user"
-
-const mockProgressData = [
-  { month: "Tháng 1", weight: 70, bmi: 23, bodyFat: 18 },
-  { month: "Tháng 2", weight: 69, bmi: 22.8, bodyFat: 17.5 },
-  { month: "Tháng 3", weight: 68, bmi: 22.5, bodyFat: 17 },
-  { month: "Tháng 4", weight: 67, bmi: 22.2, bodyFat: 16.8 },
-  { month: "Tháng 5", weight: 66, bmi: 22, bodyFat: 16.5 },
-  { month: "Tháng 6", weight: 65, bmi: 21.8, bodyFat: 16 },
-  { month: "Tháng 7", weight: 64.5, bmi: 21.5, bodyFat: 15.8 },
-  { month: "Tháng 8", weight: 64, bmi: 21.3, bodyFat: 15.5 },
-  { month: "Tháng 9", weight: 63.5, bmi: 21, bodyFat: 15.2 },
-  { month: "Tháng 10", weight: 63, bmi: 20.8, bodyFat: 15 },
-  { month: "Tháng 11", weight: 62.5, bmi: 20.6, bodyFat: 14.8 },
-  { month: "Tháng 12", weight: 62, bmi: 20.4, bodyFat: 14.5 },
-]
+import { getDashboardDataAPI } from "~/apis/progress"
 
 // Utility function to format amount
 const formatAmount = (amount) => {
@@ -86,6 +72,30 @@ const getPaymentTypeDisplay = (paymentType) => {
     default:
       return paymentType
   }
+}
+
+// Helper function to calculate BMI
+const calculateBMI = (weight, height = 1.7) => {
+  // Default height 1.7m if not provided
+  return Math.round((weight / (height * height)) * 10) / 10
+}
+
+// Helper function to transform progress data
+const transformProgressData = (trendData) => {
+  if (!trendData || trendData.length === 0) return []
+
+  return trendData.map((item) => {
+    const date = new Date(item.measurementDate)
+    const monthName = date.toLocaleDateString("vi-VN", { month: "short", year: "numeric" })
+
+    return {
+      month: monthName,
+      weight: item.weight,
+      bodyFat: item.bodyFat,
+      muscleMass: item.muscleMass,
+      bmi: calculateBMI(item.weight),
+    }
+  })
 }
 
 // Event Modal Component
@@ -253,9 +263,11 @@ function UserHomePage() {
   const [payments, setPayments] = useState([])
   const [attendances, setAttendances] = useState([])
   const [events, setEvents] = useState([])
+  const [progressData, setProgressData] = useState([])
   const [loadingPayments, setLoadingPayments] = useState(true)
   const [loadingAttendances, setLoadingAttendances] = useState(true)
   const [loadingEvents, setLoadingEvents] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(true)
 
   // Modal state
   const [selectedEvent, setSelectedEvent] = useState(null)
@@ -302,6 +314,7 @@ function UserHomePage() {
         // Load attendances
         setLoadingAttendances(true)
         const dataAttendance = await getListAttendanceByUserIdAPI(user._id)
+        console.log("🚀 ~ init ~ dataAttendance:", dataAttendance)
         if (dataAttendance?.success && dataAttendance?.attendances) {
           setAttendances(dataAttendance.attendances)
         }
@@ -310,18 +323,28 @@ function UserHomePage() {
         // Load events
         setLoadingEvents(true)
         const eventsResponse = await getUserEventsForThreeMonthsAPI(user._id)
-        console.log("🚀 ~ init ~ events:", eventsResponse)
 
         if (eventsResponse?.success && eventsResponse?.data?.events) {
           const transformedEvents = transformEventsForCalendar(eventsResponse.data.events)
           setEvents(transformedEvents)
         }
         setLoadingEvents(false)
+
+        // Load progress data
+        setLoadingProgress(true)
+        const result = await getDashboardDataAPI(user._id)
+
+        if (result?.success && result?.data?.trendData) {
+          const transformedProgressData = transformProgressData(result.data.trendData)
+          setProgressData(transformedProgressData)
+        }
+        setLoadingProgress(false)
       } catch (error) {
         console.error("Error loading data:", error)
         setLoadingPayments(false)
         setLoadingAttendances(false)
         setLoadingEvents(false)
+        setLoadingProgress(false)
       }
     }
 
@@ -455,28 +478,39 @@ function UserHomePage() {
             <CardContent>
               <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
                 Tiến độ tập luyện
+                {loadingProgress && <CircularProgress size={20} sx={{ ml: 2 }} />}
               </Typography>
 
-              <Box sx={{ height: 200, mb: 2 }}>
-                <LineChart
-                  xAxis={[{ dataKey: "month", scaleType: "point" }]}
-                  series={[
-                    { dataKey: "weight", label: "Cân nặng (kg)", color: "#16697A" },
-                    { dataKey: "bmi", label: "BMI", color: "#FFA500" },
-                    { dataKey: "bodyFat", label: "% Mỡ cơ", color: "#FF4C4C" },
-                  ]}
-                  dataset={mockProgressData}
-                  height={200}
-                  grid={{ vertical: true, horizontal: true }}
-                  slotProps={{
-                    legend: {
-                      direction: "row",
-                      position: { vertical: "bottom", horizontal: "middle" },
-                    },
-                  }}
-                  margin={{ top: 0, right: 10, bottom: 0, left: -10 }}
-                />
-              </Box>
+              {loadingProgress ? (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
+                  <CircularProgress />
+                </Box>
+              ) : progressData.length > 0 ? (
+                <Box sx={{ height: 200, mb: 2 }}>
+                  <LineChart
+                    xAxis={[{ dataKey: "month", scaleType: "point" }]}
+                    series={[
+                      { dataKey: "weight", label: "Cân nặng (kg)", color: "#16697A" },
+                      { dataKey: "bodyFat", label: "% Mỡ cơ", color: "#FF4C4C" },
+                      { dataKey: "muscleMass", label: "Khối lượng cơ (kg)", color: "#4CAF50" },
+                    ]}
+                    dataset={progressData}
+                    height={200}
+                    grid={{ vertical: true, horizontal: true }}
+                    slotProps={{
+                      legend: {
+                        direction: "row",
+                        position: { vertical: "bottom", horizontal: "middle" },
+                      },
+                    }}
+                    margin={{ top: 0, right: 10, bottom: 0, left: -10 }}
+                  />
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 200 }}>
+                  <Typography color="text.secondary">Chưa có dữ liệu tiến độ</Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -606,7 +640,7 @@ function UserHomePage() {
                                 <Typography variant="caption" color="text.secondary">
                                   {attendance.location?.address?.street}, {attendance.location?.address?.ward}
                                 </Typography>
-                                {attendance.hours > 0 && (
+                                {attendance.hours >= 0 && (
                                   <Typography variant="caption" display="block" color="primary">
                                     Thời gian tập: {attendance.hours.toFixed(1)} giờ
                                   </Typography>

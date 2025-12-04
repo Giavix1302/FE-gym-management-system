@@ -1,8 +1,8 @@
 import { axiosInstance } from "./axiosConfig"
 // import { formatPhoneNumber } from "~/utils/common"
 
-export const createLinkVnpayAPI = async (subId) => {
-  const rep = await axiosInstance.post("/payments/vnpay/subscription/" + subId)
+export const createLinkVnpayAPI = async (data) => {
+  const rep = await axiosInstance.post("/payments/vnpay/subscription", data)
   return rep.data
 }
 
@@ -26,6 +26,11 @@ export const getPaymentsByUserIdAPI = async (userId, page = 1, limit = 10) => {
 // Lấy danh sách tất cả payment cho admin
 export const getAllPaymentsForAdminAPI = async (page = 1, limit = 10) => {
   const rep = await axiosInstance.get(`/payments/admin/all?page=${page}&limit=${limit}`)
+  return rep.data
+}
+
+export const updateRefundPayment = async (id, data) => {
+  const rep = await axiosInstance.put(`/payments/admin/${id}/refund`, data)
   return rep.data
 }
 

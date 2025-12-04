@@ -51,9 +51,45 @@ import {
 import { format, parseISO, differenceInHours, startOfWeek, endOfWeek, isWithinInterval } from "date-fns"
 import { vi } from "date-fns/locale"
 import useUserStore from "~/stores/useUserStore"
+import { getListAttendanceByUserIdAPI } from "~/apis/attendance"
+import useLocationStore from "~/stores/useLocationStore"
 
 function UserCheckinPage() {
   const { user } = useUserStore()
+  const { locations } = useLocationStore()
+
+  //   [
+  //     {
+  //         "_id": "68b80223c88e5c2130e084e8",
+  //         "name": "The gym Nguyễn Kiệm",
+  //         "phone": "+84987654321",
+  //         "address": {
+  //             "street": "123 Lê Lợi",
+  //             "ward": "Phường Bến Thành",
+  //             "province": "Hồ Chí Minh"
+  //         },
+  //         "images": [
+  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760686278/gms-image/uazqqvqo2cru82uvfuay.jpg",
+  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760686278/gms-image/uazqqvqo2cru82uvfuay.jpg",
+  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760686278/gms-image/uazqqvqo2cru82uvfuay.jpg"
+  //         ]
+  //     },
+  //     {
+  //         "_id": "6922d2e9f19f6286245443e3",
+  //         "name": "THE GYM Hoàng Văn Thụ",
+  //         "phone": "+84987650000",
+  //         "address": {
+  //             "street": "123 Hoàng Văn Thụ",
+  //             "ward": "Bình Trưng",
+  //             "province": "Hồ Chí Minh"
+  //         },
+  //         "images": [
+  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1763889897/gms-image/rqjjagjybyvq8gcef3op.webp",
+  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1763889898/gms-image/yl9ff1nbuwz1vc9gpkya.jpg",
+  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1763889898/gms-image/fmxko2eidtberzbhpqsy.webp"
+  //         ]
+  //     }
+  // ]
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
@@ -69,131 +105,105 @@ function UserCheckinPage() {
     avgHours: 0,
   })
 
-  // Mock data cho lịch sử checkin với cấu trúc như yêu cầu
-  const mockdata = [
-    {
-      _id: "1",
-      checkinTime: "2024-10-15T08:00:00.000Z",
-      checkoutTime: "2024-10-15T17:30:00.000Z",
-      locationName: "Gym Tân Bình",
-    },
-    {
-      _id: "2",
-      checkinTime: "2024-10-14T08:15:00.000Z",
-      checkoutTime: "2024-10-14T17:00:00.000Z",
-      locationName: "Gym Quận 3",
-    },
-    {
-      _id: "3",
-      checkinTime: "2024-10-13T08:30:00.000Z",
-      checkoutTime: "2024-10-13T16:45:00.000Z",
-      locationName: "Gym Quận 1",
-    },
-    {
-      _id: "4",
-      checkinTime: "2024-10-12T09:00:00.000Z",
-      checkoutTime: "2024-10-12T18:00:00.000Z",
-      locationName: "Gym Quận 7",
-    },
-    {
-      _id: "5",
-      checkinTime: "2024-10-11T08:45:00.000Z",
-      checkoutTime: "2024-10-11T17:15:00.000Z",
-      locationName: "Gym Tân Bình",
-    },
-    {
-      _id: "6",
-      checkinTime: "2024-10-10T09:30:00.000Z",
-      checkoutTime: "2024-10-10T18:30:00.000Z",
-      locationName: "Gym Quận 1",
-    },
-    {
-      _id: "7",
-      checkinTime: "2024-10-09T08:00:00.000Z",
-      checkoutTime: "2024-10-09T17:00:00.000Z",
-      locationName: "Gym Quận 7",
-    },
-    {
-      _id: "8",
-      checkinTime: "2024-10-08T08:30:00.000Z",
-      checkoutTime: "",
-      locationName: "Gym Tân Bình",
-    },
-  ]
-
-  useEffect(() => {
-    setCheckinHistory(mockdata)
-
-    // Kiểm tra xem có checkin đang active không
-    const activeCheckin = mockdata.find((item) => !item.checkoutTime)
-    if (activeCheckin) {
-      setIsCheckedIn(true)
-      setCurrentCheckin(activeCheckin)
+  // Helper function để lấy tên location từ locationId
+  const getLocationNameById = (locationId) => {
+    if (!locationId) {
+      return "Unknown Location"
     }
 
-    // Tính toán thống kê tuần
-    const now = new Date()
-    const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 })
-    const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 })
-    const lastWeekStart = startOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 })
-    const lastWeekEnd = endOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 })
+    if (!locations || locations.length === 0) {
+      return "Loading..."
+    }
 
-    const thisWeekCheckins = mockdata.filter((item) => {
-      const checkinDate = parseISO(item.checkinTime)
-      return isWithinInterval(checkinDate, { start: thisWeekStart, end: thisWeekEnd })
-    })
+    const location = locations.find((loc) => loc._id === locationId)
+    return location?.name || "Unknown Location"
+  }
 
-    const lastWeekCheckins = mockdata.filter((item) => {
-      const checkinDate = parseISO(item.checkinTime)
-      return isWithinInterval(checkinDate, { start: lastWeekStart, end: lastWeekEnd })
-    })
+  useEffect(() => {
+    const init = async () => {
+      if (!user?._id) return
 
-    const totalHours = mockdata.reduce((acc, item) => {
-      if (item.checkoutTime) {
-        const hours = differenceInHours(parseISO(item.checkoutTime), parseISO(item.checkinTime))
-        return acc + hours
+      if (!locations || locations.length === 0) return
+
+      try {
+        const result = await getListAttendanceByUserIdAPI(user._id)
+
+        if (result?.success && result?.attendances) {
+          const attendances = result.attendances
+
+          // Transform dữ liệu từ API để match với UI
+          const transformedData = attendances.map((attendance) => ({
+            _id: attendance._id,
+            checkinTime: attendance.checkinTime,
+            checkoutTime: attendance.checkoutTime || "",
+            locationName: getLocationNameById(attendance.locationId),
+            locationId: attendance.locationId,
+            hours: attendance.hours,
+            method: attendance.method,
+          }))
+
+          setCheckinHistory(transformedData)
+
+          // Kiểm tra xem có checkin đang active không (chưa có checkoutTime)
+          const activeCheckin = transformedData.find((item) => !item.checkoutTime)
+          if (activeCheckin) {
+            setIsCheckedIn(true)
+            setCurrentCheckin(activeCheckin)
+          }
+
+          // Tính toán thống kê tuần
+          const now = new Date()
+          const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+          const thisWeekEnd = endOfWeek(now, { weekStartsOn: 1 })
+          const lastWeekStart = startOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 })
+          const lastWeekEnd = endOfWeek(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 })
+
+          const thisWeekCheckins = transformedData.filter((item) => {
+            const checkinDate = parseISO(item.checkinTime)
+            return isWithinInterval(checkinDate, { start: thisWeekStart, end: thisWeekEnd })
+          })
+
+          const lastWeekCheckins = transformedData.filter((item) => {
+            const checkinDate = parseISO(item.checkinTime)
+            return isWithinInterval(checkinDate, { start: lastWeekStart, end: lastWeekEnd })
+          })
+
+          // Sử dụng field hours từ API thay vì tính toán lại
+          const totalHours = transformedData.reduce((acc, item) => {
+            return acc + (item.hours || 0)
+          }, 0)
+
+          const completedSessions = transformedData.filter((item) => item.checkoutTime && item.hours > 0)
+
+          setWeeklyStats({
+            thisWeek: thisWeekCheckins.length,
+            lastWeek: lastWeekCheckins.length,
+            totalHours: Math.round(totalHours * 10) / 10, // Làm tròn 1 chữ số thập phân
+            avgHours: completedSessions.length > 0 ? Math.round((totalHours / completedSessions.length) * 10) / 10 : 0,
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching attendance data:", error)
       }
-      return acc
-    }, 0)
+    }
 
-    setWeeklyStats({
-      thisWeek: thisWeekCheckins.length,
-      lastWeek: lastWeekCheckins.length,
-      totalHours,
-      avgHours:
-        mockdata.filter((item) => item.checkoutTime).length > 0
-          ? Math.round((totalHours / mockdata.filter((item) => item.checkoutTime).length) * 10) / 10
-          : 0,
-    })
-  }, [])
+    init()
+  }, [user?._id, locations])
 
   const handleShowQR = () => {
     setQrDialogOpen(true)
   }
 
-  const handleCheckin = () => {
-    setLoading(true)
-    setTimeout(() => {
-      const newCheckin = {
-        _id: Date.now().toString(),
-        checkinTime: new Date().toISOString(),
-        checkoutTime: "",
-        locationName: "Gym Tân Bình",
-      }
-      setCurrentCheckin(newCheckin)
-      setIsCheckedIn(true)
-      setCheckinHistory((prev) => [newCheckin, ...prev])
-      setLoading(false)
-      setQrDialogOpen(false)
-    }, 2000)
-  }
-
   const handleCheckout = () => {
     setLoading(true)
     setTimeout(() => {
+      const checkoutTime = new Date().toISOString()
+      const hours = differenceInHours(parseISO(checkoutTime), parseISO(currentCheckin.checkinTime))
+
       const updatedCheckin = {
         ...currentCheckin,
-        checkoutTime: new Date().toISOString(),
+        checkoutTime,
+        hours: Math.round(hours * 10) / 10, // Làm tròn 1 chữ số thập phân
       }
       setCurrentCheckin(null)
       setIsCheckedIn(false)
@@ -217,11 +227,20 @@ function UserCheckinPage() {
     return format(parseISO(timeString), "EEEE, dd/MM/yyyy", { locale: vi })
   }
 
-  const calculateTrainingTime = (checkinTime, checkoutTime) => {
+  const calculateTrainingTime = (checkinTime, checkoutTime, hours) => {
     if (!checkinTime || !checkoutTime) return "--"
-    const hours = differenceInHours(parseISO(checkoutTime), parseISO(checkinTime))
+
+    // Ưu tiên sử dụng field hours từ API
+    if (hours !== undefined && hours !== null) {
+      const wholeHours = Math.floor(hours)
+      const minutes = Math.round((hours - wholeHours) * 60)
+      return wholeHours > 0 ? `${wholeHours}h${minutes > 0 ? ` ${minutes}m` : ""}` : `${minutes}m`
+    }
+
+    // Fallback tính toán nếu không có field hours
+    const totalHours = differenceInHours(parseISO(checkoutTime), parseISO(checkinTime))
     const minutes = Math.round(((parseISO(checkoutTime) - parseISO(checkinTime)) % (1000 * 60 * 60)) / (1000 * 60))
-    return `${hours}h${minutes > 0 ? ` ${minutes}m` : ""}`
+    return `${totalHours}h${minutes > 0 ? ` ${minutes}m` : ""}`
   }
 
   const getStatusChip = (checkinTime, checkoutTime) => {
@@ -273,7 +292,7 @@ function UserCheckinPage() {
                       Thời gian tập:
                     </Typography>
                     <Typography variant="body2" fontWeight="medium" color="primary">
-                      {calculateTrainingTime(record.checkinTime, record.checkoutTime)}
+                      {calculateTrainingTime(record.checkinTime, record.checkoutTime, record.hours)}
                     </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" gap={1}>
@@ -548,7 +567,7 @@ function UserCheckinPage() {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontWeight="medium" color="primary">
-                          {calculateTrainingTime(record.checkinTime, record.checkoutTime)}
+                          {calculateTrainingTime(record.checkinTime, record.checkoutTime, record.hours)}
                         </Typography>
                       </TableCell>
                       <TableCell>{getStatusChip(record.checkinTime, record.checkoutTime)}</TableCell>
@@ -606,27 +625,13 @@ function UserCheckinPage() {
               {user?.fullName || "Người dùng"}
             </Typography>
             <Typography variant="body1" color="text.secondary" mb={3}>
-              Đưa mã QR này cho nhân viên để checkin tập luyện
-            </Typography>
-            <Divider sx={{ my: 3 }} />
-            <Typography variant="body2" color="text.secondary">
-              Hoặc bạn có thể tự checkin bằng cách nhấn nút bên dưới
+              Đưa mã QR này cho nhân viên để checkin/checkout tập luyện
             </Typography>
           </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button onClick={() => setQrDialogOpen(false)} color="inherit" fullWidth={isMobile}>
-            Hủy
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleCheckin}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <CheckCircle />}
-            fullWidth={isMobile}
-            sx={{ ml: isMobile ? 0 : 1, mt: isMobile ? 1 : 0 }}
-          >
-            {loading ? "Đang checkin..." : "Bắt đầu tập luyện"}
+          <Button onClick={() => setQrDialogOpen(false)} color="inherit" fullWidth variant="contained">
+            Đóng
           </Button>
         </DialogActions>
       </Dialog>

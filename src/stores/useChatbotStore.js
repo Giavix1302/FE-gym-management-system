@@ -162,7 +162,7 @@ const useChatbotStore = create((set, get) => ({
 
       let response
       if (isAuthenticated) {
-        response = await chatbotWithAuthAPI({ message: messageText })
+        response = await chatbotWithAuthAPI(user._id, { message: messageText })
       } else {
         if (!state.anonymousId) {
           get().initializeChatbot()
@@ -220,7 +220,7 @@ const useChatbotStore = create((set, get) => ({
   },
 
   /**
-   * Process quick reply
+   * Process quick reply - ✅ FIXED: Send correct payload with userId
    */
   processQuickReply: async (quickReply) => {
     const user = useUserStore.getState().user
@@ -231,9 +231,9 @@ const useChatbotStore = create((set, get) => ({
 
       if (isAuthenticated) {
         const { processQuickReplyAPI } = await import("../apis/chatbot")
-        const response = await processQuickReplyAPI({
-          action: quickReply.action,
-          data: quickReply.data || {},
+        // ✅ FIXED: Pass userId as first parameter and send correct payload
+        const response = await processQuickReplyAPI(user._id, {
+          value: quickReply.value || quickReply.action || quickReply.text,
         })
 
         if (response.success) {
@@ -271,6 +271,7 @@ const useChatbotStore = create((set, get) => ({
   loadConversationHistory: async () => {
     const state = get()
     const user = useUserStore.getState().user
+    console.log("🚀 ~ user:", user)
     const isAuthenticated = !!user
 
     try {
@@ -279,7 +280,7 @@ const useChatbotStore = create((set, get) => ({
       if (isAuthenticated) {
         // ✅ Load authenticated user conversation
         const { getAuthConversationAPI } = await import("../apis/chatbot")
-        const response = await getAuthConversationAPI()
+        const response = await getAuthConversationAPI(user._id)
 
         if (response.success && response.conversation) {
           const conversation = response.conversation
@@ -416,7 +417,7 @@ const useChatbotStore = create((set, get) => ({
   },
 
   /**
-   * Load quick replies - QUICK FIX: HANDLE ERRORS GRACEFULLY
+   * Load quick replies - ✅ FIXED: Pass userId for authenticated users
    */
   loadQuickReplies: async () => {
     const user = useUserStore.getState().user
@@ -427,7 +428,8 @@ const useChatbotStore = create((set, get) => ({
 
       let response
       if (isAuthenticated) {
-        response = await getAuthQuickRepliesAPI()
+        // ✅ FIXED: Pass userId for authenticated quick replies
+        response = await getAuthQuickRepliesAPI(user._id)
       } else {
         response = await getAnonymousQuickRepliesAPI()
       }
@@ -443,10 +445,16 @@ const useChatbotStore = create((set, get) => ({
   },
 
   /**
-   * Switch to authenticated mode after user login
+   * Switch to authenticated mode after user login - ✅ FIXED: Pass userId
    */
   switchToAuthenticatedMode: async () => {
     const state = get()
+    const user = useUserStore.getState().user
+
+    if (!user) {
+      console.error("No user available for switch to authenticated mode")
+      return
+    }
 
     try {
       // Link anonymous conversation if exists
@@ -454,7 +462,7 @@ const useChatbotStore = create((set, get) => ({
         const { linkAnonymousConversationAPI } = await import("../apis/chatbot")
 
         try {
-          await linkAnonymousConversationAPI({ anonymousId: state.anonymousId })
+          await linkAnonymousConversationAPI(user._id, { anonymousId: state.anonymousId })
         } catch (error) {
           console.warn("Failed to link anonymous conversation:", error)
           // Continue anyway, don't block the switch

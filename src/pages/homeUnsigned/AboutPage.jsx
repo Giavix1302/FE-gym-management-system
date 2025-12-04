@@ -64,7 +64,7 @@ function AboutPage() {
           py: 8,
           position: "relative",
           overflow: "hidden",
-          backgroundImage: "url('/public/about-banner.jpg')", // đường dẫn hình ảnh
+          backgroundImage: "url('/about-banner.jpg')", // đường dẫn hình ảnh
           backgroundSize: "cover", // căn chỉnh
           backgroundPosition: "bottom",
           "&::before": {

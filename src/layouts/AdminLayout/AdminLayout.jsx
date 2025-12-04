@@ -102,11 +102,6 @@ const NAVIGATION_ADMIN = [
     icon: <AttachMoneyIcon />,
   },
   {
-    segment: "admin/chatbot",
-    title: "Chatbot",
-    icon: <SmartToyIcon />,
-  },
-  {
     kind: "divider",
   },
   {

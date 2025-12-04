@@ -2,6 +2,7 @@ import { axiosInstance } from "./axiosConfig"
 
 export const getDataDashboardForAdminAPI = async () => {
   const rep = await axiosInstance.get(`/statistics/admin/dashboard`)
+  console.log("🚀 ~ getDataDashboardForAdminAPI ~ rep:", rep)
   return rep.data
 }
 

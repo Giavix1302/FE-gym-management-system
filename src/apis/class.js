@@ -41,3 +41,8 @@ export const deleteClassAPI = async (classId) => {
   const rep = await axiosInstance.delete("/classes/" + classId)
   return rep.data
 }
+
+export const cancelClassEnrollmentAPI = async (enrollmentId) => {
+  const rep = await axiosInstance.patch("/class-enrollments/" + enrollmentId + "/cancel")
+  return rep.data
+}

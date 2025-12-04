@@ -44,9 +44,7 @@ import NotificationPanel from "~/components/NotificationPanel"
 export default function Header() {
   // custom hooks
   const logout = useLogout()
-  useUserStore.subscribe((state) => {
-    console.log("Store changed:", state)
-  })
+
   // store
   const { user } = useUserStore()
 

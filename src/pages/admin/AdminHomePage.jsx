@@ -30,17 +30,20 @@ import {
   Group,
   Build,
 } from "@mui/icons-material"
+import UndoIcon from "@mui/icons-material/Undo"
 import { LineChart, BarChart } from "@mui/x-charts"
 import { getDataDashboardForAdminAPI } from "~/apis/statistic"
 
 function AdminHomePage() {
   const [dashboardData, setDashboardData] = useState(null)
+  console.log("🚀 ~ AdminHomePage ~ dashboardData:", dashboardData)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const init = async () => {
       try {
         const response = await getDataDashboardForAdminAPI()
+        console.log("🚀 ~ init ~ response:", response)
         if (response.success) {
           setDashboardData(response.data)
         }
@@ -295,6 +298,13 @@ function AdminHomePage() {
                   message="Membership sắp hết hạn (7 ngày)"
                   severity={dashboardData.alerts.membershipExpiring > 0 ? "info" : "success"}
                   icon={<Schedule />}
+                />
+                <AlertItem
+                  type="pendingRefundCount"
+                  count={dashboardData.alerts.pendingRefundCount}
+                  message="Khách hàng chưa nhận được tiền hoàn trả"
+                  severity={dashboardData.alerts.pendingRefundCount > 0 ? "error" : "success"}
+                  icon={<UndoIcon />}
                 />
               </Box>
             </CardContent>

@@ -377,3 +377,28 @@ export function countRemainingDays(endISO) {
 
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 }
+
+export function checkRefund(isoDate) {
+  const targetDate = new Date(isoDate)
+  const now = new Date()
+
+  const diffMs = targetDate - now
+  const oneDayMs = 24 * 60 * 60 * 1000
+
+  const isRefund = diffMs > oneDayMs
+
+  // Format dd/mm/yyyy hh:mm
+  const dd = String(targetDate.getDate()).padStart(2, "0")
+  const mm = String(targetDate.getMonth() + 1).padStart(2, "0")
+  const yyyy = targetDate.getFullYear()
+
+  const hh = String(targetDate.getHours()).padStart(2, "0")
+  const min = String(targetDate.getMinutes()).padStart(2, "0")
+
+  const formatTime = `${dd}/${mm}/${yyyy} ${hh}:${min}`
+
+  return {
+    isRefund,
+    formatTime,
+  }
+}

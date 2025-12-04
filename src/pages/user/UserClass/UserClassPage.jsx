@@ -72,7 +72,7 @@ import {
 import ClassDetailDialog from "./ClassDetailDialog"
 // Import the shared SelectPaymentModal component
 import { SelectPaymentModal } from "~/components/SelectPaymentModal"
-import { getListClassForUserAPI, getMemberEnrolledClassesAPI } from "~/apis/class"
+import { cancelClassEnrollmentAPI, getListClassForUserAPI, getMemberEnrolledClassesAPI } from "~/apis/class"
 import { toast } from "react-toastify"
 import useLocationStore from "~/stores/useLocationStore"
 import { createLinkVnpayClassPaymentAPI } from "~/apis/payment"
@@ -84,6 +84,7 @@ function ClassEnrollmentPage() {
   const [activeTab, setActiveTab] = useState(0)
   const [classes, setClasses] = useState([])
   const [enrolledClasses, setEnrolledClasses] = useState([])
+  console.log("🚀 ~ ClassEnrollmentPage ~ enrolledClasses:", enrolledClasses)
   const [classType, setClassType] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [dataLoading, setDataLoading] = useState(false)
@@ -269,7 +270,7 @@ function ClassEnrollmentPage() {
     }
   }
 
-  const handleCancelEnrollment = () => {
+  const handleCancelEnrollment = async () => {
     if (!cancelReason.trim()) {
       setSnackbar({
         open: true,
@@ -278,21 +279,16 @@ function ClassEnrollmentPage() {
       })
       return
     }
-
     setLoading(true)
-    setTimeout(() => {
-      // In real implementation, you would call an API to cancel enrollment
-      setOpenCancelDialog(false)
-      setSelectedEnrollment(null)
-      setCancelReason("")
-      setLoading(false)
+    const result = await cancelClassEnrollmentAPI(selectedEnrollment.classEnrollmentId)
 
-      setSnackbar({
-        open: true,
-        message: "Yêu cầu hủy đăng ký đã được gửi",
-        severity: "success",
-      })
-    }, 1500)
+    if (result.success) {
+      toast.success(result.message)
+    }
+    setOpenCancelDialog(false)
+    setSelectedEnrollment(null)
+    setCancelReason("")
+    setLoading(false)
   }
 
   const filteredClasses = classes.filter((classItem) => {
@@ -615,6 +611,7 @@ function ClassEnrollmentPage() {
           ) : (
             <Grid container spacing={3}>
               {enrolledClasses.map((enrolledClass, index) => {
+                console.log("🚀 ~ ClassEnrollmentPage ~ enrolledClass:", enrolledClass)
                 const progress = calculateProgress(enrolledClass)
                 const nextSession = getNextSession(enrolledClass)
                 const paymentStatus = getPaymentStatusInfo(enrolledClass.paymentStatus)
@@ -695,7 +692,7 @@ function ClassEnrollmentPage() {
                         <CardContent sx={{ pt: 0 }}>
                           <Grid container spacing={3}>
                             {/* Left Column - Main Info */}
-                            <Grid item xs={12} md={8}>
+                            <Grid item size={{ xs: 12, md: 8 }}>
                               <Stack spacing={3}>
                                 {/* Progress Section */}
                                 <Paper
@@ -746,7 +743,7 @@ function ClassEnrollmentPage() {
 
                                 {/* Class Details */}
                                 <Grid container spacing={2}>
-                                  <Grid item xs={12} sm={6}>
+                                  <Grid item size={{ xs: 12, sm: 6 }}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
                                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                                         <People fontSize="small" color="primary" />
@@ -766,15 +763,6 @@ function ClassEnrollmentPage() {
                                           {enrolledClass.trainers?.map((trainer, idx) => (
                                             <Typography key={trainer._id} variant="body2" fontWeight={500}>
                                               {trainer.name}
-                                              {trainer.rating && (
-                                                <Box
-                                                  component="span"
-                                                  sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                                                >
-                                                  <Star fontSize="small" sx={{ color: "warning.main" }} />
-                                                  <Typography variant="caption">{trainer.rating}</Typography>
-                                                </Box>
-                                              )}
                                             </Typography>
                                           ))}
                                         </Box>
@@ -782,7 +770,7 @@ function ClassEnrollmentPage() {
                                     </Paper>
                                   </Grid>
 
-                                  <Grid item xs={12} sm={6}>
+                                  <Grid item size={{ xs: 12, sm: 6 }}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
                                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                                         <LocationOn fontSize="small" color="primary" />
@@ -799,7 +787,7 @@ function ClassEnrollmentPage() {
                                     </Paper>
                                   </Grid>
 
-                                  <Grid item xs={12} sm={6}>
+                                  <Grid item size={{ xs: 12, sm: 6 }}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
                                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                                         <CalendarMonth fontSize="small" color="primary" />
@@ -822,7 +810,7 @@ function ClassEnrollmentPage() {
                                     </Paper>
                                   </Grid>
 
-                                  <Grid item xs={12} sm={6}>
+                                  <Grid item size={{ xs: 12, sm: 6 }}>
                                     <Paper elevation={0} sx={{ p: 2, bgcolor: "grey.50", borderRadius: 2 }}>
                                       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                                         <MonetizationOn fontSize="small" color="primary" />
@@ -843,7 +831,7 @@ function ClassEnrollmentPage() {
                             </Grid>
 
                             {/* Right Column - Next Session & Actions */}
-                            <Grid item xs={12} md={4}>
+                            <Grid item size={{ xs: 12, md: 4 }}>
                               <Stack spacing={3}>
                                 {/* Next Session */}
                                 {nextSession ? (
@@ -909,7 +897,7 @@ function ClassEnrollmentPage() {
                                     Thống kê nhanh
                                   </Typography>
                                   <Grid container spacing={1}>
-                                    <Grid item xs={6}>
+                                    <Grid item size={{ xs: 6 }}>
                                       <Box sx={{ textAlign: "center", p: 1 }}>
                                         <Typography variant="h6" color="primary" fontWeight={700}>
                                           {progress.completed}
@@ -919,7 +907,7 @@ function ClassEnrollmentPage() {
                                         </Typography>
                                       </Box>
                                     </Grid>
-                                    <Grid item xs={6}>
+                                    <Grid item size={{ xs: 6 }}>
                                       <Box sx={{ textAlign: "center", p: 1 }}>
                                         <Typography variant="h6" color="warning.dark" fontWeight={700}>
                                           {progress.total - progress.completed}
@@ -1017,7 +1005,7 @@ function ClassEnrollmentPage() {
                   <Divider sx={{ my: 2 }} />
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={2}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <People fontSize="small" color="primary" />
@@ -1030,7 +1018,7 @@ function ClassEnrollmentPage() {
                           <Person fontSize="small" color="primary" />
                           <Box>
                             <Typography variant="body2">
-                              <strong>Huấn luyện viên:</strong>
+                              <strong> :</strong>
                             </Typography>
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
                               <AvatarGroup
@@ -1059,7 +1047,7 @@ function ClassEnrollmentPage() {
                       </Stack>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
+                    <Grid item size={{ xs: 12, sm: 6 }}>
                       <Stack spacing={2}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <CalendarMonth fontSize="small" color="primary" />
@@ -1106,7 +1094,6 @@ function ClassEnrollmentPage() {
                   {/* Price Section */}
                   <Box
                     sx={{
-                      bgcolor: "warning.light",
                       p: 2,
                       borderRadius: 1,
                       display: "flex",
@@ -1126,8 +1113,6 @@ function ClassEnrollmentPage() {
 
               <Alert severity="warning">
                 <Typography variant="body2">
-                  • Sau khi thanh toán thành công, bạn sẽ nhận được email xác nhận
-                  <br />
                   • Vui lòng đến đúng giờ trong buổi học đầu tiên
                   <br />• Liên hệ với chúng tôi nếu có bất kỳ thắc mắc nào
                 </Typography>
@@ -1224,21 +1209,21 @@ function ClassEnrollmentPage() {
       <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Typography variant="h6" color="error">
-            Xác nhận hủy đăng ký
+            Xác nhận hủy lớp học
           </Typography>
         </DialogTitle>
         <DialogContent>
           {selectedEnrollment && (
             <Box>
               <Alert severity="warning" sx={{ mb: 3 }}>
-                Bạn có chắc chắn muốn hủy đăng ký lớp <strong>{selectedEnrollment.name}</strong>?
+                Bạn có chắc chắn muốn hủy lớp học <strong>{selectedEnrollment.name}</strong>?
               </Alert>
 
               <TextField
                 fullWidth
                 multiline
                 rows={3}
-                label="Lý do hủy đăng ký *"
+                label="Lý do hủy lớp học *"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Vui lòng cho biết lý do..."
@@ -1247,10 +1232,9 @@ function ClassEnrollmentPage() {
 
               <Alert severity="info" sx={{ mt: 2 }}>
                 <Typography variant="body2">
-                  • Hủy trước khi lớp bắt đầu 7 ngày: Hoàn 100% học phí
+                  • Hủy trước khi lớp bắt đầu: Hoàn 100% học phí
                   <br />
-                  • Hủy trong vòng 7 ngày: Hoàn 50% học phí
-                  <br />• Sau khi lớp bắt đầu: Không hoàn học phí
+                  Hủy sau khi lớp bắt đầu: Không hoàn học phí
                 </Typography>
               </Alert>
             </Box>

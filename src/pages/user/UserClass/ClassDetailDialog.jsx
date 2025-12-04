@@ -27,6 +27,7 @@ import {
 } from "@mui/icons-material"
 
 const ClassDetailDialog = ({ open, onClose, classData }) => {
+  console.log("🚀 ~ ClassDetailDialog ~ classData:", classData)
   if (!classData) return null
 
   const getClassTypeIcon = (type) => {
@@ -222,7 +223,7 @@ const ClassDetailDialog = ({ open, onClose, classData }) => {
                     {formatTime(schedule.endTime)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Phòng: {schedule.roomId || "Sẽ thông báo"}
+                    Phòng: {schedule.roomName || "Sẽ thông báo"}
                   </Typography>
                 </Box>
               </Box>
@@ -239,46 +240,69 @@ const ClassDetailDialog = ({ open, onClose, classData }) => {
               </Typography>
               <Box sx={{ maxHeight: 300, overflowY: "auto", mb: 2 }}>
                 <Stack spacing={1}>
-                  {classData.classSession.map((session) => (
-                    <Box
-                      key={session._id}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        p: 1.5,
-                        bgcolor: "background.paper",
-                        border: 1,
-                        borderColor: "divider",
-                        borderRadius: 1,
-                      }}
-                    >
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          {session.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {session.room}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ textAlign: "right" }}>
-                        <Typography variant="body2">
-                          {new Date(session.startTime).toLocaleDateString("vi-VN")}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(session.startTime).toLocaleTimeString("vi-VN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}{" "}
-                          -{" "}
-                          {new Date(session.endTime).toLocaleTimeString("vi-VN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
+                  {classData.classSession
+                    .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+                    .map((session) => {
+                      const now = new Date()
+                      const startTime = new Date(session.startTime)
+                      const endTime = new Date(session.endTime)
+
+                      let statusChip = null
+                      if (endTime < now) {
+                        // Buổi học đã kết thúc
+                        statusChip = <Chip label="Đã hoàn thành" color="success" variant="outlined" size="small" />
+                      } else if (startTime <= now && now <= endTime) {
+                        // Buổi học đang diễn ra
+                        statusChip = <Chip label="Đang diễn ra" color="warning" size="small" />
+                      } else if (startTime > now) {
+                        // Buổi học chưa bắt đầu
+                        statusChip = <Chip label="Sắp tới" color="info" variant="outlined" size="small" />
+                      }
+
+                      return (
+                        <Box
+                          key={session._id}
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            p: 1.5,
+                            bgcolor: "background.paper",
+                            border: 1,
+                            borderColor: "divider",
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Box sx={{ flex: 1 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                              <Typography variant="body2" fontWeight={600}>
+                                {session.title}
+                              </Typography>
+                              {statusChip}
+                            </Box>
+                            <Typography variant="caption" color="text.secondary">
+                              {session.room}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: "right" }}>
+                            <Typography variant="body2">
+                              {new Date(session.startTime).toLocaleDateString("vi-VN")}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(session.startTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}{" "}
+                              -{" "}
+                              {new Date(session.endTime).toLocaleTimeString("vi-VN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )
+                    })}
                 </Stack>
               </Box>
               <Divider sx={{ my: 2 }} />

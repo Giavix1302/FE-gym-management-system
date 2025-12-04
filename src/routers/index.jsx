@@ -51,7 +51,6 @@ import AdminStaffPage from "~/pages/admin/AdminStaff/AdminStaffPage"
 import AdminEquipmentPage from "~/pages/admin/adminEquipment/AdminEquipmentPage"
 import StaffRoomPage from "~/pages/staff/staffRoom/StaffRoomPage"
 import AdminLocationPage from "~/pages/admin/adminLocation/AdminLocationPage"
-import AdminChatbotPage from "~/pages/admin/adminChatbot/AdminChatbotPage"
 import ForgotPassword from "~/pages/homeUnsigned/ForgotPassword"
 import ChangePassword from "~/pages/ChangePassword"
 import PaymentHistoryPage from "~/pages/PaymentHistoryPage"
@@ -68,6 +67,7 @@ import AboutPage from "~/pages/homeUnsigned/AboutPage"
 import PTPackagePage from "~/pages/homeUnsigned/PTPackagePage"
 import FitnessClassPage from "~/pages/homeUnsigned/FitnessClassPage"
 import ContactPage from "~/pages/homeUnsigned/ContactPage"
+import ResultPaymentFailedPage from "~/pages/user/ResultPaymentFailedPage"
 
 // ✅ Loading Component
 const LoadingScreen = () => (
@@ -198,6 +198,7 @@ export default function AppRoutes() {
             <Route path="/user/payment-history" element={<PaymentHistoryPage />} />
             <Route path="/user/profile" element={<UserProfilePage />} />
             <Route path="/user/progress" element={<UserProgressPage />} />
+            <Route path="/user/payment/failed" element={<ResultPaymentFailedPage />} />
           </Route>
         </Route>
         {/* Trainer Private Routes */}
@@ -227,7 +228,6 @@ export default function AppRoutes() {
             <Route path="/admin/payment" element={<AdminPaymentPage />} />
             <Route path="/admin/staff" element={<AdminStaffPage />} />
             <Route path="/admin/equipment" element={<AdminEquipmentPage />} />
-            <Route path="/admin/chatbot" element={<AdminChatbotPage />} />
 
             <Route path="/admin/report/user" element={<AdminReportMemberPage />} />
             <Route path="/admin/report/pt" element={<AdminReportTrainerPage />} />

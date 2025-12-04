@@ -248,13 +248,6 @@ function Signup() {
           placeholder="Nhập lại mật khẩu"
           type="password"
         />
-
-        {/* Lưu mật khẩu */}
-        <FormControlLabel
-          control={<Checkbox color="primary" size="small" />}
-          label="Lưu mật khẩu"
-          sx={{ mt: 0, width: "100%", justifyContent: "flex-end", mr: 0 }}
-        />
       </Box>
 
       {/* Nút đăng nhập */}
@@ -263,7 +256,7 @@ function Signup() {
         fullWidth
         variant="contained"
         color="primary"
-        sx={{ mt: 1, py: 1, borderRadius: 2 }}
+        sx={{ mt: 4, py: 1, borderRadius: 2 }}
       >
         Đăng kí
       </Button>

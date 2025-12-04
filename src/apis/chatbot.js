@@ -1,8 +1,141 @@
+// Updated chatbot API functions - Modified to work with userId in params for ALL authenticated endpoints
+
 import { toast } from "react-toastify"
 import { axiosPublic, axiosInstance } from "./axiosConfig"
 
 // ========================================
-// ANONYMOUS CHATBOT APIs (No Authentication)
+// AUTHENTICATED CHATBOT APIs (Require userId in params) - ✅ UPDATED
+// ========================================
+
+/**
+ * Get conversation history for authenticated user by userId
+ * @param {string} userId - User ID to get conversation for
+ * @param {string} conversationId - Optional specific conversation ID
+ * @returns {Promise<Object>} Conversation history
+ */
+export const getAuthConversationAPI = async (userId, conversationId = null) => {
+  try {
+    let url = `/chatbot/conversation/${userId}`
+    if (conversationId) {
+      url = `/chatbot/conversation/${userId}/${conversationId}`
+    }
+
+    const response = await axiosInstance.get(url)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể tải lịch sử chat"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Get conversation history by userId (alternative function name for clarity)
+ * @param {string} userId - User ID to get conversation for
+ * @param {string} conversationId - Optional specific conversation ID
+ * @returns {Promise<Object>} Conversation history
+ */
+export const getConversationByUserIdAPI = async (userId, conversationId = null) => {
+  try {
+    let url = `/chatbot/conversation/${userId}`
+    if (conversationId) {
+      url = `/chatbot/conversation/${userId}/${conversationId}`
+    }
+
+    const response = await axiosInstance.get(url)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể tải lịch sử chat"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Send message as authenticated user - ✅ UPDATED to use userId in params
+ * @param {string} userId - User ID to send message for
+ * @param {Object} data - { message: string }
+ * @returns {Promise<Object>} Response with bot reply and conversation data
+ */
+export const chatbotWithAuthAPI = async (userId, data) => {
+  try {
+    const response = await axiosInstance.post(`/chatbot/message/${userId}`, data)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Get quick replies for authenticated users - ✅ UPDATED to use userId in params
+ * @param {string} userId - User ID to get quick replies for
+ * @returns {Promise<Object>} Array of quick reply options
+ */
+export const getAuthQuickRepliesAPI = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/chatbot/quick-replies/${userId}`)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể tải quick replies"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Process quick reply action - ✅ UPDATED to use userId in params
+ * @param {string} userId - User ID to process quick reply for
+ * @param {Object} data - { value: string }
+ * @returns {Promise<Object>} Bot response
+ */
+export const processQuickReplyAPI = async (userId, data) => {
+  try {
+    const response = await axiosInstance.post(`/chatbot/quick-replies/${userId}`, data)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể xử lý quick reply"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Link anonymous conversation to authenticated user - ✅ UPDATED to use userId in params
+ * @param {string} userId - User ID to link conversation to
+ * @param {Object} data - { anonymousId: string }
+ * @returns {Promise<Object>} Link result
+ */
+export const linkAnonymousConversationAPI = async (userId, data) => {
+  try {
+    const response = await axiosInstance.post(`/chatbot/link-anonymous/${userId}`, data)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể liên kết conversation"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Get user's conversations - ✅ UPDATED to use userId in params
+ * @param {string} userId - User ID to get conversations for
+ * @returns {Promise<Object>} List of user conversations
+ */
+export const getMyConversationsAPI = async (userId) => {
+  try {
+    const response = await axiosInstance.get(`/chatbot/my/conversations/${userId}`)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể tải danh sách conversations"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+// ========================================
+// ANONYMOUS CHATBOT APIs (No Changes)
 // ========================================
 
 /**
@@ -11,7 +144,7 @@ import { axiosPublic, axiosInstance } from "./axiosConfig"
  * @returns {Promise<Object>} Response with bot reply and conversation data
  */
 export const chatbotWithAnonymousAPI = async (data) => {
-  console.log("🐛 API Call Data:", data) // Thêm log này
+  console.log("🐛 API Call Data:", data)
   try {
     const response = await axiosPublic.post("/chatbot/anonymous/message", data)
     return response.data
@@ -68,313 +201,7 @@ export const getChatbotHealthAPI = async () => {
 }
 
 // ========================================
-// AUTHENTICATED CHATBOT APIs (Require Login)
-// ========================================
-
-/**
- * Send message as authenticated user
- * @param {Object} data - { message: string }
- * @returns {Promise<Object>} Response with bot reply and conversation data
- */
-export const chatbotWithAuthAPI = async (data) => {
-  try {
-    const response = await axiosInstance.post("/chatbot/message", data)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get conversation history for authenticated user
- * @returns {Promise<Object>} Conversation history
- */
-export const getAuthConversationAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/conversation")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải lịch sử chat"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get quick replies for authenticated users
- * @returns {Promise<Object>} Array of quick reply options
- */
-export const getAuthQuickRepliesAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/quick-replies")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải quick replies"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Process quick reply action
- * @param {Object} data - { action: string, data?: Object }
- * @returns {Promise<Object>} Bot response
- */
-export const processQuickReplyAPI = async (data) => {
-  try {
-    const response = await axiosInstance.post("/chatbot/quick-replies", data)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể xử lý quick reply"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get user's conversations
- * @returns {Promise<Object>} List of user conversations
- */
-export const getMyConversationsAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/my/conversations")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải danh sách conversations"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get user's actions
- * @returns {Promise<Object>} List of user actions
- */
-export const getMyActionsAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/my/actions")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải danh sách actions"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-// ========================================
-// ADMIN CHATBOT APIs (Require Admin Role)
-// ========================================
-
-/**
- * Get all conversations (Admin only)
- * @param {Object} params - { page?, limit?, status? }
- * @returns {Promise<Object>} All conversations with pagination
- */
-export const getAllConversationsAPI = async (params = {}) => {
-  try {
-    const response = await axiosInstance.get("/chatbot/admin/conversations", { params })
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải conversations"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get specific conversation by ID (Admin only)
- * @param {string} conversationId - Conversation ID
- * @returns {Promise<Object>} Conversation details
- */
-export const getConversationByIdAPI = async (conversationId) => {
-  try {
-    const response = await axiosInstance.get(`/chatbot/admin/conversations/${conversationId}`)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải conversation"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get user conversations (Admin only)
- * @param {string} userId - User ID
- * @returns {Promise<Object>} User conversations
- */
-export const getUserConversationsAPI = async (userId) => {
-  try {
-    const response = await axiosInstance.get(`/chatbot/admin/user/${userId}/conversations`)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải user conversations"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get user actions (Admin only)
- * @param {string} userId - User ID
- * @returns {Promise<Object>} User actions
- */
-export const getUserActionsAPI = async (userId) => {
-  try {
-    const response = await axiosInstance.get(`/chatbot/admin/user/${userId}/actions`)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải user actions"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get all actions (Admin only)
- * @param {Object} params - { actionType?, status? }
- * @returns {Promise<Object>} All actions
- */
-export const getAllActionsAPI = async (params = {}) => {
-  try {
-    const response = await axiosInstance.get("/chatbot/admin/actions", { params })
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải actions"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-// ========================================
-// GYM INFO APIs (Admin only)
-// ========================================
-
-/**
- * Get all gym info (Admin only)
- * @returns {Promise<Object>} Gym info entries
- */
-export const getAllGymInfoAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/admin/gym-info")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải gym info"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Create gym info entry (Admin only)
- * @param {Object} data - Gym info data
- * @returns {Promise<Object>} Created gym info entry
- */
-export const createGymInfoAPI = async (data) => {
-  try {
-    const response = await axiosInstance.post("/chatbot/admin/gym-info", data)
-    toast.success("Tạo gym info thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tạo gym info"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Update gym info entry (Admin only)
- * @param {string} id - Gym info entry ID
- * @param {Object} data - Updated gym info data
- * @returns {Promise<Object>} Updated gym info entry
- */
-export const updateGymInfoAPI = async (id, data) => {
-  try {
-    const response = await axiosInstance.put(`/chatbot/admin/gym-info/${id}`, data)
-    toast.success("Cập nhật gym info thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể cập nhật gym info"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Delete gym info entry (Admin only)
- * @param {string} id - Gym info entry ID
- * @returns {Promise<Object>} Delete result
- */
-export const deleteGymInfoAPI = async (id) => {
-  try {
-    const response = await axiosInstance.delete(`/chatbot/admin/gym-info/${id}`)
-    toast.success("Xóa gym info thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể xóa gym info"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-// ========================================
-// ANALYTICS APIs (Admin only)
-// ========================================
-
-/**
- * Get chatbot analytics (Admin only)
- * @returns {Promise<Object>} Analytics data
- */
-export const getChatbotAnalyticsAPI = async () => {
-  try {
-    const response = await axiosInstance.get("/chatbot/admin/analytics")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải analytics"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-// ========================================
-// DEVELOPMENT APIs (Development only)
-// ========================================
-
-/**
- * Test intent recognition (Dev only)
- * @param {Object} data - { message: string }
- * @returns {Promise<Object>} Intent classification result
- */
-export const testIntentAPI = async (data) => {
-  try {
-    const response = await axiosInstance.post("/chatbot/dev/test-intent", data)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể test intent"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Seed test data (Dev only - dangerous operation)
- * @returns {Promise<Object>} Seed result
- */
-export const seedTestDataAPI = async () => {
-  try {
-    const response = await axiosInstance.post("/chatbot/dev/seed-data")
-    toast.success("Seed data thành công!")
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể seed data"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-// ========================================
-// UTILITY FUNCTIONS
+// UTILITY FUNCTIONS (UNCHANGED)
 // ========================================
 
 /**
@@ -388,9 +215,8 @@ export const processChatbotResponse = (response) => {
   const processedResponse = {
     ...response,
     needsAuth: response.requiresAuth || false,
-    hasActions: false,
-    hasPaymentLink: false,
-    hasConfirmation: false,
+    hasPersonalInfo: false,
+    isError: false,
   }
 
   // Set UI flags based on response type
@@ -399,25 +225,57 @@ export const processChatbotResponse = (response) => {
       processedResponse.needsAuth = true
       break
 
-    case "membership_options":
-    case "registration_form":
-      processedResponse.hasActions = true
+    case "membership_info":
+    case "schedule_info":
+    case "my_membership":
+    case "my_schedule":
+      processedResponse.hasPersonalInfo = true
       break
 
-    case "payment_link":
-      processedResponse.hasPaymentLink = true
-      processedResponse.paymentUrl = response.paymentUrl
+    case "no_membership":
+    case "no_active_membership":
+      processedResponse.needsAuth = true
+      processedResponse.hasPersonalInfo = true
       break
 
-    case "membership_confirmation":
-    case "registration_confirmation":
-      processedResponse.hasConfirmation = true
+    case "faq_response":
+    case "locations_info":
+    case "memberships_info":
+    case "classes_info":
+    case "trainers_info":
+    case "equipment_info":
+    case "basic_info":
+    case "hours_info":
+    case "contact_info":
+      processedResponse.isFAQ = true
+      break
+
+    case "greeting_response":
+    case "thanks_response":
+    case "time_response":
+    case "general_response":
+      processedResponse.isGeneral = true
       break
 
     case "error":
-    case "action_failed":
+    case "system_error":
+    case "validation_error":
+    case "membership_error":
+    case "schedule_error":
+    case "locations_error":
+    case "memberships_error":
+    case "classes_error":
+    case "trainers_error":
       processedResponse.isError = true
       break
+
+    case "unknown_intent":
+    case "unknown":
+      processedResponse.isUnknown = true
+      break
+
+    default:
+      processedResponse.isGeneral = true
   }
 
   return processedResponse
@@ -442,70 +300,128 @@ export const formatChatbotMessage = (content) => {
 }
 
 /**
- * Extract payment URL from response
+ * Check if response indicates user needs to login
  * @param {Object} response - Chatbot response
- * @returns {string|null} Payment URL if exists
+ * @returns {boolean} True if login required
  */
-export const extractPaymentUrl = (response) => {
-  if (response.type === "payment_link" && response.paymentUrl) {
-    return response.paymentUrl
-  }
-
-  // Try to extract from content
-  const urlMatch = response.content?.match(/(https?:\/\/[^\s]+)/g)
-  return urlMatch ? urlMatch[0] : null
+export const isLoginRequired = (response) => {
+  return response.type === "login_required" || response.needsAuth || response.requiresAuth
 }
 
-export const linkAnonymousConversationAPI = async (data) => {
-  try {
-    const response = await axiosInstance.post("/chatbot/link-anonymous", data)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể liên kết conversation"
-    toast.error(errorMessage)
-    throw err
+/**
+ * Check if response contains personal information
+ * @param {Object} response - Chatbot response
+ * @returns {boolean} True if contains personal info
+ */
+export const hasPersonalInfo = (response) => {
+  const personalTypes = [
+    "membership_info",
+    "schedule_info",
+    "my_membership",
+    "my_schedule",
+    "no_membership",
+    "no_active_membership",
+  ]
+  return personalTypes.includes(response.type)
+}
+
+/**
+ * Check if response is an error
+ * @param {Object} response - Chatbot response
+ * @returns {boolean} True if error response
+ */
+export const isErrorResponse = (response) => {
+  const errorTypes = [
+    "error",
+    "system_error",
+    "validation_error",
+    "membership_error",
+    "schedule_error",
+    "user_not_found",
+  ]
+  return errorTypes.includes(response.type) || response.isError
+}
+
+/**
+ * Check if response contains FAQ information
+ * @param {Object} response - Chatbot response
+ * @returns {boolean} True if FAQ response
+ */
+export const isFAQResponse = (response) => {
+  const faqTypes = [
+    "faq_response",
+    "locations_info",
+    "memberships_info",
+    "classes_info",
+    "trainers_info",
+    "equipment_info",
+    "basic_info",
+    "hours_info",
+    "contact_info",
+  ]
+  return faqTypes.includes(response.type)
+}
+
+/**
+ * Get response category for styling/handling
+ * @param {Object} response - Chatbot response
+ * @returns {string} Response category
+ */
+export const getResponseCategory = (response) => {
+  if (isErrorResponse(response)) return "error"
+  if (isLoginRequired(response)) return "auth_required"
+  if (hasPersonalInfo(response)) return "personal"
+  if (isFAQResponse(response)) return "faq"
+  return "general"
+}
+
+/**
+ * Extract data from chatbot response for UI components
+ * @param {Object} response - Chatbot response
+ * @returns {Object} Extracted data
+ */
+export const extractResponseData = (response) => {
+  const category = getResponseCategory(response)
+
+  return {
+    category,
+    type: response.type,
+    content: response.content,
+    data: response.data || null,
+    metadata: response.metadata || {},
+    needsAuth: isLoginRequired(response),
+    isError: isErrorResponse(response),
+    hasPersonalInfo: hasPersonalInfo(response),
+    isFAQ: isFAQResponse(response),
+    timestamp: response.timestamp || new Date().toISOString(),
   }
 }
 
-// Export all APIs
+// Export main APIs - ✅ UPDATED to include userId in all authenticated endpoints
 export default {
-  // Anonymous APIs
+  // Anonymous APIs (No changes)
   chatbotWithAnonymousAPI,
   getAnonymousConversationAPI,
   getAnonymousQuickRepliesAPI,
   getChatbotHealthAPI,
 
-  // Authenticated APIs
+  // Authenticated APIs - ✅ UPDATED: All now require userId parameter
   chatbotWithAuthAPI,
-  getAuthConversationAPI,
-  getAuthQuickRepliesAPI,
-  processQuickReplyAPI,
-  getMyConversationsAPI,
-  getMyActionsAPI,
-
-  // Admin APIs
-  getAllConversationsAPI,
-  getConversationByIdAPI,
-  getUserConversationsAPI,
-  getUserActionsAPI,
-  getAllActionsAPI,
-
-  // Gym Info APIs
-  getAllGymInfoAPI,
-  createGymInfoAPI,
-  updateGymInfoAPI,
-  deleteGymInfoAPI,
-
-  // Analytics APIs
-  getChatbotAnalyticsAPI,
-
-  // Development APIs
-  testIntentAPI,
-  seedTestDataAPI,
+  getAuthConversationAPI, // Now requires userId parameter
+  getConversationByUserIdAPI, // Alternative function name
+  getAuthQuickRepliesAPI, // Now requires userId parameter
+  processQuickReplyAPI, // Now requires userId parameter
+  getMyConversationsAPI, // Now requires userId parameter
+  linkAnonymousConversationAPI, // Now requires userId parameter
 
   // Utility functions
   processChatbotResponse,
   generateAnonymousId,
   formatChatbotMessage,
-  extractPaymentUrl,
+  isLoginRequired,
+  hasPersonalInfo,
+  isErrorResponse,
+  isFAQResponse,
+  getResponseCategory,
+  extractResponseData,
 }

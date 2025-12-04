@@ -604,10 +604,15 @@ export default function UserMembershipPage() {
         console.log("🚀 ~ handlePayment ~ membershipId:", membershipId)
 
         // call api lấy subId
-        const data = await createSubscriptionAPI(userId, membershipId)
+        // const data = await createSubscriptionAPI(userId, membershipId)
+
+        const dataToCreate = {
+          userId,
+          membershipId,
+        }
 
         // call api lầy nữa lấy link thanh toán
-        const vnpay = await createLinkVnpayAPI(data.subscriptionId)
+        const vnpay = await createLinkVnpayAPI(dataToCreate)
         console.log("🚀 ~ handlePayment ~ link:", vnpay.paymentUrl)
 
         window.open(vnpay.paymentUrl, "_blank")

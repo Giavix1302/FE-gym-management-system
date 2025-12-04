@@ -66,6 +66,7 @@ import {
   Sort,
   DateRange,
 } from "@mui/icons-material"
+
 import { theme } from "~/theme"
 import BookingCartModal from "./BookingCartModal"
 import BookedDetailModal from "./BookedDetailModal"
@@ -81,12 +82,13 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"
 import { createReviewAPI } from "~/apis/review"
 import { toast } from "react-toastify"
 import BookingHistoryModal from "./BookingHistoryModal"
-import { getHoursBetween } from "~/utils/common"
+import { checkRefund, convertISOToVNTime, getHoursBetween } from "~/utils/common"
 
 function UserBookingPage() {
   // store
   const { user } = useUserStore()
   const { listTrainerInfo, setListTrainerInfo } = useListTrainerInfoForUser()
+  console.log("🚀 ~ UserBookingPage ~ listTrainerInfo:", listTrainerInfo)
   const { locations } = useLocationStore()
 
   // Main states
@@ -103,7 +105,6 @@ function UserBookingPage() {
 
   // Booking cart states
   const [bookingCart, setBookingCart] = useState([])
-  console.log("🚀 ~ UserBookingPage ~ bookingCart:", bookingCart)
   const [selectedLocation, setSelectedLocation] = useState("")
   const [bookingNote, setBookingNote] = useState("")
 
@@ -162,6 +163,7 @@ function UserBookingPage() {
           fullName: userInfo?.fullName || "Không có tên",
           avatar: userInfo?.avatar || "",
           email: userInfo?.email || "",
+          phone: userInfo?.phone || "",
         },
         specialization: trainer?.trainerInfo?.specialization || "Chưa xác định",
         bio: trainer?.trainerInfo?.bio || "Chưa có thông tin",
@@ -305,6 +307,8 @@ function UserBookingPage() {
             const transformedBookings = transformBookingData(bookingResponse.bookings)
             console.log("🚀 ~ init ~ transformedBookings:", transformedBookings)
             setExistingBookings(transformedBookings)
+
+            // nếu mà có booking chưa thanh toán
           }
         }
       } catch (error) {
@@ -512,7 +516,7 @@ function UserBookingPage() {
         }
       case "pending":
         return {
-          label: "Chờ xác nhận",
+          label: "Chờ thanh toán",
           color: "warning",
           icon: <HourglassEmpty fontSize="small" />,
         }
@@ -716,130 +720,6 @@ function UserBookingPage() {
 
     setOpenDetailDialog(false)
     setOpenCancelDialog(true)
-  }
-
-  // Alternative: Direct cancellation without dialog (if you prefer immediate action)
-  const handleCancelSessionDirect = async (session) => {
-    if (!session || !session.bookingId) {
-      setSnackbar({
-        open: true,
-        message: "Không tìm thấy thông tin phiên tập",
-        severity: "error",
-      })
-      return
-    }
-
-    const confirmed = window.confirm("Bạn có chắc chắn muốn hủy phiên tập này?")
-    if (!confirmed) return
-
-    setLoading(true)
-
-    try {
-      const result = await cancelBookingAPI(session.bookingId)
-
-      if (result.success || result.status === "success") {
-        // Update local state - mark specific session as cancelled
-        const updatedBookings = existingBookings.map((booking) => {
-          const hasSession = booking.allSessions.some((s) => s.bookingId === session.bookingId)
-
-          if (hasSession) {
-            return {
-              ...booking,
-              allSessions: booking.allSessions.map((s) =>
-                s.bookingId === session.bookingId ? { ...s, status: "cancelled" } : s,
-              ),
-            }
-          }
-          return booking
-        })
-
-        setExistingBookings(updatedBookings)
-
-        setSnackbar({
-          open: true,
-          message: result.message || "Hủy phiên tập thành công",
-          severity: "success",
-        })
-      } else {
-        throw new Error(result.message || "Không thể hủy phiên tập")
-      }
-    } catch (error) {
-      console.error("Error cancelling session:", error)
-      setSnackbar({
-        open: true,
-        message: error.message || "Lỗi khi hủy phiên tập. Vui lòng thử lại!",
-        severity: "error",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Alternative approach if you need to cancel individual sessions
-  // You might need a separate API endpoint for this
-  const handleCancelIndividualSession = async (session) => {
-    if (!cancelReason.trim()) {
-      setSnackbar({
-        open: true,
-        message: "Vui lòng nhập lý do hủy lịch",
-        severity: "error",
-      })
-      return
-    }
-
-    setLoading(true)
-
-    try {
-      const sessionId = session._id || session.bookingId
-
-      if (!sessionId) {
-        throw new Error("Không tìm thấy ID phiên tập")
-      }
-
-      // If you have a separate API for cancelling individual sessions
-      // const result = await cancelSessionAPI(sessionId)
-
-      // Otherwise, use the booking API
-      const result = await cancelBookingAPI(sessionId)
-
-      if (result.success || result.status === "success") {
-        // Update only the specific session in local state
-        const updatedBookings = existingBookings.map((booking) => {
-          if (booking._id === selectedBooking._id) {
-            return {
-              ...booking,
-              allSessions: booking.allSessions.map((s) =>
-                s._id === session._id || s.bookingId === session.bookingId ? { ...s, status: "cancelled" } : s,
-              ),
-            }
-          }
-          return booking
-        })
-
-        setExistingBookings(updatedBookings)
-
-        setOpenCancelDialog(false)
-        setSelectedBooking(null)
-        setCancelReason("")
-
-        setSnackbar({
-          open: true,
-          message: result.message || "Hủy phiên tập thành công",
-          severity: "success",
-        })
-      } else {
-        throw new Error(result.message || "Không thể hủy phiên tập")
-      }
-    } catch (error) {
-      console.error("Error cancelling session:", error)
-      setSnackbar({
-        open: true,
-        message: error.message || "Lỗi khi hủy phiên tập. Vui lòng thử lại!",
-        severity: "error",
-      })
-    } finally {
-      setLoading(false)
-    }
   }
 
   const handleShowPTDetails = (trainer) => {
@@ -1060,7 +940,6 @@ function UserBookingPage() {
       </CardContent>
     </Card>
   )
-
   return (
     <Container sx={{ py: 4 }}>
       {/* Header */}
@@ -1400,6 +1279,7 @@ function UserBookingPage() {
             ) : (
               existingBookings
                 .map((booking, index) => {
+                  console.log("🚀 ~ UserBookingPage ~ booking:", booking)
                   // Safety check for booking structure
                   if (!booking || !booking.trainer || !booking.allSessions || !Array.isArray(booking.allSessions)) {
                     console.warn("Invalid booking structure:", booking)
@@ -1456,6 +1336,7 @@ function UserBookingPage() {
 
                   const isMultiSession = booking.allSessions && booking.allSessions.length > 1
                   const overallStatus = getBookingStatus(booking.allSessions)
+                  console.log("🚀 ~ UserBookingPage ~ overallStatus:", overallStatus)
                   const statusInfo = getStatusInfo(overallStatus)
 
                   // Calculate session statistics
@@ -1704,19 +1585,15 @@ function UserBookingPage() {
 
                             {/* Action Buttons */}
                             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
-                              {upcomingSessions > 0 && (
+                              {overallStatus === "pending" && (
                                 <Button
                                   size="small"
                                   variant="outlined"
-                                  color="error"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelectedBooking(booking)
-                                    setOpenCancelDialog(true)
-                                  }}
-                                  startIcon={<Cancel />}
+                                  color="warning"
+                                  onClick={(e) => {}}
+                                  startIcon={<HourglassEmpty />}
                                 >
-                                  Hủy lịch
+                                  Ấn để thanh toán
                                 </Button>
                               )}
                               <Button
@@ -2327,10 +2204,19 @@ function UserBookingPage() {
 
               <Alert severity="info" sx={{ mt: 2 }}>
                 <Typography variant="body2">
-                  • Hủy lịch trước 24h: Miễn phí
+                  {checkRefund(selectedBooking?.sessionToCancel?.startTime).formatTime}
                   <br />
-                  • Hủy lịch trong vòng 24h: Phí 50% giá trị buổi tập
-                  <br />• Chúng tôi sẽ liên hệ xác nhận việc hủy lịch trong vòng 30 phút
+                  {checkRefund(selectedBooking?.sessionToCancel?.startTime).isRefund ? (
+                    <>
+                      • Bạn hủy trước hơn 24 giờ → <strong>Miễn phí (được hoàn tiền)</strong>
+                      <br />• Chúng tôi sẽ liên hệ cho bạn để thực hiện hoàn trả
+                    </>
+                  ) : (
+                    <>
+                      • Bạn hủy trong vòng 24 giờ → <strong>Không thể hoàn tiền</strong>
+                      <br />
+                    </>
+                  )}
                 </Typography>
               </Alert>
             </Box>

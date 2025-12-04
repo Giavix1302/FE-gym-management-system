@@ -19,6 +19,7 @@ import {
   useMediaQuery,
 } from "@mui/material"
 import { Close, Email, School, WorkOutline, Star, Schedule, Add, CheckCircle } from "@mui/icons-material"
+import LocalPhoneIcon from "@mui/icons-material/LocalPhone"
 import { theme } from "~/theme"
 
 function PTDetailModal({
@@ -31,6 +32,7 @@ function PTDetailModal({
   onAddToCart,
   formatDate,
 }) {
+  console.log("🚀 ~ PTDetailModal ~ trainer:", trainer)
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   if (!trainer) return null
@@ -82,6 +84,7 @@ function PTDetailModal({
           {/* Header Section */}
           <Paper elevation={0} sx={{ p: 3, mb: 3, border: "1px solid", borderColor: "divider" }}>
             <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+              {/* Avatar */}
               <Avatar
                 src={
                   trainer.userId.avatar ||
@@ -95,6 +98,7 @@ function PTDetailModal({
                 }}
               />
 
+              {/* Left content */}
               <Box sx={{ flex: 1 }}>
                 <Typography variant="h4" fontWeight={700} color="primary" gutterBottom>
                   {trainer.userId.fullName}
@@ -107,19 +111,38 @@ function PTDetailModal({
                   </Typography>
                 </Box>
 
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
-                  {trainer.specialization.split(", ").map((spec, index) => (
-                    <Chip key={index} label={spec} color="primary" variant="outlined" size="small" />
-                  ))}
-                </Box>
-
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                  <Email fontSize="small" color="action" />
+                  <Email fontSize="small" color="primary" />
                   <Typography variant="body2" color="text.secondary">
                     {trainer.userId.email}
                   </Typography>
                 </Box>
 
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                  <LocalPhoneIcon fontSize="small" color="primary" />
+                  <Typography variant="body2" color="text.secondary">
+                    {trainer.userId.phone}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Right content — specialization + price */}
+              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", minWidth: 180 }}>
+                {/* Specializations */}
+                <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: 1, mb: 2 }}>
+                  {trainer.specialization.split(", ").map((spec, index) => (
+                    <Chip
+                      key={index}
+                      label={spec}
+                      color="primary"
+                      variant="filled"
+                      size="medium"
+                      sx={{ fontSize: "1rem" }}
+                    />
+                  ))}
+                </Box>
+
+                {/* Price */}
                 <Chip
                   label={`${trainer.pricePerHour.toLocaleString("vi-VN")}đ / giờ`}
                   color="warning"
@@ -144,12 +167,7 @@ function PTDetailModal({
               </Typography>
 
               {trainer.physiqueImages && trainer.physiqueImages.length > 0 ? (
-                <ImageList
-                  sx={{ width: "100%", height: 300 }}
-                  cols={isMobile ? 2 : Math.min(4, trainer.physiqueImages.length)}
-                  rowHeight={200}
-                  gap={8}
-                >
+                <ImageList sx={{ width: "100%", height: 160 }} cols={isMobile ? 2 : 6} rowHeight={160} gap={4}>
                   {trainer.physiqueImages.map((image, index) => (
                     <ImageListItem key={index}>
                       <img
@@ -202,7 +220,7 @@ function PTDetailModal({
 
           {/* Detailed Information */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Paper elevation={0} sx={{ p: 3, height: "100%", border: "1px solid", borderColor: "divider" }}>
                 <Typography
                   variant="h6"
@@ -234,7 +252,7 @@ function PTDetailModal({
               </Paper>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Paper elevation={0} sx={{ p: 3, height: "100%", border: "1px solid", borderColor: "divider" }}>
                 <Typography
                   variant="h6"
@@ -276,7 +294,7 @@ function PTDetailModal({
                   )
 
                   return (
-                    <Grid item xs={6} sm={4} md={3} key={schedule._id || idx}>
+                    <Grid item size={{ xs: 6, sm: 4, md: 3 }} key={schedule._id || idx}>
                       <Paper
                         elevation={0}
                         sx={{
