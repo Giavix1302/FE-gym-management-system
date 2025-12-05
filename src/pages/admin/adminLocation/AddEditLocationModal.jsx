@@ -353,7 +353,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
         </IconButton>
       </DialogTitle>
 
-      <Box component="form" onSubmit={handleSubmit} sx={{ overflowY: "auto" }}>
+      <Box component="form" sx={{ overflowY: "auto" }}>
         <DialogContent dividers>
           <Grid container spacing={3}>
             {/* Basic Information */}
@@ -681,6 +681,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
           disabled={loading}
           startIcon={isEditing ? <BusinessIcon /> : <AddIcon />}
           sx={{ minWidth: 120 }}
+          onClick={handleSubmit}
         >
           {loading ? "Đang xử lý..." : isEditing ? "Cập nhật" : "Thêm mới"}
         </Button>
