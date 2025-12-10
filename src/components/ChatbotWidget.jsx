@@ -7,12 +7,16 @@ import {
   TextField,
   IconButton,
   Avatar,
-  Chip,
   Collapse,
   Divider,
   Button,
   Alert,
   LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Chip,
 } from "@mui/material"
 import {
   SmartToy as SmartToyIcon,
@@ -22,6 +26,8 @@ import {
   Maximize as MaximizeIcon,
   Login as LoginIcon,
   Launch as LaunchIcon,
+  HourglassEmpty as HourglassEmptyIcon,
+  Warning as WarningIcon,
 } from "@mui/icons-material"
 
 import useChatbotStore from "~/stores/useChatbotStore"
@@ -31,18 +37,15 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
   const {
     messages,
     isLoading,
-    quickReplies,
     error,
-    lastResponseType,
-    awaitingConfirmation,
+    rateLimitInfo,
+    isRateLimited,
+    rateLimitError,
     sendMessage,
-    processQuickReply,
     loadConversationHistory,
-    loadQuickReplies,
     switchToAuthenticatedMode,
     clearError,
     initializeChatbot,
-    getLastBotMessage,
   } = useChatbotStore()
 
   const { user } = useUserStore()
@@ -51,6 +54,9 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
   const [isMinimized, setIsMinimized] = useState(false)
   const [messageInput, setMessageInput] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [showRateLimitDialog, setShowRateLimitDialog] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   const messagesEndRef = useRef(null)
   const isAuthenticated = !!user
@@ -58,6 +64,7 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
   // Initialize chatbot when component mounts
   useEffect(() => {
     initializeChatbot()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Handle authentication state change
@@ -65,23 +72,32 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
     if (isAuthenticated) {
       switchToAuthenticatedMode()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated])
 
   // Load data when widget opens
   useEffect(() => {
-    if (isOpen && !isMinimized) {
-      loadConversationHistory()
-      loadQuickReplies()
+    const loadHistory = async () => {
+      if (isOpen && !isMinimized) {
+        setIsLoadingHistory(true)
+        await loadConversationHistory()
+        setIsLoadingHistory(false)
+        setIsFirstLoad(false)
+      }
     }
-  }, [isOpen, isMinimized])
+    loadHistory()
+  }, [isOpen, isMinimized, loadConversationHistory])
 
-  // Auto scroll to bottom when new messages
+  // Auto scroll to bottom when new messages or after loading history
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    if (!isLoadingHistory) {
+      // Scroll immediately to bottom after loading (instant for first load, smooth for new messages)
+      scrollToBottom(isFirstLoad)
+    }
+  }, [messages, isLoadingHistory, isFirstLoad])
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  const scrollToBottom = (instant = false) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: instant ? "instant" : "smooth" })
   }
 
   const handleClose = () => {
@@ -92,7 +108,7 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
   }
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || isSending) return
+    if (!messageInput.trim() || isSending || isRateLimited) return
 
     const content = messageInput.trim()
     setMessageInput("")
@@ -107,16 +123,28 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
     }
   }
 
-  const handleQuickReply = async (quickReply) => {
-    setIsSending(true)
-    try {
-      await processQuickReply(quickReply)
-    } catch (error) {
-      console.error("Quick reply error:", error)
-    } finally {
-      setIsSending(false)
+  // Show warning when running low on messages
+  useEffect(() => {
+    if (rateLimitInfo && rateLimitInfo.remaining > 0) {
+      const percentRemaining = (rateLimitInfo.remaining / rateLimitInfo.limit) * 100
+
+      if (percentRemaining <= 20 && percentRemaining > 0) {
+        const message =
+          rateLimitInfo.type === "anonymous"
+            ? `⚠️ Còn ${rateLimitInfo.remaining}/${rateLimitInfo.limit} lượt hỏi. Đăng nhập để được 100 lượt!`
+            : `⚠️ Còn ${rateLimitInfo.remaining}/${rateLimitInfo.limit} lượt hỏi hôm nay.`
+
+        console.warn(message)
+      }
     }
-  }
+  }, [rateLimitInfo])
+
+  // Show dialog when rate limited
+  useEffect(() => {
+    if (isRateLimited && rateLimitError) {
+      setShowRateLimitDialog(true)
+    }
+  }, [isRateLimited, rateLimitError])
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -142,7 +170,15 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
   }
 
   const formatContent = (content) => {
-    return content.replace(/\n/g, "<br>")
+    // Parse markdown-style images: ![alt](url)
+    let formatted = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, url) => {
+      return `<img src="${url}" alt="${alt}" style="max-width: 100%; border-radius: 8px; margin: 8px 0; display: block;" />`
+    })
+
+    // Replace newlines with <br>
+    formatted = formatted.replace(/\n/g, "<br>")
+
+    return formatted
   }
 
   const renderMessage = (message, index) => {
@@ -245,85 +281,120 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
     )
   }
 
-  // ✅ FIXED: Quick replies with horizontal scroll
-  const renderQuickReplies = () => {
-    if (!quickReplies.length || awaitingConfirmation) return null
+  const renderRateLimitDialog = () => {
+    if (!rateLimitError) return null
+
+    const { requiresLogin, resetAt } = rateLimitError
+    const resetTime = resetAt ? new Date(resetAt).toLocaleString("vi-VN") : ""
 
     return (
-      <Box sx={{ p: 2, borderTop: "1px solid #e0e0e0" }}>
-        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: "block" }}>
-          Gợi ý câu hỏi:
-        </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            overflowX: "auto",
-            scrollbarWidth: "thin",
-            "&::-webkit-scrollbar": {
-              height: "6px",
-            },
-            "&::-webkit-scrollbar-track": {
-              background: "#f1f1f1",
-              borderRadius: "3px",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              background: "#c1c1c1",
-              borderRadius: "3px",
-            },
-            "&::-webkit-scrollbar-thumb:hover": {
-              background: "#a8a8a8",
-            },
-            pb: 1,
-          }}
-        >
-          {quickReplies.slice(0, 8).map((reply, index) => (
-            <Chip
-              key={index}
-              label={reply.text}
-              onClick={() => handleQuickReply(reply)}
-              size="small"
-              variant="outlined"
-              clickable
-              disabled={isSending || isLoading}
-              sx={{
-                flexShrink: 0,
-                whiteSpace: "nowrap",
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
+      <Dialog open={showRateLimitDialog} onClose={() => setShowRateLimitDialog(false)}>
+        <DialogTitle>{requiresLogin ? "🔐 Đăng nhập để tiếp tục" : "⏰ Đã hết lượt hỏi hôm nay"}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" gutterBottom>
+            {requiresLogin
+              ? "Bạn đã hết lượt hỏi miễn phí (15/ngày). Vui lòng đăng nhập để tiếp tục!"
+              : "Bạn đã vượt quá giới hạn 100 tin nhắn/ngày. Vui lòng thử lại vào ngày mai!"}
+          </Typography>
+          {resetTime && (
+            <Typography variant="caption" color="text.secondary">
+              Reset vào lúc: {resetTime}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {requiresLogin ? (
+            <>
+              <Button onClick={() => setShowRateLimitDialog(false)}>Đóng</Button>
+              <Button variant="contained" onClick={handleLoginRedirect} startIcon={<LoginIcon />}>
+                Đăng nhập
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => setShowRateLimitDialog(false)}>Đã hiểu</Button>
+          )}
+        </DialogActions>
+      </Dialog>
     )
   }
 
   const renderChatContent = () => (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* Rate Limit Badge */}
+      {rateLimitInfo && !isLoadingHistory && (
+        <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+          <Chip
+            icon={
+              rateLimitInfo.remaining / rateLimitInfo.limit <= 0.2 ? <WarningIcon /> : <HourglassEmptyIcon />
+            }
+            label={`${rateLimitInfo.remaining}/${rateLimitInfo.limit} lượt hỏi còn lại`}
+            color={rateLimitInfo.remaining / rateLimitInfo.limit <= 0.2 ? "warning" : "default"}
+            size="small"
+            sx={{ width: "100%" }}
+          />
+          {rateLimitInfo.type === "anonymous" && !isAuthenticated && (
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<LoginIcon />}
+              onClick={handleLoginRedirect}
+              sx={{ mt: 1, width: "100%", fontSize: "0.75rem" }}
+            >
+              Đăng nhập để được 100 lượt
+            </Button>
+          )}
+        </Box>
+      )}
+
       {/* Messages Area */}
       <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
-        {/* Header Info - Now inside scrollable area */}
-        <Box sx={{ p: 2, textAlign: "center", mb: 2 }}>
-          <Avatar
-            sx={{
-              width: 48,
-              height: 48,
-              bgcolor: "secondary.main",
-              color: "white",
-              mx: "auto",
-              mb: 1,
-            }}
-          >
-            <SmartToyIcon />
-          </Avatar>
-          <Typography variant="body2" color="text.secondary">
-            Trợ lý AI Elite Fitness
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {isAuthenticated ? `Xin chào ${user.fullName}!` : "Chat ẩn danh"}
-          </Typography>
-        </Box>
+        {/* Loading History State */}
+        {isLoadingHistory && (
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
+            <Avatar
+              sx={{
+                width: 64,
+                height: 64,
+                bgcolor: "secondary.main",
+                color: "white",
+                mb: 2,
+              }}
+            >
+              <SmartToyIcon fontSize="large" />
+            </Avatar>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Đang tải lịch sử chat...
+            </Typography>
+            <LinearProgress sx={{ width: 200, mt: 2 }} />
+          </Box>
+        )}
 
-        {messages.length === 0 && (
+        {/* Chat Content - Only show when not loading */}
+        {!isLoadingHistory && (
+          <>
+            {/* Header Info - Now inside scrollable area */}
+            <Box sx={{ p: 2, textAlign: "center", mb: 2 }}>
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  bgcolor: "secondary.main",
+                  color: "white",
+                  mx: "auto",
+                  mb: 1,
+                }}
+              >
+                <SmartToyIcon />
+              </Avatar>
+              <Typography variant="body2" color="text.secondary">
+                Trợ lý AI THE GYM
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {isAuthenticated ? `Xin chào ${user.fullName}!` : "Chat ẩn danh"}
+              </Typography>
+            </Box>
+
+            {messages.length === 0 && (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Xin chào! Tôi có thể giúp bạn:
@@ -347,24 +418,24 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
 
         {messages.map((message, index) => renderMessage(message, index))}
 
-        {isLoading && (
-          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: "secondary.main", mr: 1 }}>
-              <SmartToyIcon fontSize="small" />
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Đang trả lời...
-              </Typography>
-              <LinearProgress size="small" sx={{ mt: 0.5 }} />
-            </Box>
-          </Box>
+            {isLoading && (
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Avatar sx={{ width: 32, height: 32, bgcolor: "secondary.main", mr: 1 }}>
+                  <SmartToyIcon fontSize="small" />
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Đang trả lời...
+                  </Typography>
+                  <LinearProgress size="small" sx={{ mt: 0.5 }} />
+                </Box>
+              </Box>
+            )}
+
+            <div ref={messagesEndRef} />
+          </>
         )}
-
-        <div ref={messagesEndRef} />
       </Box>
-
-      {renderQuickReplies()}
 
       <Divider />
 
@@ -374,11 +445,11 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="Nhập câu hỏi..."
+            placeholder={isRateLimited ? "Đã hết lượt hỏi hôm nay" : "Nhập câu hỏi..."}
             value={messageInput}
             onChange={(e) => setMessageInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={isSending || isLoading}
+            disabled={isSending || isLoading || isRateLimited}
             size="small"
             multiline
             maxRows={3}
@@ -386,79 +457,90 @@ const ChatbotWidget = ({ onClose, lowPosition = false }) => {
           <IconButton
             color="primary"
             onClick={handleSendMessage}
-            disabled={!messageInput.trim() || isSending || isLoading}
+            disabled={!messageInput.trim() || isSending || isLoading || isRateLimited}
           >
             <SendIcon />
           </IconButton>
         </Box>
 
-        {!isAuthenticated && (
+        {!isAuthenticated && !isRateLimited && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
             Đăng nhập để sử dụng đầy đủ tính năng
           </Typography>
+        )}
+
+        {isRateLimited && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            Bạn đã hết lượt hỏi hôm nay. Vui lòng thử lại sau.
+          </Alert>
         )}
       </Box>
     </Box>
   )
 
   return (
-    <Collapse in={isOpen}>
-      <Card
-        sx={{
-          position: "fixed",
-          bottom: lowPosition ? 20 : 160, // Move down when SpeedDial is hidden
-          right: 20,
-          width: 450,
-          height: isMinimized ? 60 : 600,
-          zIndex: 999,
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: 3,
-        }}
-      >
-        {/* Header */}
-        <Box
+    <>
+      <Collapse in={isOpen}>
+        <Card
           sx={{
-            bgcolor: "secondary.main",
-            color: "white",
-            p: 1.5,
+            position: "fixed",
+            bottom: lowPosition ? 20 : 160, // Move down when SpeedDial is hidden
+            right: 20,
+            width: 450,
+            height: isMinimized ? 60 : 600,
+            zIndex: 999,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            flexDirection: "column",
+            boxShadow: 3,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <SmartToyIcon sx={{ mr: 1 }} />
-            <Typography variant="h6">Trợ lý AI</Typography>
-          </Box>
-
-          <Box>
-            <IconButton size="small" sx={{ color: "white" }} onClick={() => setIsMinimized(!isMinimized)}>
-              {isMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
-            </IconButton>
-            <IconButton size="small" sx={{ color: "white" }} onClick={handleClose}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </Box>
-
-        {/* Content */}
-        {!isMinimized && (
-          <CardContent
+          {/* Header */}
+          <Box
             sx={{
-              p: 0,
-              flex: 1,
-              overflow: "hidden",
-              "&:last-child": {
-                pb: 0,
-              },
+              bgcolor: "secondary.main",
+              color: "white",
+              p: 1.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
-            {renderChatContent()}
-          </CardContent>
-        )}
-      </Card>
-    </Collapse>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <SmartToyIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Trợ lý AI</Typography>
+            </Box>
+
+            <Box>
+              <IconButton size="small" sx={{ color: "white" }} onClick={() => setIsMinimized(!isMinimized)}>
+                {isMinimized ? <MaximizeIcon /> : <MinimizeIcon />}
+              </IconButton>
+              <IconButton size="small" sx={{ color: "white" }} onClick={handleClose}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </Box>
+
+          {/* Content */}
+          {!isMinimized && (
+            <CardContent
+              sx={{
+                p: 0,
+                flex: 1,
+                overflow: "hidden",
+                "&:last-child": {
+                  pb: 0,
+                },
+              }}
+            >
+              {renderChatContent()}
+            </CardContent>
+          )}
+        </Card>
+      </Collapse>
+
+      {/* Rate Limit Dialog */}
+      {renderRateLimitDialog()}
+    </>
   )
 }
 

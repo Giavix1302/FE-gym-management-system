@@ -3,23 +3,28 @@ import { axiosInstance } from "./axiosConfig"
 
 export const createLinkVnpayAPI = async (data) => {
   const rep = await axiosInstance.post("/payments/vnpay/subscription", data)
+  console.log("🚀 ~ createLinkVnpayAPI ~ rep:", rep)
   return rep.data
 }
 
 export const createLinkVnpayBookingPaymentAPI = async (data) => {
   console.log("🚀 ~ createLinkVnpayBookingPaymentAPI ~ data:", data)
   const rep = await axiosInstance.post("/payments/vnpay/booking", data)
+  console.log("🚀 ~ createLinkVnpayBookingPaymentAPI ~ rep:", rep)
   return rep.data
 }
 
 export const createLinkVnpayClassPaymentAPI = async (data) => {
+  console.log("🚀 ~ createLinkVnpayClassPaymentAPI ~ data:", data)
   const rep = await axiosInstance.post("/payments/vnpay/class", data)
+  console.log("🚀 ~ createLinkVnpayClassPaymentAPI ~ rep:", rep)
   return rep.data
 }
 
 // Lấy danh sách payment theo userId
 export const getPaymentsByUserIdAPI = async (userId, page = 1, limit = 10) => {
   const rep = await axiosInstance.get(`/payments/user/${userId}?page=${page}&limit=${limit}`)
+  console.log("🚀 ~ getPaymentsByUserIdAPI ~ rep:", rep)
   return rep.data
 }
 

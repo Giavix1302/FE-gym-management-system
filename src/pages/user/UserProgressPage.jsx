@@ -41,7 +41,6 @@ import {
   updateProgressAPI,
   deleteProgressAPI,
   getDashboardDataAPI,
-  getComparisonDataAPI,
 } from "~/apis/progress"
 
 function UserProgressPage() {
@@ -120,7 +119,6 @@ function UserProgressPage() {
     try {
       const submitData = {
         ...formData,
-        userId: user._id,
         measurementDate: formData.measurementDate + "T00:00:00.000Z",
       }
 

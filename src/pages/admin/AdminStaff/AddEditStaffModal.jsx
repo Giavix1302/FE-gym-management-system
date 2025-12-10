@@ -317,7 +317,7 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
       <DialogContent dividers>
         <Grid container spacing={3}>
           {/* Left Column - Personal Info */}
-          <Grid item xs={12} md={6}>
+          <Grid item size={{ xs: 12, md: 6 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary.main">
               <PersonIcon sx={{ verticalAlign: "middle", mr: 1 }} />
               Thông tin cá nhân
@@ -485,7 +485,7 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
           </Grid>
 
           {/* Right Column - Work Info */}
-          <Grid item xs={12} md={6}>
+          <Grid item size={{ xs: 12, md: 6 }}>
             <Typography variant="h6" fontWeight="bold" gutterBottom color="primary.main">
               <BadgeIcon sx={{ verticalAlign: "middle", mr: 1 }} />
               Thông tin công việc

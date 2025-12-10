@@ -735,8 +735,10 @@ function UserBookingPage() {
     setOpenReviewDialog(true)
   }
 
-  const handleSubmitReview = async () => {
-    if (!reviewComment.trim()) {
+  const handleSubmitReview = async (reviewData) => {
+    console.log("🚀 ~ handleSubmitReview ~ reviewData:", reviewData)
+
+    if (!reviewData?.comment?.trim()) {
       setSnackbar({
         open: true,
         message: "Vui lòng nhập nhận xét",
@@ -747,20 +749,12 @@ function UserBookingPage() {
 
     setReviewLoading(true)
     try {
-      // Replace with actual API call
-      // await submitReviewAPI(selectedSession.bookingId, {
-      //   rating: reviewRating,
-      //   comment: reviewComment.trim(),
-      // })
-
-      selectedSession
-
       const dataToCreateReview = {
-        bookingId: selectedSession.bookingId,
+        bookingId: reviewData.bookingId,
         userId: user._id,
         trainerId: selectedSession.trainer.trainerId,
-        rating: reviewRating,
-        comment: reviewComment.trim(),
+        rating: reviewData.rating,
+        comment: reviewData.comment,
       }
 
       const result = await createReviewAPI(dataToCreateReview)
@@ -777,8 +771,8 @@ function UserBookingPage() {
             ? {
                 ...item,
                 review: {
-                  rating: reviewRating,
-                  comment: reviewComment.trim(),
+                  rating: reviewData.rating,
+                  comment: reviewData.comment,
                   createdAt: new Date().toISOString(),
                 },
               }
@@ -2074,106 +2068,6 @@ function UserBookingPage() {
         onCancelSession={handleCancelSession}
         canCancelBooking={canCancelBooking}
       />
-
-      {/* Review Dialog */}
-      <Dialog open={openReviewDialog} onClose={() => setOpenReviewDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Star color="primary" />
-            <Typography variant="h6">Đánh giá buổi tập với {selectedSession?.trainer?.userInfo?.fullName}</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {selectedSession && (
-            <Box>
-              {/* Session Info */}
-              <Paper sx={{ p: 2, mb: 3, bgcolor: "grey.50" }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  📅 {formatDate(selectedSession.session?.startTime)}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  ⏰{" "}
-                  {new Date(selectedSession.session?.startTime).toLocaleTimeString("vi-VN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  -{" "}
-                  {new Date(selectedSession.session?.endTime).toLocaleTimeString("vi-VN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Typography>
-                <Typography variant="body2">📍 {selectedSession.session?.location?.name}</Typography>
-                {selectedSession.session?.location?.address && (
-                  <Typography variant="caption" color="text.secondary">
-                    {typeof selectedSession.session.location.address === "string"
-                      ? selectedSession.session.location.address
-                      : `${selectedSession.session.location.address.street || ""}, ${selectedSession.session.location.address.ward || ""}, ${selectedSession.session.location.address.province || ""}`.replace(
-                          /^,\s*|,\s*$/g,
-                          "",
-                        )}
-                  </Typography>
-                )}
-              </Paper>
-
-              {/* Rating Section */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Đánh giá chất lượng buổi tập *
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Rating
-                    value={reviewRating}
-                    onChange={(event, newValue) => setReviewRating(newValue || 1)}
-                    size="large"
-                    precision={1}
-                  />
-                  <Typography variant="body2" color="text.secondary">
-                    ({reviewRating}/5 sao)
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Comment Section */}
-              <Box sx={{ mb: 2 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Nhận xét về buổi tập *"
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="Chia sẻ trải nghiệm của bạn về buổi tập này..."
-                  error={!reviewComment.trim()}
-                  helperText={!reviewComment.trim() ? "Vui lòng nhập nhận xét" : `${reviewComment.length}/500 ký tự`}
-                  inputProps={{ maxLength: 500 }}
-                />
-              </Box>
-
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="body2">
-                  Đánh giá của bạn sẽ giúp cải thiện chất lượng dịch vụ và hỗ trợ các thành viên khác trong việc lựa
-                  chọn PT phù hợp.
-                </Typography>
-              </Alert>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={() => setOpenReviewDialog(false)} color="inherit" variant="outlined">
-            Hủy
-          </Button>
-          <Button
-            onClick={handleSubmitReview}
-            color="primary"
-            variant="contained"
-            disabled={reviewLoading || !reviewComment.trim()}
-            startIcon={reviewLoading ? <AutorenewOutlined sx={{ animation: "spin 1s linear infinite" }} /> : <Send />}
-          >
-            {reviewLoading ? "Đang gửi..." : "Gửi đánh giá"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Cancel Dialog */}
       <Dialog open={openCancelDialog} onClose={() => setOpenCancelDialog(false)} maxWidth="sm" fullWidth>

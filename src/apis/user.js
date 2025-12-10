@@ -3,12 +3,14 @@ import { axiosInstance } from "./axiosConfig"
 export const updateInfoUserAPI = async (userId, payload) => {
   console.log("🚀 ~ updateInfoUserAPI ~ payload:", payload)
   const res = await axiosInstance.put(`/users/${userId}`, payload)
+  console.log("🚀 ~ updateInfoUserAPI ~ res:", res)
   return res.data
 }
 
 export const updateAvatarAPI = async (userId, payload) => {
-  console.log("🚀 ~ updateInfoUserAPI ~ payload:", payload)
+  console.log("🚀 ~ updateAvatarAPI ~ payload:", payload)
   const res = await axiosInstance.put(`/users/${userId}/avatar`, payload)
+  console.log("🚀 ~ updateAvatarAPI ~ res:", res)
   return res.data
 }
 
@@ -37,8 +39,8 @@ export const getListUserForAdminAPI = async (page = 1, limit = 20) => {
 
 // NEW: Lấy chi tiết 1 user
 export const getUserDetailAPI = async (userId) => {
-  console.log("🚀 ~ getUserDetailAPI ~ userId:", userId)
   const res = await axiosInstance.get(`/users/${userId}`)
+  console.log("🚀 ~ getUserDetailAPI ~ res:", res)
   return res.data
 }
 
@@ -59,6 +61,7 @@ export const softDeleteUserAPI = async (userId) => {
 // NEW: Lấy events của user trong 3 tháng
 export const getUserEventsForThreeMonthsAPI = async (userId) => {
   const res = await axiosInstance.get(`/users/${userId}/events/three-months`)
+  console.log("🚀 ~ getUserEventsForThreeMonthsAPI ~ res:", res)
   return res.data
 }
 

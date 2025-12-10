@@ -16,6 +16,11 @@ const useChatbotStore = create((set, get) => ({
   awaitingConfirmation: false, // For confirmation dialogs
   pendingAction: null, // Store action while waiting for confirmation
 
+  // Rate Limiting State
+  rateLimitInfo: null, // { limit, remaining, reset, type }
+  isRateLimited: false, // True when user has exceeded their limit
+  rateLimitError: null, // Error object from 429 response
+
   // ========================================
   // CORE ACTIONS
   // ========================================
@@ -136,6 +141,27 @@ const useChatbotStore = create((set, get) => ({
     set({ pendingAction: null, awaitingConfirmation: false })
   },
 
+  /**
+   * Set rate limit info from API response
+   */
+  setRateLimitInfo: (rateLimitInfo) => {
+    set({ rateLimitInfo })
+  },
+
+  /**
+   * Set rate limited state
+   */
+  setRateLimited: (isRateLimited, rateLimitError = null) => {
+    set({ isRateLimited, rateLimitError })
+  },
+
+  /**
+   * Clear rate limit error
+   */
+  clearRateLimitError: () => {
+    set({ isRateLimited: false, rateLimitError: null })
+  },
+
   // ========================================
   // API INTEGRATION ACTIONS
   // ========================================
@@ -174,6 +200,30 @@ const useChatbotStore = create((set, get) => ({
       }
 
       console.log("🛠 Frontend - API Response:", response)
+
+      // Update rate limit info from response
+      if (response.rateLimitInfo) {
+        get().setRateLimitInfo(response.rateLimitInfo)
+      }
+
+      // Handle rate limit error (429)
+      if (response.isRateLimited) {
+        get().setRateLimited(true, response.rateLimitError)
+
+        // Add system message about rate limit
+        get().addMessage({
+          type: "bot",
+          content: response.message,
+          responseType: "rate_limit_exceeded",
+          responseData: {
+            suggestion: response.suggestion,
+            requiresLogin: response.rateLimitError?.requiresLogin,
+            resetAt: response.rateLimitError?.resetAt,
+          },
+        })
+
+        return // Stop processing
+      }
 
       if (response.success) {
         // Add bot response

@@ -2,7 +2,9 @@ import { axiosInstance } from "./axiosConfig"
 
 // POST /progress - Tạo mới progress record
 export const createProgressAPI = async (data) => {
+  console.log("🚀 ~ createProgressAPI ~ data:", data)
   const rep = await axiosInstance.post("/progress", data)
+  console.log("🚀 ~ createProgressAPI ~ rep:", rep)
   return rep.data
 }
 
@@ -20,6 +22,7 @@ export const getAllProgressByUserIdAPI = async (userId, options = {}) => {
   const url = queryString ? `/progress/${userId}?${queryString}` : `/progress/${userId}`
 
   const rep = await axiosInstance.get(url)
+  console.log("🚀 ~ getAllProgressByUserIdAPI ~ rep:", rep)
   return rep.data
 }
 
@@ -31,7 +34,9 @@ export const getProgressDetailAPI = async (progressId) => {
 
 // PUT /progress/:id - Cập nhật progress record
 export const updateProgressAPI = async (progressId, data) => {
+  console.log("🚀 ~ updateProgressAPI ~ progressId, data:", progressId, data)
   const rep = await axiosInstance.put(`/progress/${progressId}`, data)
+  console.log("🚀 ~ updateProgressAPI ~ rep:", rep)
   return rep.data
 }
 
@@ -39,6 +44,7 @@ export const updateProgressAPI = async (progressId, data) => {
 export const deleteProgressAPI = async (progressId) => {
   console.log("🚀 ~ deleteProgressAPI ~ progressId:", progressId)
   const rep = await axiosInstance.delete(`/progress/${progressId}`)
+  console.log("🚀 ~ deleteProgressAPI ~ rep:", rep)
   return rep.data
 }
 
@@ -69,6 +75,7 @@ export const getStatisticsAPI = async (userId) => {
 // GET /progress/dashboard/:userId - Lấy tất cả dữ liệu cho dashboard
 export const getDashboardDataAPI = async (userId) => {
   const rep = await axiosInstance.get(`/progress/dashboard/${userId}`)
+  console.log("🚀 ~ getDashboardDataAPI ~ rep:", rep)
   return rep.data
 }
 

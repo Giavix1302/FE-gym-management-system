@@ -18,6 +18,7 @@ export const updateIsApprovedAPI = async (trainerId, payload) => {
 // for user
 export const getListTrainerForUserAPI = async () => {
   const res = await axiosInstance.get(`/trainers/user`)
+  console.log("🚀 ~ getListTrainerForUserAPI ~ res:", res)
   return res.data
 }
 

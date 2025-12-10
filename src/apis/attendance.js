@@ -31,6 +31,7 @@ export const getListAttendanceByUserIdAPI = async (userId, params = {}) => {
   const rep = await axiosInstance.get(`/attendances/list/${userId}`, {
     params: params,
   })
+  console.log("🚀 ~ getListAttendanceByUserIdAPI ~ rep:", rep)
   return rep.data
 }
 

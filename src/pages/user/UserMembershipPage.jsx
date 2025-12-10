@@ -72,6 +72,7 @@ function MembershipCard() {
   // store
   const { user } = useUserStore()
   const { updateMyMembership, resetMyMembership, myMembership } = useMyMembershipStore()
+  console.log("🚀 ~ MembershipCard ~ myMembership:", myMembership)
 
   const createAt = myMembership?.paymentInfo?.expireAt // ví dụ "2025-09-14T09:39:28.449Z"
   const ttlMs = 60 * 60 * 1000 // 1 giờ

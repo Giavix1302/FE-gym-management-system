@@ -5,10 +5,9 @@ import dayjs from "dayjs"
 // =================================================================================
 // MEMBERSHIP CRUD APIs
 // =================================================================================
-
-// Login (dùng axiosPublic vì chưa có token)
 export const getListMembershipAPI = async () => {
   const rep = await axiosInstance.get("/memberships")
+  console.log("🚀 ~ getListMembershipAPI ~ rep:", rep)
   return rep.data
 }
 

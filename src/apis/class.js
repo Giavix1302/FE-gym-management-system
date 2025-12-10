@@ -12,11 +12,13 @@ export const getListClassForAdminAPI = async () => {
 
 export const getListClassForUserAPI = async () => {
   const rep = await axiosInstance.get("/classes/user")
+  console.log("🚀 ~ getListClassForUserAPI ~ rep:", rep)
   return rep.data
 }
 
 export const getMemberEnrolledClassesAPI = async (userId) => {
   const rep = await axiosInstance.get("/classes/user/" + userId)
+  console.log("🚀 ~ getMemberEnrolledClassesAPI ~ rep:", rep)
   return rep.data
 }
 
@@ -44,5 +46,6 @@ export const deleteClassAPI = async (classId) => {
 
 export const cancelClassEnrollmentAPI = async (enrollmentId) => {
   const rep = await axiosInstance.patch("/class-enrollments/" + enrollmentId + "/cancel")
+  console.log("🚀 ~ cancelClassEnrollmentAPI ~ rep:", rep)
   return rep.data
 }

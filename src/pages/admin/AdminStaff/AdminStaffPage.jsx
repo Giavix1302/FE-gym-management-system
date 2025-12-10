@@ -167,7 +167,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
           </Typography>
 
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Stack spacing={2}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <PhoneIcon color="primary" />
@@ -207,7 +207,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">
@@ -244,7 +244,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
               </Stack>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item size={{ xs: 12 }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Địa chỉ
@@ -266,7 +266,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
           </Typography>
 
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Stack spacing={2}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <LocationIcon color="primary" />
@@ -297,7 +297,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Stack spacing={2}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <TimeIcon color="info" />
@@ -333,7 +333,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
           </Typography>
 
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Ngày tạo
@@ -344,7 +344,7 @@ function StaffDetailModal({ open, onClose, staff, onStaffUpdate, onStaffDelete }
               </Box>
             </Grid>
 
-            <Grid item xs={12} md={6}>
+            <Grid item size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Ngày cập nhật

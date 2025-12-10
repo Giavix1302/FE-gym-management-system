@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react"
+import React, { useState, useCallback, useMemo, useEffect } from "react"
 import {
   Box,
   Container,
@@ -34,7 +34,7 @@ import {
 
 // Import stores và APIs
 import useUserStore from "~/stores/useUserStore"
-import { updateAvatarAPI, updateInfoUserAPI } from "~/apis/user"
+import { getUserDetailAPI, updateAvatarAPI, updateInfoUserAPI } from "~/apis/user"
 import { convertISOToVNTime, toISODate } from "~/utils/common"
 import MyBackdrop from "~/components/MyBackdrop"
 
@@ -154,6 +154,14 @@ export default function UserProfilePage() {
 
   // Store
   const { user, updateUser } = useUserStore()
+
+  useEffect(() => {
+    const init = async () => {
+      const data = await getUserDetailAPI(user._id)
+      console.log("🚀 ~ UserProfilePage ~ data:", data)
+    }
+    init()
+  }, [])
 
   // Dữ liệu user với các field có thể chỉnh sửa
   const userData = useMemo(

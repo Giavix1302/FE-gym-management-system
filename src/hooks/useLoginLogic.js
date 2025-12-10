@@ -115,6 +115,7 @@ export const useLoginLogic = () => {
           navigate("/staff/dashboard")
         } else if (user.role === "user") {
           updateUser(user)
+          console.log("🚀 ~ handleLogin ~ data.myMembership:", data.myMembership)
           updateMyMembership(data.myMembership)
           navigate("/user/home")
         } else if (user.role === "pt") {

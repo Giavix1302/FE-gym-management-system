@@ -9,24 +9,28 @@ export const getUserNotificationsAPI = async (userId, params = {}) => {
   }).toString()
 
   const rep = await axiosInstance.get(`/notifications/user/${userId}?${queryParams}`)
+  console.log("🚀 ~ getUserNotificationsAPI ~ rep:", rep)
   return rep.data
 }
 
 // Lấy số lượng notifications chưa đọc
 export const getUnreadNotificationCountAPI = async (userId) => {
   const rep = await axiosInstance.get(`/notifications/user/${userId}/unread-count`)
+  console.log("🚀 ~ getUnreadNotificationCountAPI ~ rep:", rep)
   return rep.data
 }
 
 // Đánh dấu notification là đã đọc
 export const markNotificationAsReadAPI = async (notificationId) => {
   const rep = await axiosInstance.patch(`/notifications/${notificationId}/read`)
+  console.log("🚀 ~ markNotificationAsReadAPI ~ rep:", rep)
   return rep.data
 }
 
 // Đánh dấu tất cả notifications là đã đọc
 export const markAllNotificationsAsReadAPI = async (userId) => {
   const rep = await axiosInstance.patch(`/notifications/user/${userId}/mark-all-read`)
+  console.log("🚀 ~ markAllNotificationsAsReadAPI ~ rep:", rep)
   return rep.data
 }
 

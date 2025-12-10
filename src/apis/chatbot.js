@@ -1,17 +1,119 @@
-// Updated chatbot API functions - Modified to work with userId in params for ALL authenticated endpoints
+/**
+ * CHATBOT API v2.0 - Gemini AI Function Calling
+ * ==============================================
+ *
+ * MAJOR CHANGES FROM v1.0:
+ * ------------------------
+ * ✨ AI thông minh thật sự - không còn pattern matching cứng
+ * ✨ Context-aware - nhớ 10 messages gần nhất
+ * ✨ Real-time data từ database
+ * ✨ Cá nhân hóa với authentication
+ * ✨ Trả lời mọi câu hỏi và lái về gym tự nhiên
+ *
+ * BREAKING CHANGES:
+ * -----------------
+ * 1. Response format changed:
+ *    - OLD: response.type, response.data, response.metadata
+ *    - NEW: response.response.content, response.response.type
+ *
+ * 2. Quick Replies are now OPTIONAL:
+ *    - AI understands natural language
+ *    - Users can type anything freely
+ *    - Quick replies are just UI suggestions
+ *
+ * 3. No more hardcoded response types:
+ *    - AI generates responses dynamically
+ *    - Check for keywords like "đăng nhập" or "🔐" instead of type === "login_required"
+ *
+ * MIGRATION GUIDE:
+ * ----------------
+ * - Update message handling to use response.response.content
+ * - Allow free-form text input (not just quick replies)
+ * - Handle longer, multi-line responses with formatting
+ * - Check content for login hints instead of type field
+ *
+ * See full documentation: /docs/chatbot-api-v2.md
+ */
 
 import { toast } from "react-toastify"
 import { axiosPublic, axiosInstance } from "./axiosConfig"
 
 // ========================================
-// AUTHENTICATED CHATBOT APIs (Require userId in params) - ✅ UPDATED
+// CORE CHATBOT APIs - v2.0
 // ========================================
 
 /**
- * Get conversation history for authenticated user by userId
+ * Health Check - Check chatbot service status
+ * GET /api/chatbot/health
+ * @returns {Promise<Object>} Health status with AI connection info
+ */
+export const getChatbotHealthAPI = async () => {
+  try {
+    const response = await axiosPublic.get("/chatbot/health")
+    return response.data
+  } catch (err) {
+    console.error("Chatbot health check failed:", err)
+    throw err
+  }
+}
+
+// ========================================
+// AUTHENTICATED CHATBOT APIs (User logged in)
+// ========================================
+
+/**
+ * Send message as authenticated user (user logged in)
+ * POST /api/chatbot/message/:userId
+ * AI can answer personalized questions about user's membership, schedule, etc.
+ * @param {string} userId - User ID to send message for
+ * @param {Object} data - { message: string }
+ * @returns {Promise<Object>} Response with AI reply, conversation data, and rate limit info
+ * @example
+ * // User asks: "Gói tập của tôi còn bao nhiêu ngày?"
+ * // AI responds with personalized info about their membership
+ */
+export const chatbotWithAuthAPI = async (userId, data) => {
+  try {
+    const response = await axiosInstance.post(`/chatbot/message/${userId}`, data)
+
+    // Extract rate limit info from headers
+    const rateLimitInfo = {
+      limit: parseInt(response.headers['x-ratelimit-limit'] || '0'),
+      remaining: parseInt(response.headers['x-ratelimit-remaining'] || '0'),
+      reset: parseInt(response.headers['x-ratelimit-reset'] || '0'),
+      type: response.headers['x-ratelimit-type'] || 'authenticated'
+    }
+
+    return {
+      ...response.data,
+      rateLimitInfo
+    }
+  } catch (err) {
+    // Handle rate limit error (429)
+    if (err.response?.status === 429) {
+      const errorData = err.response.data
+      return {
+        success: false,
+        isRateLimited: true,
+        rateLimitError: errorData.error,
+        message: errorData.message,
+        suggestion: errorData.suggestion
+      }
+    }
+
+    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * Get conversation history for authenticated user
+ * GET /api/chatbot/conversation/:userId
+ * GET /api/chatbot/conversation/:userId/:conversationId
  * @param {string} userId - User ID to get conversation for
  * @param {string} conversationId - Optional specific conversation ID
- * @returns {Promise<Object>} Conversation history
+ * @returns {Promise<Object>} Conversation history with all messages
  */
 export const getAuthConversationAPI = async (userId, conversationId = null) => {
   try {
@@ -30,79 +132,25 @@ export const getAuthConversationAPI = async (userId, conversationId = null) => {
 }
 
 /**
- * Get conversation history by userId (alternative function name for clarity)
- * @param {string} userId - User ID to get conversation for
- * @param {string} conversationId - Optional specific conversation ID
- * @returns {Promise<Object>} Conversation history
+ * Get user's all conversations (for history list)
+ * GET /api/chatbot/my/conversations/:userId
+ * @param {string} userId - User ID to get conversations for
+ * @returns {Promise<Object>} List of all user conversations
  */
-export const getConversationByUserIdAPI = async (userId, conversationId = null) => {
+export const getMyConversationsAPI = async (userId) => {
   try {
-    let url = `/chatbot/conversation/${userId}`
-    if (conversationId) {
-      url = `/chatbot/conversation/${userId}/${conversationId}`
-    }
-
-    const response = await axiosInstance.get(url)
+    const response = await axiosInstance.get(`/chatbot/my/conversations/${userId}`)
     return response.data
   } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải lịch sử chat"
+    const errorMessage = err.response?.data?.message || err.message || "Không thể tải danh sách conversations"
     toast.error(errorMessage)
     throw err
   }
 }
 
 /**
- * Send message as authenticated user - ✅ UPDATED to use userId in params
- * @param {string} userId - User ID to send message for
- * @param {Object} data - { message: string }
- * @returns {Promise<Object>} Response with bot reply and conversation data
- */
-export const chatbotWithAuthAPI = async (userId, data) => {
-  try {
-    const response = await axiosInstance.post(`/chatbot/message/${userId}`, data)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Get quick replies for authenticated users - ✅ UPDATED to use userId in params
- * @param {string} userId - User ID to get quick replies for
- * @returns {Promise<Object>} Array of quick reply options
- */
-export const getAuthQuickRepliesAPI = async (userId) => {
-  try {
-    const response = await axiosInstance.get(`/chatbot/quick-replies/${userId}`)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải quick replies"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Process quick reply action - ✅ UPDATED to use userId in params
- * @param {string} userId - User ID to process quick reply for
- * @param {Object} data - { value: string }
- * @returns {Promise<Object>} Bot response
- */
-export const processQuickReplyAPI = async (userId, data) => {
-  try {
-    const response = await axiosInstance.post(`/chatbot/quick-replies/${userId}`, data)
-    return response.data
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể xử lý quick reply"
-    toast.error(errorMessage)
-    throw err
-  }
-}
-
-/**
- * Link anonymous conversation to authenticated user - ✅ UPDATED to use userId in params
+ * Link anonymous conversation to user account after login
+ * POST /api/chatbot/link-anonymous/:userId
  * @param {string} userId - User ID to link conversation to
  * @param {Object} data - { anonymousId: string }
  * @returns {Promise<Object>} Link result
@@ -118,37 +166,94 @@ export const linkAnonymousConversationAPI = async (userId, data) => {
   }
 }
 
+// ========================================
+// DEPRECATED: Quick Replies APIs (Still work but NOT needed)
+// AI now handles everything naturally - no need for hardcoded quick replies
+// Keep these for backward compatibility, but FE should allow free-form input
+// ========================================
+
 /**
- * Get user's conversations - ✅ UPDATED to use userId in params
- * @param {string} userId - User ID to get conversations for
- * @returns {Promise<Object>} List of user conversations
+ * @deprecated AI v2.0 understands natural language - quick replies are optional
+ * Get quick replies for authenticated users
+ * @param {string} userId - User ID to get quick replies for
+ * @returns {Promise<Object>} Array of quick reply suggestions
  */
-export const getMyConversationsAPI = async (userId) => {
+export const getAuthQuickRepliesAPI = async (userId) => {
   try {
-    const response = await axiosInstance.get(`/chatbot/my/conversations/${userId}`)
+    const response = await axiosInstance.get(`/chatbot/quick-replies/${userId}`)
     return response.data
   } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || "Không thể tải danh sách conversations"
+    const errorMessage = err.response?.data?.message || err.message || "Không thể tải quick replies"
+    toast.error(errorMessage)
+    throw err
+  }
+}
+
+/**
+ * @deprecated Just send the message text directly via chatbotWithAuthAPI
+ * Process quick reply action
+ * @param {string} userId - User ID to process quick reply for
+ * @param {Object} data - { value: string }
+ * @returns {Promise<Object>} Bot response
+ */
+export const processQuickReplyAPI = async (userId, data) => {
+  try {
+    const response = await axiosInstance.post(`/chatbot/quick-replies/${userId}`, data)
+    return response.data
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || "Không thể xử lý quick reply"
     toast.error(errorMessage)
     throw err
   }
 }
 
 // ========================================
-// ANONYMOUS CHATBOT APIs (No Changes)
+// ANONYMOUS CHATBOT APIs (User not logged in)
 // ========================================
 
 /**
- * Send message as anonymous user
+ * Send message as anonymous user (user not logged in)
+ * POST /api/chatbot/anonymous/message
+ * AI answers general questions about gym. For personal questions, prompts user to login.
  * @param {Object} data - { message: string, anonymousId?: string }
- * @returns {Promise<Object>} Response with bot reply and conversation data
+ * @returns {Promise<Object>} Response with AI reply, conversation data, and rate limit info
+ * @example
+ * // User asks: "Gym có những gói membership nào?"
+ * // AI responds with membership info
+ *
+ * // User asks: "Gói tập của tôi còn bao nhiêu ngày?"
+ * // AI responds: "Để xem gói tập của bạn, bạn cần đăng nhập nhé! 🔐"
  */
 export const chatbotWithAnonymousAPI = async (data) => {
   console.log("🐛 API Call Data:", data)
   try {
     const response = await axiosPublic.post("/chatbot/anonymous/message", data)
-    return response.data
+
+    // Extract rate limit info from headers
+    const rateLimitInfo = {
+      limit: parseInt(response.headers['x-ratelimit-limit'] || '0'),
+      remaining: parseInt(response.headers['x-ratelimit-remaining'] || '0'),
+      reset: parseInt(response.headers['x-ratelimit-reset'] || '0'),
+      type: response.headers['x-ratelimit-type'] || 'anonymous'
+    }
+
+    return {
+      ...response.data,
+      rateLimitInfo
+    }
   } catch (err) {
+    // Handle rate limit error (429)
+    if (err.response?.status === 429) {
+      const errorData = err.response.data
+      return {
+        success: false,
+        isRateLimited: true,
+        rateLimitError: errorData.error,
+        message: errorData.message,
+        suggestion: errorData.suggestion
+      }
+    }
+
     const errorMessage = err.response?.data?.message || err.message || "Lỗi hệ thống"
     toast.error(errorMessage)
     throw err
@@ -157,8 +262,9 @@ export const chatbotWithAnonymousAPI = async (data) => {
 
 /**
  * Get conversation history for anonymous user
+ * GET /api/chatbot/anonymous/conversation/:anonymousId
  * @param {string} anonymousId - Anonymous user identifier
- * @returns {Promise<Object>} Conversation history
+ * @returns {Promise<Object>} Conversation history with all messages
  */
 export const getAnonymousConversationAPI = async (anonymousId) => {
   try {
@@ -172,8 +278,9 @@ export const getAnonymousConversationAPI = async (anonymousId) => {
 }
 
 /**
+ * @deprecated AI v2.0 understands natural language - quick replies are optional
  * Get quick replies for anonymous users
- * @returns {Promise<Object>} Array of quick reply options
+ * @returns {Promise<Object>} Array of quick reply suggestions
  */
 export const getAnonymousQuickRepliesAPI = async () => {
   try {
@@ -186,103 +293,13 @@ export const getAnonymousQuickRepliesAPI = async () => {
   }
 }
 
-/**
- * Check chatbot health status
- * @returns {Promise<Object>} Health status
- */
-export const getChatbotHealthAPI = async () => {
-  try {
-    const response = await axiosPublic.get("/chatbot/health")
-    return response.data
-  } catch (err) {
-    console.error("Chatbot health check failed:", err)
-    throw err
-  }
-}
-
 // ========================================
-// UTILITY FUNCTIONS (UNCHANGED)
+// UTILITY FUNCTIONS for v2.0 AI Responses
 // ========================================
-
-/**
- * Handle chatbot response based on type
- * @param {Object} response - Chatbot response object
- * @returns {Object} Processed response with UI hints
- */
-export const processChatbotResponse = (response) => {
-  const { type, content, data } = response
-
-  const processedResponse = {
-    ...response,
-    needsAuth: response.requiresAuth || false,
-    hasPersonalInfo: false,
-    isError: false,
-  }
-
-  // Set UI flags based on response type
-  switch (type) {
-    case "login_required":
-      processedResponse.needsAuth = true
-      break
-
-    case "membership_info":
-    case "schedule_info":
-    case "my_membership":
-    case "my_schedule":
-      processedResponse.hasPersonalInfo = true
-      break
-
-    case "no_membership":
-    case "no_active_membership":
-      processedResponse.needsAuth = true
-      processedResponse.hasPersonalInfo = true
-      break
-
-    case "faq_response":
-    case "locations_info":
-    case "memberships_info":
-    case "classes_info":
-    case "trainers_info":
-    case "equipment_info":
-    case "basic_info":
-    case "hours_info":
-    case "contact_info":
-      processedResponse.isFAQ = true
-      break
-
-    case "greeting_response":
-    case "thanks_response":
-    case "time_response":
-    case "general_response":
-      processedResponse.isGeneral = true
-      break
-
-    case "error":
-    case "system_error":
-    case "validation_error":
-    case "membership_error":
-    case "schedule_error":
-    case "locations_error":
-    case "memberships_error":
-    case "classes_error":
-    case "trainers_error":
-      processedResponse.isError = true
-      break
-
-    case "unknown_intent":
-    case "unknown":
-      processedResponse.isUnknown = true
-      break
-
-    default:
-      processedResponse.isGeneral = true
-  }
-
-  return processedResponse
-}
 
 /**
  * Generate anonymous ID for new users
+ * Format: anon_{timestamp}_{random}
  * @returns {string} Anonymous ID
  */
 export const generateAnonymousId = () => {
@@ -290,138 +307,63 @@ export const generateAnonymousId = () => {
 }
 
 /**
- * Format chatbot message for display
- * @param {string} content - Message content
- * @returns {string} Formatted content
+ * Format chatbot message for display (preserves line breaks and formatting)
+ * AI responses in v2.0 contain emojis, bullet points, and multi-line content
+ * @param {string} content - Message content from AI
+ * @returns {Array<string>} Array of lines for rendering
  */
 export const formatChatbotMessage = (content) => {
-  // Convert newlines to <br> for HTML display
-  return content.replace(/\n/g, "<br>")
+  // Split by newlines to preserve AI formatting
+  return content.split('\n')
 }
 
 /**
  * Check if response indicates user needs to login
- * @param {Object} response - Chatbot response
+ * v2.0: AI mentions "đăng nhập" or 🔐 emoji when login is needed
+ * @param {string} content - Message content from AI
  * @returns {boolean} True if login required
  */
-export const isLoginRequired = (response) => {
-  return response.type === "login_required" || response.needsAuth || response.requiresAuth
+export const isLoginRequired = (content) => {
+  if (typeof content === 'string') {
+    return content.includes('đăng nhập') || content.includes('🔐')
+  }
+  return false
 }
 
 /**
- * Check if response contains personal information
- * @param {Object} response - Chatbot response
- * @returns {boolean} True if contains personal info
- */
-export const hasPersonalInfo = (response) => {
-  const personalTypes = [
-    "membership_info",
-    "schedule_info",
-    "my_membership",
-    "my_schedule",
-    "no_membership",
-    "no_active_membership",
-  ]
-  return personalTypes.includes(response.type)
-}
-
-/**
- * Check if response is an error
- * @param {Object} response - Chatbot response
+ * Check if response is an error from the system
+ * v2.0: Check response.success field
+ * @param {Object} apiResponse - Full API response
  * @returns {boolean} True if error response
  */
-export const isErrorResponse = (response) => {
-  const errorTypes = [
-    "error",
-    "system_error",
-    "validation_error",
-    "membership_error",
-    "schedule_error",
-    "user_not_found",
-  ]
-  return errorTypes.includes(response.type) || response.isError
+export const isErrorResponse = (apiResponse) => {
+  return apiResponse && apiResponse.success === false
 }
 
-/**
- * Check if response contains FAQ information
- * @param {Object} response - Chatbot response
- * @returns {boolean} True if FAQ response
- */
-export const isFAQResponse = (response) => {
-  const faqTypes = [
-    "faq_response",
-    "locations_info",
-    "memberships_info",
-    "classes_info",
-    "trainers_info",
-    "equipment_info",
-    "basic_info",
-    "hours_info",
-    "contact_info",
-  ]
-  return faqTypes.includes(response.type)
-}
+// ========================================
+// EXPORTS - Chatbot API v2.0
+// ========================================
 
-/**
- * Get response category for styling/handling
- * @param {Object} response - Chatbot response
- * @returns {string} Response category
- */
-export const getResponseCategory = (response) => {
-  if (isErrorResponse(response)) return "error"
-  if (isLoginRequired(response)) return "auth_required"
-  if (hasPersonalInfo(response)) return "personal"
-  if (isFAQResponse(response)) return "faq"
-  return "general"
-}
-
-/**
- * Extract data from chatbot response for UI components
- * @param {Object} response - Chatbot response
- * @returns {Object} Extracted data
- */
-export const extractResponseData = (response) => {
-  const category = getResponseCategory(response)
-
-  return {
-    category,
-    type: response.type,
-    content: response.content,
-    data: response.data || null,
-    metadata: response.metadata || {},
-    needsAuth: isLoginRequired(response),
-    isError: isErrorResponse(response),
-    hasPersonalInfo: hasPersonalInfo(response),
-    isFAQ: isFAQResponse(response),
-    timestamp: response.timestamp || new Date().toISOString(),
-  }
-}
-
-// Export main APIs - ✅ UPDATED to include userId in all authenticated endpoints
 export default {
-  // Anonymous APIs (No changes)
-  chatbotWithAnonymousAPI,
-  getAnonymousConversationAPI,
-  getAnonymousQuickRepliesAPI,
+  // Core API
   getChatbotHealthAPI,
 
-  // Authenticated APIs - ✅ UPDATED: All now require userId parameter
-  chatbotWithAuthAPI,
-  getAuthConversationAPI, // Now requires userId parameter
-  getConversationByUserIdAPI, // Alternative function name
-  getAuthQuickRepliesAPI, // Now requires userId parameter
-  processQuickReplyAPI, // Now requires userId parameter
-  getMyConversationsAPI, // Now requires userId parameter
-  linkAnonymousConversationAPI, // Now requires userId parameter
+  // Anonymous APIs (user not logged in)
+  chatbotWithAnonymousAPI,
+  getAnonymousConversationAPI,
+  getAnonymousQuickRepliesAPI, // DEPRECATED but kept for compatibility
 
-  // Utility functions
-  processChatbotResponse,
+  // Authenticated APIs (user logged in) - All require userId
+  chatbotWithAuthAPI,
+  getAuthConversationAPI,
+  getMyConversationsAPI,
+  linkAnonymousConversationAPI,
+  getAuthQuickRepliesAPI, // DEPRECATED but kept for compatibility
+  processQuickReplyAPI, // DEPRECATED but kept for compatibility
+
+  // Utility functions for v2.0
   generateAnonymousId,
   formatChatbotMessage,
   isLoginRequired,
-  hasPersonalInfo,
   isErrorResponse,
-  isFAQResponse,
-  getResponseCategory,
-  extractResponseData,
 }
