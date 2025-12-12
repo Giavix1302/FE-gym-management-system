@@ -24,6 +24,7 @@ export const getMemberEnrolledClassesAPI = async (userId) => {
 
 export const getListClassForTrainerAPI = async (trainerId) => {
   const rep = await axiosInstance.get("/classes/trainer/" + trainerId)
+  console.log("🚀 ~ getListClassForTrainerAPI ~ rep:", rep)
   return rep.data
 }
 

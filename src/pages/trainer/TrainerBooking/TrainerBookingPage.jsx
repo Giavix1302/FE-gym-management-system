@@ -47,7 +47,7 @@ import { updateTrainerAdviceAPI } from "~/apis/booking"
 import { theme } from "~/theme"
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import dayjs from "dayjs"
-import { createScheduleForPtAPI } from "~/apis/schedule"
+import { createScheduleForPtAPI, deleteScheduleForPtAPI } from "~/apis/schedule"
 import { toast } from "react-toastify"
 import DateField from "~/components/DateField"
 import TimeField from "~/components/TimeField"
@@ -417,9 +417,19 @@ export default function TrainerBookingPage() {
     }
   }
 
-  const handleDeleteSlot = (bookingId) => {
+  const handleDeleteSlot = async (scheduleId) => {
     // Handle delete slot logic
-    console.log("Delete slot for booking:", bookingId)
+    console.log("Delete slot for schedule:", scheduleId)
+    try {
+      await deleteScheduleForPtAPI(scheduleId)
+      // Cập nhật lại listSchedule trong store
+      const updatedList = listSchedule.filter((schedule) => schedule._id !== scheduleId)
+      setListSchedule(updatedList)
+      toast.success("Xóa lịch thành công")
+    } catch (error) {
+      console.error("Failed to delete slot:", error)
+      toast.error("Có lỗi xảy ra khi xóa lịch")
+    }
     handleCloseModal()
   }
 

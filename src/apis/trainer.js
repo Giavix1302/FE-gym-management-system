@@ -2,11 +2,13 @@ import { axiosInstance } from "./axiosConfig"
 
 // for pt
 export const updateInfoTrainerByUserIdAPI = async (userId, payload) => {
+  console.log("🚀 ~ updateInfoTrainerByUserIdAPI ~ payload:", payload)
   console.log("🚀 ~ updateInfoTrainerByUserIdAPI ~ userId:", userId)
   for (const [key, value] of payload.entries()) {
     console.log(key, value)
   }
   const res = await axiosInstance.put(`/trainers/${userId}`, payload)
+  console.log("🚀 ~ updateInfoTrainerByUserIdAPI ~ res:", res)
   return res.data
 }
 
@@ -30,12 +32,14 @@ export const getListTrainerForAdminAPI = async () => {
 
 // Lấy danh sách booking completed của trainer
 export const getListBookingByTrainerIdAPI = async (userId, page = 1, limit = 10) => {
+  console.log("🚀 ~ getListBookingByTrainerIdAPI ~ userId:", userId)
   const res = await axiosInstance.get(`/trainers/${userId}/bookings`, {
     params: {
       page,
       limit,
     },
   })
+  console.log("🚀 ~ getListBookingByTrainerIdAPI ~ res:", res)
   return res.data
 }
 
@@ -54,11 +58,13 @@ export const getTrainerBookingsAPI = async (userId, options = {}) => {
 
 export const getTrainerDashboardStatsAPI = async (userId) => {
   const res = await axiosInstance.get(`/trainers/${userId}/dashboard-stats`)
+  console.log("🚀 ~ getTrainerDashboardStatsAPI ~ res:", res)
   return res.data
 }
 
 export const getTrainerEventsForThreeMonthsAPI = async (userId) => {
   const res = await axiosInstance.get(`/trainers/${userId}/events`)
+  console.log("🚀 ~ getTrainerEventsForThreeMonthsAPI ~ res:", res)
   return res.data
 }
 

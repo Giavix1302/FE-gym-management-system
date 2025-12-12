@@ -119,8 +119,10 @@ function UserProgressPage() {
     try {
       const submitData = {
         ...formData,
+        userId: user._id,
         measurementDate: formData.measurementDate + "T00:00:00.000Z",
       }
+      console.log("🚀 ~ handleSubmit ~ submitData:", submitData)
 
       let response
       if (editingProgress) {

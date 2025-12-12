@@ -24,6 +24,8 @@ export const cancelBookingAPI = async (bookingId) => {
 }
 
 export const updateTrainerAdviceAPI = async (bookingId, advice) => {
+  console.log("🚀 ~ updateTrainerAdviceAPI ~ bookingId, advice:", bookingId, advice)
   const rep = await axiosInstance.patch(`/bookings/${bookingId}/trainer-advice`, advice)
+  console.log("🚀 ~ updateTrainerAdviceAPI ~ rep:", rep)
   return rep.data
 }

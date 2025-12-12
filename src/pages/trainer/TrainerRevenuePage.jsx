@@ -51,6 +51,10 @@ function TrainerRevenuePage() {
   // Get unique locations for filter
   const uniqueLocations = [...new Set(bookings.map((booking) => booking.locationName))]
 
+  // Determine if item is booking or classSession
+  const isBooking = (item) => item.userName !== undefined
+  const isClassSession = (item) => item.roomName !== undefined
+
   // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -83,7 +87,11 @@ function TrainerRevenuePage() {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter((booking) => booking.userName.toLowerCase().includes(searchTerm.toLowerCase()))
+      filtered = filtered.filter((booking) => {
+        // Tìm kiếm theo userName (booking) hoặc roomName (classSession)
+        const searchTarget = booking.userName || booking.roomName || ""
+        return searchTarget.toLowerCase().includes(searchTerm.toLowerCase())
+      })
     }
 
     // Location filter
@@ -99,13 +107,18 @@ function TrainerRevenuePage() {
   const calculateStats = () => {
     const totalRevenue = filteredBookings.reduce((sum, booking) => sum + booking.price, 0)
     const totalBookings = filteredBookings.length
-    const uniqueCustomers = new Set(filteredBookings.map((booking) => booking.userName)).size
+    // Đếm cả booking users và class sessions
+    const bookingItems = filteredBookings.filter(isBooking)
+    const classSessionItems = filteredBookings.filter(isClassSession)
+    const uniqueCustomers = new Set(bookingItems.map((booking) => booking.userName)).size
     const averageRevenuePerBooking = totalBookings > 0 ? totalRevenue / totalBookings : 0
 
     return {
       totalRevenue,
       totalBookings,
       uniqueCustomers,
+      totalClassSessions: classSessionItems.length,
+      totalPersonalBookings: bookingItems.length,
       averageRevenuePerBooking,
     }
   }
@@ -156,6 +169,7 @@ function TrainerRevenuePage() {
       try {
         setLoading(true)
         const result = await getListBookingByTrainerIdAPI(user._id)
+        console.log("🚀 ~ init ~ result:", result)
         if (result.success) {
           setBookings(result.data)
           setPagination(result.pagination)
@@ -212,10 +226,10 @@ function TrainerRevenuePage() {
           <Card elevation={2}>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
-                Số Booking
+                Số buổi dạy kèm
               </Typography>
               <Typography variant="h6" color="secondary.main" fontWeight="bold">
-                {stats.totalBookings}
+                {stats.totalPersonalBookings}
               </Typography>
             </CardContent>
           </Card>
@@ -224,19 +238,20 @@ function TrainerRevenuePage() {
           <Card elevation={2}>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
-                Khách Hàng
+                Số Buổi Lớp Học
               </Typography>
-              <Typography variant="h6" color="info.main" fontWeight="bold">
-                {stats.uniqueCustomers}
+              <Typography variant="h6" color="success.main" fontWeight="bold">
+                {stats.totalClassSessions}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
+
         <Grid item size={{ xs: 6, md: 3 }}>
           <Card elevation={2}>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
-                TB/Booking
+                TB/Buổi
               </Typography>
               <Typography variant="h6" color="warning.main" fontWeight="bold">
                 {formatCurrency(stats.averageRevenuePerBooking)}
@@ -354,10 +369,10 @@ function TrainerRevenuePage() {
             <TextField
               fullWidth
               size="small"
-              label="Tìm theo tên khách hàng"
+              label="Tìm kiếm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Nhập tên khách hàng..."
+              placeholder="Tên khách hàng hoặc phòng..."
             />
           </Grid>
           <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
@@ -388,8 +403,9 @@ function TrainerRevenuePage() {
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
                 <TableCell sx={{ color: "white", fontWeight: "bold" }}>STT</TableCell>
+                <TableCell sx={{ color: "white", fontWeight: "bold" }}>Loại</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold" }}>Tiêu đề</TableCell>
-                <TableCell sx={{ color: "white", fontWeight: "bold" }}>Khách hàng</TableCell>
+                <TableCell sx={{ color: "white", fontWeight: "bold" }}>Thông tin</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold" }}>Địa điểm</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold" }}>Giá tiền</TableCell>
                 <TableCell sx={{ color: "white", fontWeight: "bold" }}>Ngày tạo</TableCell>
@@ -398,13 +414,13 @@ function TrainerRevenuePage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <Typography>Đang tải dữ liệu...</Typography>
                   </TableCell>
                 </TableRow>
               ) : currentPageData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                     <Typography color="text.secondary">Không có dữ liệu</Typography>
                   </TableCell>
                 </TableRow>
@@ -412,6 +428,13 @@ function TrainerRevenuePage() {
                 currentPageData.map((booking, index) => (
                   <TableRow key={booking._id} hover>
                     <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={isBooking(booking) ? "PT 1-1" : "Lớp học"}
+                        color={isBooking(booking) ? "primary" : "success"}
+                        size="small"
+                      />
+                    </TableCell>
                     <TableCell sx={{ maxWidth: isMobile ? 150 : 300 }}>
                       <Typography
                         variant="body2"
@@ -425,7 +448,9 @@ function TrainerRevenuePage() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2">{booking.userName}</Typography>
+                      <Typography variant="body2">
+                        {isBooking(booking) ? <span>👤 {booking.userName}</span> : <span>🏠 {booking.roomName}</span>}
+                      </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography
