@@ -572,6 +572,7 @@ export default function TrainerProfilePage() {
       showSnackbar("Vui lòng hoàn thiện thông tin trước khi gửi!", "error")
       return
     }
+    handleSave()
     setOpenSubmitDialog(false)
     showSnackbar("Đã gửi yêu cầu phê duyệt cho Admin!", "success")
   }
@@ -664,15 +665,9 @@ export default function TrainerProfilePage() {
                 sx={{ fontWeight: "bold" }}
               />
             </Stack>
-
             <Typography variant="h6" sx={{ mt: 1, opacity: 0.9 }}>
               Personal Trainer
             </Typography>
-
-            <Stack direction="row" spacing={2} sx={{ mt: 2 }} justifyContent={isMobile ? "center" : "flex-start"}>
-              <Chip icon={<StarIcon />} label="5 / 5" sx={{ bgcolor: "white", color: "primary.main" }} />
-              <Chip icon={<GroupsIcon />} label="10 / 15 khách" sx={{ bgcolor: "white", color: "primary.main" }} />
-            </Stack>
           </Box>
 
           {!isMobile && (

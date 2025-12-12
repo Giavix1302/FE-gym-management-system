@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from "react"
 import {
   Box,
@@ -82,11 +84,13 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"
 import { createReviewAPI } from "~/apis/review"
 import { toast } from "react-toastify"
 import BookingHistoryModal from "./BookingHistoryModal"
-import { checkRefund, convertISOToVNTime, getHoursBetween } from "~/utils/common"
+import { checkRefund, getHoursBetween } from "~/utils/common"
+import useMyMembershipStore from "~/stores/useMyMembershipStore"
 
 function UserBookingPage() {
   // store
   const { user } = useUserStore()
+  const { myMembership } = useMyMembershipStore()
   const { listTrainerInfo, setListTrainerInfo } = useListTrainerInfoForUser()
   console.log("🚀 ~ UserBookingPage ~ listTrainerInfo:", listTrainerInfo)
   const { locations } = useLocationStore()
@@ -287,6 +291,9 @@ function UserBookingPage() {
   useEffect(() => {
     const init = async () => {
       try {
+        if (myMembership.name === "") {
+          toast.info("Bạn chưa có gói thành viên nào. Vui lòng mua gói thành viên để đặt lịch với PT.")
+        }
         setDataLoading(true)
 
         // Fetch trainers
@@ -435,6 +442,10 @@ function UserBookingPage() {
   }
 
   const handlePayNow = () => {
+    if (myMembership.name === "") {
+      toast.info("Bạn chưa có gói thành viên nào. Vui lòng mua gói thành viên để đặt lịch với PT.")
+      return
+    }
     setOpenPaymentModal(true)
   }
 

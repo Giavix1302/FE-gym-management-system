@@ -224,14 +224,7 @@ export default function AdminMembershipPage() {
                 Quản lý gói tập
               </Typography>
             </Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button variant="outlined" startIcon={<ImportIcon />} sx={{ textTransform: "none" }}>
-                Import
-              </Button>
-              <Button variant="outlined" startIcon={<ExportIcon />} sx={{ textTransform: "none" }}>
-                Export
-              </Button>
-            </Box>
+            <Box sx={{ display: "flex", gap: 1 }}></Box>
           </Box>
         </CardContent>
       </Card>

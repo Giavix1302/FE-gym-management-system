@@ -14,7 +14,7 @@ import {
 } from "@mui/material"
 import ArrowBackIcon from "@mui/icons-material/ArrowBack"
 
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { useState, Fragment } from "react"
 
 // import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
@@ -28,11 +28,11 @@ import { signupAPI, verifyOtpAPI } from "~/apis/auth"
 
 //store
 import useUserStore from "~/stores/useUserStore"
+import { getListLocationAPI } from "~/apis/location"
+import useLocationStore from "~/stores/useLocationStore"
 
 function Signup() {
-  useUserStore.subscribe((state) => {
-    console.log("Store changed:", state)
-  })
+  const { setLocations } = useLocationStore()
   // store
   const { setUser, resetUser } = useUserStore()
 
@@ -126,6 +126,9 @@ function Signup() {
       // trả ra accesstoken và lưu refreshtoken vào cookie
       removeFromLocalStorage("accessToken")
       saveToLocalStorage("accessToken", data.accessToken)
+
+      const result = await getListLocationAPI()
+      setLocations(result.locations)
 
       // điều hướng về trang chủ
       if (data.user.role === "user") {
@@ -275,82 +278,3 @@ function Signup() {
 }
 
 export default Signup
-
-// const [email, setEmail] = useState("")
-// const [isEmailError, setIsEmailError] = useState(false)
-
-// const [birthOfDate, setBirthOfDate] = useState({ day: "", month: "", year: "" })
-// <Typography variant="subtitle1" align="left" sx={{ fontWeight: "bold", color: "text.secondary", mt: 1 }}>
-//                 Ngày tháng năm sinh
-//               </Typography>
-//               <LocalizationProvider dateAdapter={AdapterDayjs}>
-//                 <DatePicker
-//                   slotProps={{
-//                     textField: {
-//                       size: "small",
-//                       onKeyDown: (e) => e.preventDefault(),
-//                     },
-//                   }}
-//                   onError={(error) => {
-//                     toast.error(error)
-//                   }}
-//                   onChange={(values) => {
-//                     return setBirthOfDate((prev) => ({
-//                       ...prev,
-//                       day: values?.$D || 0,
-//                       month: values?.$M + 1 || 0,
-//                       year: values?.$y || 0,
-//                     }))
-//                   }}
-//                   sx={{
-//                     p: 0,
-//                     width: "100%",
-//                     "& .MuiPickersSectionList-root": {
-//                       py: 1,
-//                     },
-//                   }}
-//                 />
-//               </LocalizationProvider>
-
-// const updateUserInfo = async () => {
-//   // reset
-//   setIsFullNameError(false)
-//   setIsEmailError(false)
-
-//   // check empty
-//   if (fullName === "") {
-//     toast.error("Vui lòng điền họ và tên")
-//     setIsFullNameError(true)
-//     return
-//   }
-//   if (email === "") {
-//     toast.error("Vui lòng điền email")
-//     setIsEmailError(true)
-//     return
-//   }
-//   if (!isValidEmail(email)) {
-//     toast.error("Vui lòng điền đúng định dạng email")
-//     setIsEmailError(true)
-//     return
-//   }
-//   if (birthOfDate.day === "" || birthOfDate.month === "" || birthOfDate.year === "") {
-//     toast.error("Vui lòng chọn ngày tháng năm sinh")
-//     return
-//   }
-//   if (!isOver12(birthOfDate)) {
-//     toast.error("Bạn phải trên 12 tuổi mới được đăng ký.")
-//     return
-//   }
-
-//   const data = {
-//     fullName,
-//     email,
-//     dateOfBirth: convertToISODateTime({ day: birthOfDate.day, month: birthOfDate.month, year: birthOfDate.year }),
-//     role,
-//   }
-//   // call api
-//   updateInfoUserAPI(user._id, data)
-//   // chuyển hướng về trang chủ theo role
-
-//   // handleNext("Finish")
-// }

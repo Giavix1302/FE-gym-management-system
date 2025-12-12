@@ -80,12 +80,14 @@ import useUserStore from "~/stores/useUserStore"
 
 function ClassEnrollmentPage() {
   const { user } = useUserStore()
+  const { locations } = useLocationStore()
 
   const [activeTab, setActiveTab] = useState(0)
   const [classes, setClasses] = useState([])
   const [enrolledClasses, setEnrolledClasses] = useState([])
   console.log("🚀 ~ ClassEnrollmentPage ~ enrolledClasses:", enrolledClasses)
   const [classType, setClassType] = useState("all")
+  const [locationFilter, setLocationFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [dataLoading, setDataLoading] = useState(false)
 
@@ -293,11 +295,12 @@ function ClassEnrollmentPage() {
 
   const filteredClasses = classes.filter((classItem) => {
     const matchType = classType === "all" || classItem.classType?.toLowerCase() === classType.toLowerCase()
+    const matchLocation = locationFilter === "all" || classItem.locationName === locationFilter
     const matchSearch =
       searchTerm === "" ||
       classItem.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       classItem.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchType && matchSearch
+    return matchType && matchLocation && matchSearch
   })
 
   const isClassFull = (classItem) => (classItem.enrolled || 0) >= (classItem.capacity || 0)
@@ -311,6 +314,7 @@ function ClassEnrollmentPage() {
           getListClassForUserAPI(),
           getMemberEnrolledClassesAPI(user._id),
         ])
+        console.log("🚀 ~ init ~ classesResult:", classesResult)
 
         if (!classesResult.success) {
           toast.error(classesResult?.message || "Lỗi lấy dữ liệu lớp học")
@@ -376,7 +380,7 @@ function ClassEnrollmentPage() {
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                 <TextField
                   fullWidth
                   size="small"
@@ -393,7 +397,7 @@ function ClassEnrollmentPage() {
                 />
               </Grid>
 
-              <Grid item size={{ xs: 12, sm: 6, md: 4 }}>
+              <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                 <TextField
                   fullWidth
                   select
@@ -409,7 +413,32 @@ function ClassEnrollmentPage() {
                 </TextField>
               </Grid>
 
-              <Grid item size={{ xs: 12, sm: 12, md: 4 }}>
+              <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
+                <TextField
+                  fullWidth
+                  select
+                  size="small"
+                  label="Cơ sở"
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LocationOn fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                >
+                  <MenuItem value="all">Tất cả cơ sở</MenuItem>
+                  {locations.map((location) => (
+                    <MenuItem key={location._id} value={location.name}>
+                      {location.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+
+              <Grid item size={{ xs: 12, sm: 6, md: 3 }}>
                 <Paper
                   sx={{
                     px: 2,

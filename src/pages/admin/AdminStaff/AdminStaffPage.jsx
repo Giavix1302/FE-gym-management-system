@@ -632,12 +632,6 @@ export default function AdminStaffPage() {
               </Typography>
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Button variant="outlined" startIcon={<ImportIcon />} sx={{ textTransform: "none" }}>
-                Import
-              </Button>
-              <Button variant="outlined" startIcon={<ExportIcon />} sx={{ textTransform: "none" }}>
-                Export
-              </Button>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}

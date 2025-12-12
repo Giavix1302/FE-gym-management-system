@@ -15,10 +15,6 @@ import {
   Avatar,
   Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   Alert,
   Paper,
   LinearProgress,
@@ -411,29 +407,6 @@ export default function SessionDetailModal({ session, isOpen, onClose }) {
         <Button onClick={onClose} color="inherit">
           Đóng
         </Button>
-
-        {sessionStatus.status === "upcoming" && (
-          <>
-            <Button variant="outlined" startIcon={<EditIcon />} color="primary">
-              Chỉnh sửa
-            </Button>
-            <Button variant="contained" color="success" startIcon={<PlayArrowIcon />}>
-              Bắt đầu buổi học
-            </Button>
-          </>
-        )}
-
-        {sessionStatus.status === "ongoing" && (
-          <Button variant="contained" color="error" startIcon={<Stop />}>
-            Kết thúc buổi học
-          </Button>
-        )}
-
-        {sessionStatus.status === "completed" && (
-          <Button variant="outlined" startIcon={<AssessmentIcon />} color="primary">
-            Xem báo cáo
-          </Button>
-        )}
       </DialogActions>
     </Dialog>
   )

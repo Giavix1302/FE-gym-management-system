@@ -54,8 +54,6 @@ const CLASS_TYPES = [
   { value: "yoga", label: "Yoga" },
   { value: "boxing", label: "Boxing" },
   { value: "dance", label: "Dance" },
-  { value: "cardio", label: "Cardio" },
-  { value: "strength", label: "Strength" },
 ]
 
 export default function AddEditClassModal({ open, onClose, onSubmit, classData, trainers = [], locations = [] }) {
@@ -231,6 +229,15 @@ export default function AddEditClassModal({ open, onClose, onSubmit, classData, 
 
   const handleAddRecurrence = () => {
     if (newRecurrence.dayOfWeek && newRecurrence.startTime && newRecurrence.endTime && newRecurrence.roomId) {
+      // Validate start time < end time
+      const startMinutes = newRecurrence.startTime.hour * 60 + newRecurrence.startTime.minute
+      const endMinutes = newRecurrence.endTime.hour * 60 + newRecurrence.endTime.minute
+
+      if (startMinutes >= endMinutes) {
+        toast.error("Giờ bắt đầu phải nhỏ hơn giờ kết thúc!")
+        return
+      }
+
       // Check if this exact schedule already exists
       const exists = formData.recurrence.some(
         (rec) =>

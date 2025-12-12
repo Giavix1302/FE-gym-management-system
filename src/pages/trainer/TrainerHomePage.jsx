@@ -274,39 +274,6 @@ function EventModal({ open, event, onClose }) {
                 </Box>
               </Box>
             )}
-
-            {/* Price (for bookings) */}
-            {event.price && event.eventType === "booking" && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <MonetizationOn color="action" />
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">
-                    Giá
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "#FFA62B", fontWeight: "bold" }}>
-                    {new Intl.NumberFormat("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    }).format(event.price)}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {/* Class capacity (for class sessions) */}
-            {event.eventType === "classSession" && event.capacity && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Group color="action" />
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">
-                    Sức chứa lớp
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {event.enrolledCount || 0}/{event.capacity} học viên
-                  </Typography>
-                </Box>
-              </Box>
-            )}
           </Box>
         </Box>
       </Fade>
@@ -503,6 +470,7 @@ const TrainerHomePage = () => {
         setLoading(true)
 
         // Lấy thống kê dashboard
+        if (!trainerInfo._id) return
         const dataTrainerDashboardStats = await getTrainerDashboardStatsAPI(user._id)
         setDataTrainerDashboardStats(dataTrainerDashboardStats?.stats)
 
@@ -607,7 +575,7 @@ const TrainerHomePage = () => {
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography color="textSecondary" gutterBottom>
-                    Số buổi đã hoàn thành
+                    Số buổi hoàng thành tháng này
                   </Typography>
                   <Typography variant="h4" sx={{ color: "#16697A" }}>
                     {dataTrainerDashboardStats.monthlyCompletedSessions || 0}
@@ -628,9 +596,7 @@ const TrainerHomePage = () => {
                     Doanh thu tháng
                   </Typography>
                   <Typography variant="h4" sx={{ color: "#16697A" }}>
-                    {dataTrainerDashboardStats.monthlyRevenue
-                      ? (dataTrainerDashboardStats.monthlyRevenue / 1000000).toFixed(1) + "M"
-                      : "0M"}
+                    {formatPrice(dataTrainerDashboardStats.monthlyRevenue || 0)}
                   </Typography>
                 </Box>
                 <MonetizationOn sx={{ fontSize: 40, color: "#FFA62B" }} />

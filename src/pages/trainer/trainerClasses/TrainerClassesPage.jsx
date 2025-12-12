@@ -4,7 +4,6 @@ import {
   Container,
   Paper,
   Typography,
-  Button,
   Grid,
   Card,
   CardContent,
@@ -12,7 +11,6 @@ import {
   Tabs,
   Tab,
   Chip,
-  Avatar,
   FormControl,
   InputLabel,
   Select,
@@ -21,30 +19,17 @@ import {
   InputAdornment,
   IconButton,
   Badge,
-  useTheme,
-  useMediaQuery,
-  CardMedia,
-  Divider,
 } from "@mui/material"
 import {
   School as SchoolIcon,
-  Schedule as ScheduleIcon,
-  Person as PersonIcon,
   LocationOn as LocationIcon,
-  Phone as PhoneIcon,
-  Star as StarIcon,
   AccessTime as AccessTimeIcon,
   Search as SearchIcon,
   EventAvailable as EventAvailableIcon,
   History as HistoryIcon,
-  AttachMoney as AttachMoneyIcon,
   Edit as EditIcon,
   Visibility as VisibilityIcon,
-  Add as AddIcon,
   Group as GroupIcon,
-  FitnessCenter as FitnessCenterIcon,
-  DateRange as DateRangeIcon,
-  Room as RoomIcon,
   CalendarMonth as CalendarIcon,
 } from "@mui/icons-material"
 import NoteIcon from "@mui/icons-material/Note"
@@ -54,89 +39,6 @@ import SessionDetailModal from "./SessionDetailModal"
 import useTrainerInfoStore from "~/stores/useTrainerInfoStore"
 import { getListClassForTrainerAPI } from "~/apis/class"
 import { toast } from "react-toastify"
-
-// const mockClasses = [
-//   {
-//     _id: "68e7a3078bd727cef7308ffd",
-//     name: "test lớp",
-//     description: "test lớp",
-//     capacity: 20,
-//     trainers: [
-//       {
-//         _id: "68d3ad9592b0108bfae55892",
-//         fullName: "Nguyen Van A",
-//         avatar: "",
-//         phone: "09887654321",
-//         specialization: "",
-//         rating: 4,
-//       },
-//     ],
-//     classType: "dance",
-//     price: 1000000,
-//     locationInfo: {
-//       _id: "68b80223c88e5c2130e084e8",
-//       name: "THE GEM Nguyen Kiem",
-//       address: {
-//         street: "123 Lê Lợi",
-//         ward: "Phường Bến Thành",
-//         province: "Hồ Chí Minh",
-//       },
-//     },
-//     startDate: "2025-10-09T00:00:00.000Z",
-//     endDate: "2025-11-02T23:59:59.999Z",
-//     recurrence: [
-//       {
-//         dayOfWeek: 2,
-//         startTime: {
-//           hour: 9,
-//           minute: 0,
-//         },
-//         endTime: {
-//           hour: 10,
-//           minute: 0,
-//         },
-//         roomId: "68dbdd2f1f6ee91416652ebe",
-//       },
-//     ],
-//     image: "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760011015/gms-image/hcudkydbjfp5v3dkmjl0.jpg",
-//     classSession: [
-//       {
-//         _id: "68e7a3088bd727cef7308ffe",
-//         className: "test lớp",
-//         hours: 1,
-//         startTime: "2025-10-14T04:00:00.000Z",
-//         endTime: "2025-10-14T05:00:00.000Z",
-//         roomName: "Phòng 01",
-//         title: "test lớp 123 - Tuesday 09:00-10:00",
-//       },
-//       {
-//         _id: "68e7a3088bd727cef7309000",
-//         className: "test lớp",
-//         hours: 1,
-//         startTime: "2025-10-28T02:00:00.000Z",
-//         endTime: "2025-10-28T03:00:00.000Z",
-//         roomName: "Phòng 01",
-//         title: "test lớp - Tuesday 09:00-10:00",
-//       },
-//     ],
-//     classEnrolled: [
-//       {
-//         userId: "user1",
-//         fullName: "Nguyễn Văn B",
-//         phone: "0987654321",
-//         avatar: "",
-//       },
-//       {
-//         userId: "user2",
-//         fullName: "Trần Thị C",
-//         phone: "0976543210",
-//         avatar: "",
-//       },
-//     ],
-//   },
-// ]
-
-// Class List Item Component
 
 function ClassListItem({ classData, onViewDetails, onEditClass }) {
   const getClassTypeColor = (classType) => {
@@ -160,10 +62,8 @@ function ClassListItem({ classData, onViewDetails, onEditClass }) {
         return "Khiêu vũ"
       case "yoga":
         return "Yoga"
-      case "cardio":
-        return "Cardio"
-      case "strength":
-        return "Sức mạnh"
+      case "boxing":
+        return "Boxing"
       default:
         return classType
     }
@@ -356,8 +256,6 @@ function ClassListItem({ classData, onViewDetails, onEditClass }) {
 
 // Main Component
 export default function TrainerClassManagePage() {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const { trainerInfo } = useTrainerInfoStore()
 
   // States
@@ -379,6 +277,7 @@ export default function TrainerClassManagePage() {
   useEffect(() => {
     // Simulate API call
     const init = async () => {
+      if (!trainerInfo._id) return
       const classInfo = await getListClassForTrainerAPI(trainerInfo._id)
       if (!classInfo.success) return
       setClasses(classInfo.classes)
@@ -538,9 +437,6 @@ export default function TrainerClassManagePage() {
             <CalendarIcon color="primary" />
             Lịch học
           </Typography>
-          <Button variant="contained" startIcon={<AddIcon />}>
-            Tạo lớp học mới
-          </Button>
         </Stack>
 
         <GymCalendar events={calendarEvents} onEventClick={handleSessionClick} />

@@ -28,6 +28,7 @@ import MeetingRoomIcon from "@mui/icons-material/MeetingRoom"
 import { toast } from "react-toastify"
 import { createRoomAPI, updateRoomAPI, softDeleteRoomAPI, getListRoomByLocationIdAPI } from "~/apis/room"
 import useCurrentLocation from "~/stores/useCurrentLocationStore"
+
 import RoomDetailModal from "./RoomDetailModal"
 import RoomFormModal from "./RoomFormModal"
 
@@ -282,7 +283,7 @@ function StaffRoomPage() {
             const roomStatus = getRoomStatus(room)
 
             return (
-              <Grid item size={{ xs: 12, sm: 3 }} key={room._id}>
+              <Grid item size={{ xs: 12, sm: 3 }} key={room._id} sx={{}}>
                 <Card
                   sx={{
                     cursor: "pointer",
@@ -291,6 +292,7 @@ function StaffRoomPage() {
                       transform: "translateY(-2px)",
                       boxShadow: 4,
                     },
+                    height: "100%",
                   }}
                   onClick={() => handleRoomClick(room)}
                 >

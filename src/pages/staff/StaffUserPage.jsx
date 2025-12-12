@@ -452,7 +452,6 @@ function StaffUserPage() {
                   <TableCell sx={{ fontWeight: "bold" }}>Họ và tên</TableCell>
                   <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
                   <TableCell sx={{ fontWeight: "bold" }}>Số điện thoại</TableCell>
-                  <TableCell sx={{ fontWeight: "bold" }}>Trạng thái</TableCell>
                   <TableCell sx={{ fontWeight: "bold" }}>Gói tập hiện tại</TableCell>
                   <TableCell sx={{ fontWeight: "bold" }}>Ngày tạo</TableCell>
                 </TableRow>
@@ -476,9 +475,6 @@ function StaffUserPage() {
                       <TableCell>{user.email || "N/A"}</TableCell>
                       <TableCell>{user.phone || "N/A"}</TableCell>
                       <TableCell>
-                        <Chip label={getStatusText(user.status)} color={getStatusColor(user.status)} size="small" />
-                      </TableCell>
-                      <TableCell>
                         {currentSub ? (
                           <Chip label="Có gói tập" color="success" size="small" variant="outlined" />
                         ) : (
@@ -491,7 +487,7 @@ function StaffUserPage() {
                 })}
                 {displayUsers.length === 0 && !loading && (
                   <TableRow>
-                    <TableCell colSpan={7} sx={{ textAlign: "center", py: 4 }}>
+                    <TableCell colSpan={6} sx={{ textAlign: "center", py: 4 }}>
                       <Typography variant="body1" color="text.secondary">
                         {searchTerm || subscriptionFilter !== "all"
                           ? "Không tìm thấy người dùng nào phù hợp với bộ lọc"

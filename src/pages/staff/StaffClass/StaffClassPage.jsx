@@ -158,7 +158,7 @@ export default function StaffClassPage() {
     setEditingClass(null)
     // Refresh the classes list
     const init = async () => {
-      const data = await getListClassForAdminAPI()
+      const data = await getListClassByLocationIdAPI(currentLocation._id)
       setClasses(data.classes)
     }
     init()
@@ -251,14 +251,7 @@ export default function StaffClassPage() {
                 Quản lý Lớp học
               </Typography>
             </Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button variant="outlined" startIcon={<ImportIcon />}>
-                Import
-              </Button>
-              <Button variant="outlined" startIcon={<ExportIcon />}>
-                Export
-              </Button>
-            </Box>
+            <Box sx={{ display: "flex", gap: 1 }}></Box>
           </Box>
         </CardContent>
       </Card>

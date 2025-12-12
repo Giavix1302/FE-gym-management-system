@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react"
+import React, { useState, useMemo } from "react"
 import {
   Box,
   Container,
@@ -221,7 +221,6 @@ function BookingListItem({ booking, onViewDetails, onAddAdvice }) {
 
 // Main Component
 export default function TrainerBookingPage() {
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
   const { trainerInfo } = useTrainerInfoStore()
   const { listSchedule, setListSchedule, updateSchedule } = useListScheduleForPTStore()
   console.log("🚀 ~ TrainerBookingPage ~ listSchedule:", listSchedule)
@@ -374,14 +373,6 @@ export default function TrainerBookingPage() {
     setSelectedBooking(null)
   }
 
-  // const handleSaveAdvice = (bookingId, advice) => {
-  //   // Handle save advice logic
-  //   console.log("Save advice for booking:", bookingId, advice)
-
-  //   updateTrainerAdviceAPI
-  //   handleCloseModal()
-  // }
-
   const handleSaveAdvice = async (scheduleId, advice) => {
     try {
       // Tìm schedule bằng scheduleId để lấy bookingId
@@ -435,6 +426,10 @@ export default function TrainerBookingPage() {
 
   // Add schedule handler with booking refresh fix
   const handleAddSchedule = async () => {
+    if (trainerInfo.isApproved !== "approved") {
+      toast.error("Tài khoản huấn luyện viên của bạn chưa được phê duyệt.")
+      return
+    }
     try {
       console.log("🚀 ~ handleAddSchedule ~ scheduleDateValue:", scheduleDateValue)
       console.log("🚀 ~ handleAddSchedule ~ startTimeValue:", startTimeValue)
@@ -479,27 +474,36 @@ export default function TrainerBookingPage() {
         return
       }
 
+      // Create startTime and endTime first to check
       const startTime = dateValue
         .hour(startTimeValue.hour)
         .minute(startTimeValue.minute)
         .second(0)
         .millisecond(0)
-        .toISOString()
+
+      // Check if schedule is in the future
+      const now = dayjs()
+      if (startTime.isBefore(now)) {
+        toast.error("Lịch tạo phải ở tương lai. Vui lòng chọn thời gian sau thời điểm hiện tại")
+        return
+      }
 
       const endTime = dateValue
         .hour(endTimeValue.hour)
         .minute(endTimeValue.minute)
         .second(0)
         .millisecond(0)
-        .toISOString()
 
-      console.log("🚀 ~ handleAddSchedule ~ startTime:", startTime)
-      console.log("🚀 ~ handleAddSchedule ~ endTime:", endTime)
+      const startTimeISO = startTime.toISOString()
+      const endTimeISO = endTime.toISOString()
+
+      console.log("🚀 ~ handleAddSchedule ~ startTime:", startTimeISO)
+      console.log("🚀 ~ handleAddSchedule ~ endTime:", endTimeISO)
 
       const dataToSend = {
         trainerId: trainerInfo._id,
-        startTime,
-        endTime,
+        startTime: startTimeISO,
+        endTime: endTimeISO,
       }
 
       const result = await createScheduleForPtAPI(dataToSend)
@@ -508,8 +512,8 @@ export default function TrainerBookingPage() {
       // Create new schedule object with proper structure
       const newSchedule = {
         _id: result?.newSchedule._id,
-        startTime: startTime,
-        endTime: endTime,
+        startTime: startTimeISO,
+        endTime: endTimeISO,
         booking: {
           userInfo: {},
           address: {},

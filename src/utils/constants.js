@@ -38,10 +38,6 @@ export const navItemUserSigned = [
     title: "Lớp học",
     link: "user/class",
   },
-  {
-    title: "Tin tức",
-    link: "user/news",
-  },
 ]
 
 export const navItemPTSigned = [
@@ -52,7 +48,6 @@ export const navItemPTSigned = [
     title: "Các gói tập",
     link: "pt/membership",
   },
-  { title: "Tin tức", link: "pt/news" },
 ]
 
 export const EQUIPMENT_MUSCLE_CATEGORIES = {

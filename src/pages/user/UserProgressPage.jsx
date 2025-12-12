@@ -117,17 +117,26 @@ function UserProgressPage() {
     if (!validateForm()) return
 
     try {
-      const submitData = {
-        ...formData,
-        userId: user._id,
-        measurementDate: formData.measurementDate + "T00:00:00.000Z",
-      }
-      console.log("🚀 ~ handleSubmit ~ submitData:", submitData)
+      // const submitData = {
+      //   ...formData,
+      //   userId: user._id,
+      //   measurementDate: formData.measurementDate + "T00:00:00.000Z",
+      // }
+      // console.log("🚀 ~ handleSubmit ~ submitData:", submitData)
 
       let response
       if (editingProgress) {
+        const submitData = {
+          ...formData,
+          measurementDate: formData.measurementDate + "T00:00:00.000Z",
+        }
         response = await updateProgressAPI(editingProgress._id, submitData)
       } else {
+        const submitData = {
+          ...formData,
+          userId: user._id,
+          measurementDate: formData.measurementDate + "T00:00:00.000Z",
+        }
         response = await createProgressAPI(submitData)
       }
 

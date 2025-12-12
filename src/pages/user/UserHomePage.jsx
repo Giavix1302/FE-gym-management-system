@@ -56,6 +56,7 @@ import { getPaymentsByUserIdAPI } from "~/apis/payment"
 import { getListAttendanceByUserIdAPI } from "~/apis/attendance"
 import { getUserEventsForThreeMonthsAPI } from "~/apis/user"
 import { getDashboardDataAPI } from "~/apis/progress"
+import { useNavigate } from "react-router-dom"
 
 // Utility function to format amount
 const formatAmount = (amount) => {
@@ -82,14 +83,15 @@ const calculateBMI = (weight, height = 1.7) => {
 
 // Helper function to transform progress data
 const transformProgressData = (trendData) => {
+  console.log("🚀 ~ transformProgressData ~ trendData:", trendData)
   if (!trendData || trendData.length === 0) return []
 
   return trendData.map((item) => {
     const date = new Date(item.measurementDate)
-    const monthName = date.toLocaleDateString("vi-VN", { month: "short", year: "numeric" })
+    const dayName = date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
 
     return {
-      month: monthName,
+      month: dayName,
       weight: item.weight,
       bodyFat: item.bodyFat,
       muscleMass: item.muscleMass,
@@ -186,6 +188,7 @@ function EventModal({ open, event, onClose }) {
                 color={getEventTypeColor(event.eventType)}
                 sx={{ mb: 2 }}
               />
+              {event.status && <Chip label={event.status} color="error" sx={{ mb: 2, ml: 1 }} />}
               <Typography variant="h6" fontWeight="bold">
                 {event.title}
               </Typography>
@@ -258,6 +261,7 @@ function EventModal({ open, event, onClose }) {
 function UserHomePage() {
   const { user } = useUserStore()
   const { myMembership } = useMyMembershipStore()
+  const navigate = useNavigate()
 
   // State for real data
   const [payments, setPayments] = useState([])
@@ -283,6 +287,7 @@ function UserHomePage() {
       locationName: event.locationName,
       trainerName: event.trainerName,
       eventType: event.eventType,
+      status: event?.status,
       // Add roomName if it's a class session
       roomName: event.roomName || null,
     }))
@@ -290,6 +295,7 @@ function UserHomePage() {
 
   // Handle event click
   const handleEventClick = (event) => {
+    console.log("🚀 ~ handleEventClick ~ event:", event)
     setSelectedEvent(event)
     setModalOpen(true)
   }
@@ -388,7 +394,7 @@ function UserHomePage() {
                 <Typography variant="h6" fontWeight="bold" color="primary">
                   Thông tin cá nhân
                 </Typography>
-                <IconButton color="primary" size="small">
+                <IconButton onClick={() => navigate("/user/profile")} color="primary" size="small">
                   <EditIcon />
                 </IconButton>
               </Box>
@@ -396,11 +402,13 @@ function UserHomePage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <CakeIcon color="action" fontSize="small" />
-                  <Typography variant="body2">Tuổi: {user.age}</Typography>
+                  <Typography variant="body2">Tuổi: {user?.age ? user.age : "Chưa cập nhật"}</Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <PersonIcon color="action" fontSize="small" />
-                  <Typography variant="body2">Giới tính: {user.gender === "male" ? "nam" : "nữ"}</Typography>
+                  <Typography variant="body2">
+                    Giới tính: {user?.gender === "male" ? "Nam" : user?.gender === "female" ? "Nữ" : "Chưa cập nhật"}
+                  </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <PhoneIcon color="action" fontSize="small" />
@@ -409,12 +417,18 @@ function UserHomePage() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <LocationIcon color="action" fontSize="small" />
                   <Typography variant="body2" sx={{ lineHeight: 1.4 }}>
-                    Địa chỉ: {user.address}
+                    Địa chỉ: {user?.address || "Chưa cập nhật"}
                   </Typography>
                 </Box>
               </Box>
 
-              <Button variant="outlined" fullWidth sx={{ mt: 3 }} startIcon={<EditIcon />}>
+              <Button
+                onClick={() => navigate("/user/profile")}
+                variant="outlined"
+                fullWidth
+                sx={{ mt: 3 }}
+                startIcon={<EditIcon />}
+              >
                 Chỉnh sửa
               </Button>
             </CardContent>
@@ -465,8 +479,8 @@ function UserHomePage() {
                 </>
               )}
 
-              <Button variant="contained" fullWidth sx={{ mt: 1 }}>
-                Gia hạn gói
+              <Button onClick={() => navigate("/user/membership")} variant="contained" fullWidth sx={{ mt: 1 }}>
+                Xem gói tập
               </Button>
             </CardContent>
           </Card>

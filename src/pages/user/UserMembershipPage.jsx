@@ -18,7 +18,6 @@ import {
   CalendarMonth,
   CheckCircle,
   CardMembership,
-  Close,
 } from "@mui/icons-material"
 import {
   calculateMonthlyPrice,
@@ -28,7 +27,6 @@ import {
   calculateDiscountedPrice,
 } from "~/utils/common"
 import { getListMembershipAPI } from "~/apis/membership"
-import { createSubscriptionAPI } from "~/apis/subscription"
 import { createLinkVnpayAPI } from "~/apis/payment"
 import useMembershipStore from "~/stores/useMembershipStore"
 import useUserStore from "~/stores/useUserStore"
@@ -37,10 +35,10 @@ import { SelectPaymentModal } from "~/components/SelectPaymentModal"
 import { deleteSubscriptionAPI, getSubscriptionByUserIdAPI } from "~/apis/subscription"
 import useMyMembershipStore from "~/stores/useMyMembershipStore"
 import MyBackdrop from "~/components/MyBackdrop"
-import { useCountdown } from "~/hooks/useCountdown"
 import { toast } from "react-toastify"
 import ConfirmDialog from "~/components/ConfirmDialog"
 import { useNavigate } from "react-router-dom"
+import { getListAttendanceByUserIdAPI } from "~/apis/attendance"
 
 // ================= COMPONENT: InfoBox =================
 function InfoBox({ icon, label, value }) {
@@ -71,44 +69,20 @@ function InfoBox({ icon, label, value }) {
 function MembershipCard() {
   // store
   const { user } = useUserStore()
-  const { updateMyMembership, resetMyMembership, myMembership } = useMyMembershipStore()
+  const { resetMyMembership, myMembership } = useMyMembershipStore()
   console.log("🚀 ~ MembershipCard ~ myMembership:", myMembership)
 
-  const createAt = myMembership?.paymentInfo?.expireAt // ví dụ "2025-09-14T09:39:28.449Z"
-  const ttlMs = 60 * 60 * 1000 // 1 giờ
-  const expireAtFromCreate = createAt ? new Date(new Date(createAt).getTime() + ttlMs).toISOString() : null
+  const [quantityAttendance, setQuantityAttendance] = useState(0)
+
+  useEffect(() => {
+    const init = async () => {
+      const dataAttendance = await getListAttendanceByUserIdAPI(user._id)
+      setQuantityAttendance(dataAttendance.attendances.length)
+    }
+    init()
+  }, [])
 
   // ưu tiên dùng expireAt nếu có, nếu không thì dùng expireAtFromCreate
-  const expireAt = myMembership?.paymentInfo?.expireAt || expireAtFromCreate
-
-  const { expired, formatted } = useCountdown(expireAt, {
-    onExpire: () => {
-      const init = async () => {
-        if (myMembership.status === "expired") {
-          resetMyMembership()
-        }
-        const dataSub = await getSubscriptionByUserIdAPI(user._id)
-        console.log("🚀 ~ init ~ subscription:", dataSub)
-        if (dataSub.success) {
-          updateMyMembership({
-            remainingSessions: dataSub.subscription.remainingSessions,
-            startDate: dataSub.subscription.startDate,
-            endDate: dataSub.subscription.endDate,
-            status: dataSub.subscription.status,
-            name: dataSub.subscription.name,
-            bannerURL: dataSub.subscription.bannerURL,
-            durationMonth: dataSub.subscription.durationMonth,
-            totalCheckin: dataSub.subscription.totalCheckin || 0,
-            paymentStatus: dataSub.subscription.paymentStatus,
-            paymentInfo: dataSub.subscription.paymentInfo,
-          })
-        } else {
-          resetMyMembership()
-        }
-      }
-      init()
-    },
-  })
 
   const [openDialogConfirm, setOpenDialogConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -209,23 +183,6 @@ function MembershipCard() {
               </Button>
             </Box>
           )}
-          {myMembership.name !== "" && myMembership.paymentStatus === "unpaid" && (
-            <Box>
-              <Button
-                onClick={() => {
-                  window.open(myMembership?.paymentInfo?.paymentUrl, "_blank")
-                }}
-                color="warning"
-                variant="contained"
-              >
-                {expired ? (
-                  <Typography>Đã hết hạn</Typography>
-                ) : (
-                  <Typography>Ấn để thanh toán — Còn {formatted}</Typography>
-                )}
-              </Button>
-            </Box>
-          )}
         </Box>
         {myMembership.name === "" ? (
           <Box>
@@ -314,7 +271,7 @@ function MembershipCard() {
                   <InfoBox icon={<AccessTime />} label="Thời hạn" value={myMembership.durationMonth + " tháng"} />
                 </Grid>
                 <Grid item xs={6}>
-                  <InfoBox icon={<FitnessCenter />} label="Số lần đi tập" value={myMembership.totalCheckin + " lần"} />
+                  <InfoBox icon={<FitnessCenter />} label="Số lần đi tập" value={quantityAttendance + " lần"} />
                 </Grid>
                 <Grid item xs={6}>
                   <InfoBox
@@ -514,7 +471,7 @@ export default function UserMembershipPage() {
 
   // Store
   const { listMembership, setPackages } = useMembershipStore()
-  const { user } = useUserStore()
+  const { user, updateUser } = useUserStore()
   const { updateMyMembership, resetMyMembership, myMembership } = useMyMembershipStore()
 
   useEffect(() => {
@@ -529,6 +486,7 @@ export default function UserMembershipPage() {
       const dataSub = await getSubscriptionByUserIdAPI(user._id)
       console.log("🚀 ~ init ~ subscription:", dataSub)
       if (dataSub.success) {
+        updateUser({ status: "active" })
         updateMyMembership({
           _id: dataSub.subscription._id,
           remainingSessions: dataSub.subscription.remainingSessions,

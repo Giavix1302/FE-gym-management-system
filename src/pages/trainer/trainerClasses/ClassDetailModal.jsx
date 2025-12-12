@@ -610,16 +610,6 @@ export default function ClassDetailModal({ classData, isOpen, onClose }) {
         <Button onClick={onClose} color="inherit">
           Đóng
         </Button>
-
-        <Button variant="outlined" startIcon={<EditIcon />} color="primary">
-          Chỉnh sửa lớp học
-        </Button>
-
-        {classStatus.status === "active" && (
-          <Button variant="contained" color="success">
-            Quản lý buổi học
-          </Button>
-        )}
       </DialogActions>
     </Dialog>
   )

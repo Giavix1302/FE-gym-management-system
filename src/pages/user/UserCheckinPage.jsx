@@ -58,38 +58,6 @@ function UserCheckinPage() {
   const { user } = useUserStore()
   const { locations } = useLocationStore()
 
-  //   [
-  //     {
-  //         "_id": "68b80223c88e5c2130e084e8",
-  //         "name": "The gym Nguyễn Kiệm",
-  //         "phone": "+84987654321",
-  //         "address": {
-  //             "street": "123 Lê Lợi",
-  //             "ward": "Phường Bến Thành",
-  //             "province": "Hồ Chí Minh"
-  //         },
-  //         "images": [
-  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760686278/gms-image/uazqqvqo2cru82uvfuay.jpg",
-  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760686278/gms-image/uazqqvqo2cru82uvfuay.jpg",
-  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1760686278/gms-image/uazqqvqo2cru82uvfuay.jpg"
-  //         ]
-  //     },
-  //     {
-  //         "_id": "6922d2e9f19f6286245443e3",
-  //         "name": "THE GYM Hoàng Văn Thụ",
-  //         "phone": "+84987650000",
-  //         "address": {
-  //             "street": "123 Hoàng Văn Thụ",
-  //             "ward": "Bình Trưng",
-  //             "province": "Hồ Chí Minh"
-  //         },
-  //         "images": [
-  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1763889897/gms-image/rqjjagjybyvq8gcef3op.webp",
-  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1763889898/gms-image/yl9ff1nbuwz1vc9gpkya.jpg",
-  //             "https://res.cloudinary.com/djw2dyvbc/image/upload/v1763889898/gms-image/fmxko2eidtberzbhpqsy.webp"
-  //         ]
-  //     }
-  // ]
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down("md"))
 
@@ -194,24 +162,6 @@ function UserCheckinPage() {
     setQrDialogOpen(true)
   }
 
-  const handleCheckout = () => {
-    setLoading(true)
-    setTimeout(() => {
-      const checkoutTime = new Date().toISOString()
-      const hours = differenceInHours(parseISO(checkoutTime), parseISO(currentCheckin.checkinTime))
-
-      const updatedCheckin = {
-        ...currentCheckin,
-        checkoutTime,
-        hours: Math.round(hours * 10) / 10, // Làm tròn 1 chữ số thập phân
-      }
-      setCurrentCheckin(null)
-      setIsCheckedIn(false)
-      setCheckinHistory((prev) => prev.map((item) => (item._id === currentCheckin._id ? updatedCheckin : item)))
-      setLoading(false)
-    }, 2000)
-  }
-
   const formatTime = (timeString) => {
     if (!timeString) return "--"
     return format(parseISO(timeString), "HH:mm", { locale: vi })
@@ -220,11 +170,6 @@ function UserCheckinPage() {
   const formatDate = (timeString) => {
     if (!timeString) return "--"
     return format(parseISO(timeString), "dd/MM/yyyy", { locale: vi })
-  }
-
-  const formatFullDate = (timeString) => {
-    if (!timeString) return "--"
-    return format(parseISO(timeString), "EEEE, dd/MM/yyyy", { locale: vi })
   }
 
   const calculateTrainingTime = (checkinTime, checkoutTime, hours) => {
@@ -387,17 +332,6 @@ function UserCheckinPage() {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Tại: <strong>{currentCheckin?.locationName}</strong>
                   </Typography>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    fullWidth
-                    onClick={handleCheckout}
-                    disabled={loading}
-                    startIcon={loading ? <CircularProgress size={16} /> : <Cancel />}
-                    sx={{ mt: 2 }}
-                  >
-                    {loading ? "Đang checkout..." : "Kết thúc tập luyện"}
-                  </Button>
                 </Box>
               ) : (
                 <Box>

@@ -11,28 +11,28 @@ function FitnessClassPage() {
       name: "YOGA",
       intensity: "Vừa phải",
       duration: "60 Phút",
-      image: "/public/yoga.jpg",
+      image: "/yoga.jpg",
     },
     {
       id: 2,
       name: "DANCE",
       intensity: "Cơ bản",
       duration: "60 Phút",
-      image: "/public/dance.jpg",
+      image: "/dance.jpg",
     },
     {
       id: 3,
       name: "BOXING",
       intensity: "Trung bình đến nâng cao",
       duration: "60 Phút",
-      image: "/public/boxing.jpg",
+      image: "/boxing.jpg",
     },
     {
       id: 4,
       name: "CARDIO & CORE",
       intensity: "Trung bình đến nâng cao",
       duration: "60 Phút",
-      image: "/public/cadio.jpg",
+      image: "/cadio.jpg",
     },
   ]
 
