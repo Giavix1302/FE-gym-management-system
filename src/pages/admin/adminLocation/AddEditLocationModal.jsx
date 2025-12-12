@@ -44,14 +44,14 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
       province: "",
     },
   })
-  const [images, setImages] = useState([])
+  const [images, setImages] = useState([]) 
   const [newImages, setNewImages] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
   // Address selection states
-  const [provinces, setProvinces] = useState([])
-  const [wards, setWards] = useState([])
+  const [provinces, setProvinces] = useState([]) //tinh
+  const [wards, setWards] = useState([]) //phuong
   const [selectedProvinceCode, setSelectedProvinceCode] = useState("")
   const [selectedWardCode, setSelectedWardCode] = useState("")
   const [loadingWards, setLoadingWards] = useState(false)
@@ -61,35 +61,35 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
   const [previewOpen, setPreviewOpen] = useState(false)
 
   // Load provinces on component mount
-  useEffect(() => {
-    const provinceList = getProvinces()
+  useEffect(() => { // lay danh sach tinh
+    const provinceList = getProvinces() // lay danh sach tinh
     setProvinces(provinceList)
   }, [])
 
   // Reset form when modal opens/closes or location changes
-  useEffect(() => {
+  useEffect(() => {// reset form khi mo modal
     if (open) {
-      if (isEditing && location) {
-        setFormData({
-          name: location.name || "",
-          phone: location.phone || "",
-          address: {
+      if (isEditing && location) { // neu la chinh sua
+        setFormData({ // gan du lieu location vao form
+          name: location.name || "", // lay ten location
+          phone: location.phone || "", // lay so dien thoai
+          address: { // lay dia chi
             street: location.address?.street || "",
             ward: location.address?.ward || "",
             province: location.address?.province || "",
           },
         })
-        setImages(location.images || [])
+        setImages(location.images || []) // gan hinh anh hien co cua location
 
         // Set selected province and ward codes for editing
-        if (location.address?.province) {
-          const province = getProvinceByName(location.address.province)
-          if (province) {
-            setSelectedProvinceCode(province.code)
+        if (location.address?.province) { // neu co tinh
+          const province = getProvinceByName(location.address.province) // tim tinh theo ten
+          if (province) { // neu tim thay
+            setSelectedProvinceCode(province.code) // gan ma tinh
             const wardList = getWardsByProvinceCode(province.code)
             setWards(wardList)
 
-            if (location.address?.ward) {
+            if (location.address?.ward) { // neu co phuong
               const ward = getWardByName(location.address.ward, province.code)
               if (ward) {
                 setSelectedWardCode(ward.code)
@@ -97,8 +97,8 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
             }
           }
         }
-      } else {
-        setFormData({
+      } else { // neu la them moi
+        setFormData({ // reset form
           name: "",
           phone: "",
           address: {
@@ -106,9 +106,9 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
             ward: "",
             province: "",
           },
-        })
-        setImages([])
-        setSelectedProvinceCode("")
+        }) 
+        setImages([]) // khong co hinh anh
+        setSelectedProvinceCode("") // reset tinh
         setSelectedWardCode("")
         setWards([])
       }
@@ -117,13 +117,13 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
       setPreviewImage("")
       setPreviewOpen(false)
     }
-  }, [open, location, isEditing])
+  }, [open, location, isEditing]) // khi mo modal hoac location thay doi
 
   // Form validation
-  const validateForm = () => {
-    const newErrors = {}
+  const validateForm = () => { // validate form
+    const newErrors = {} // luu loi
 
-    if (!formData.name.trim()) {
+    if (!formData.name.trim()) { 
       newErrors.name = "Tên location là bắt buộc"
     } else if (formData.name.trim().length < 2) {
       newErrors.name = "Tên location phải có ít nhất 2 ký tự"
@@ -152,12 +152,12 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
   }
 
   // Handle province selection
-  const handleProvinceChange = (provinceCode) => {
-    setSelectedProvinceCode(provinceCode)
+  const handleProvinceChange = (provinceCode) => { // chon tinh
+    setSelectedProvinceCode(provinceCode) // gan ma tinh
     setSelectedWardCode("")
     setWards([])
 
-    const selectedProvince = provinces.find((p) => p.code === provinceCode)
+    const selectedProvince = provinces.find((p) => p.code === provinceCode) // tim tinh theo ma
     if (selectedProvince) {
       setFormData((prev) => ({
         ...prev,
@@ -168,7 +168,7 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
         },
       }))
 
-      setLoadingWards(true)
+      setLoadingWards(true) // hien thi loading khi lay phuong
       const wardList = getWardsByProvinceCode(provinceCode)
       setWards(wardList)
       setLoadingWards(false)
@@ -287,16 +287,16 @@ export default function AddEditLocationModal({ open, onClose, location, onSubmit
   }
 
   // Handle form submission
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (event) => { // gui form
+    event.preventDefault() // chan reload trang
 
-    if (!validateForm()) {
+    if (!validateForm()) { // neu khong hop le
       return
     }
 
-    setLoading(true)
+    setLoading(true) // hien thi loading
 
-    try {
+    try { // thu thuc hien gui form
       const submitData = new FormData()
       submitData.append("name", formData.name.trim())
       submitData.append("phone", formData.phone.trim())

@@ -41,7 +41,7 @@ import { addEquipmentAPI, updateEquipmentAPI } from "~/apis/equipment"
 import { toast } from "react-toastify"
 import { EQUIPMENT_MUSCLE_CATEGORIES, MUSCLE_CATEGORY_LABELS } from "~/utils/constants"
 
-const VisuallyHiddenInput = styled("input")({
+const VisuallyHiddenInput = styled("input")({ 
   clip: "rect(0 0 0 0)",
   clipPath: "inset(50%)",
   height: 1,
@@ -88,7 +88,7 @@ export default function AddEditEquipmentModal({
     preview: "",
     currentImageURL: "", // For edit mode - existing image URL
   })
-
+  console.log(formData)
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 

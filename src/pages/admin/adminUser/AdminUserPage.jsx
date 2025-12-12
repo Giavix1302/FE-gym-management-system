@@ -44,7 +44,7 @@ import useLocationStore from "~/stores/useLocationStore"
 
 // Import APIs
 import { getListUserForAdminAPI, softDeleteUserAPI } from "~/apis/user"
-import useListUserForAdminStore from "~/stores/useListUserForAdminStore"
+import useListUserForAdminStore from "~/stores/useListUserForAdminStore" //do
 
 function AdminUserPage() {
   // Zustand stores
@@ -54,22 +54,22 @@ function AdminUserPage() {
   const { locations } = useLocationStore()
 
   // Component state
-  const [filteredUsers, setFilteredUsers] = useState([])
-  const [selectedUser, setSelectedUser] = useState(null)
-  const [error, setError] = useState("")
-  const [successMessage, setSuccessMessage] = useState("")
+  const [filteredUsers, setFilteredUsers] = useState([]) //danhsach user khi ap dung filter
+  const [selectedUser, setSelectedUser] = useState(null)// user dc chon de xem chi tiet
+  const [error, setError] = useState("") 
+  const [successMessage, setSuccessMessage] = useState("")//thong bao thanh cong
 
-  // Filter states
-  const [searchTerm, setSearchTerm] = useState("")
-  const [subscriptionFilter, setSubscriptionFilter] = useState("all")
+  // Filter state 
+  const [searchTerm, setSearchTerm] = useState("") //tu khoa tim kiem
+  const [subscriptionFilter, setSubscriptionFilter] = useState("all") //goi tap: all, hasSubscription, noSubscription
   const [statusFilter, setStatusFilter] = useState("active") // active, deleted, all
 
   // Modal states
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false) //modal xem chi tiet user
+  const [deleteLoading, setDeleteLoading] = useState(false) //trang thai loading khi xoa user
 
   // Utility functions
-  const hasActiveSubscription = (user) => {
+  const hasActiveSubscription = (user) => { // kiem tra user co goi tap dang hoat dong khong
     if (!user.subscriptions || user.subscriptions.length === 0) return false
 
     const now = new Date()
@@ -79,28 +79,28 @@ function AdminUserPage() {
     })
   }
 
-  const getUserStatusColor = (user) => {
+  const getUserStatusColor = (user) => {// lay mau trang thai 
     if (user.isDeleted) return "error"
     return hasActiveSubscription(user) ? "success" : "default"
   }
 
-  const getUserStatusText = (user) => {
+  const getUserStatusText = (user) => { // lay text trang thai
     if (user.isDeleted) return "Đã xóa"
     return hasActiveSubscription(user) ? "Đang tập" : "Hết hạn"
   }
 
   // Fetch users data
-  const fetchUsers = async (currentPage = 0) => {
+  const fetchUsers = async (currentPage = 0) => { // trang hien tai
     try {
-      setLoading(true)
-      setError("")
+      setLoading(true) // bat dau loading
+      setError("") // xoa loi cu
 
-      const response = await getListUserForAdminAPI(currentPage + 1, pagination.limit)
+      const response = await getListUserForAdminAPI(currentPage + 1, pagination.limit) //api lay ds user
       console.log("🚀 ~ fetchUsers ~ response:", response)
 
-      if (response.success) {
-        setListUsers(response.data.users || [])
-        setPagination(
+      if (response.success) { //neu thanh cong
+        setListUsers(response.data.users || [])// cap nhat store
+        setPagination(// cap nhat phan trang
           response.data.pagination || {
             currentPage: 1,
             totalPages: 1,
@@ -110,25 +110,25 @@ function AdminUserPage() {
             hasPrev: false,
           },
         )
-      } else {
+      } else {// neu khong thanh cong
         setError("Không thể tải danh sách người dùng")
       }
-    } catch (err) {
+    } catch (err) {//xu ly loi
       console.error("Error fetching users:", err)
       setError("Có lỗi xảy ra khi tải dữ liệu")
     } finally {
-      setLoading(false)
+      setLoading(false)// ket thuc loading
     }
   }
 
   // Filter users based on search term, subscription status, and delete status
-  const filterUsers = () => {
+  const filterUsers = () => { // loc user dua tren tu khoa, trang thai goi tap, trang thai xoa
     let filtered = listUsers
 
     // Filter by search term (name, phone, email)
-    if (searchTerm.trim()) {
+    if (searchTerm.trim()) { // neu co tu khoa tim kiem
       const search = searchTerm.toLowerCase()
-      filtered = filtered.filter(
+      filtered = filtered.filter(// loc user
         (user) =>
           user.fullName?.toLowerCase().includes(search) ||
           user.phone?.includes(searchTerm) ||
@@ -136,18 +136,18 @@ function AdminUserPage() {
       )
     }
 
-    // Filter by subscription status
-    if (subscriptionFilter !== "all") {
-      filtered = filtered.filter((user) => {
-        const hasActive = hasActiveSubscription(user)
-        return subscriptionFilter === "hasSubscription" ? hasActive : !hasActive
+    // Filter by subscription status goi tap
+    if (subscriptionFilter !== "all") { // neu khong phai all
+      filtered = filtered.filter((user) => {// kiem tra dieu kien loc
+        const hasActive = hasActiveSubscription(user)// kiem tra user co goi tap dang hoat dong khong
+        return subscriptionFilter === "hasSubscription" ? hasActive : !hasActive// neu loc theo co goi tap thi phai co, nguoc lai phai khong co
       })
     }
 
     // Filter by delete status
-    if (statusFilter === "active") {
-      filtered = filtered.filter((user) => !user.isDeleted)
-    } else if (statusFilter === "deleted") {
+    if (statusFilter === "active") { // hien thi user chua bi xoa
+      filtered = filtered.filter((user) => !user.isDeleted) 
+    } else if (statusFilter === "deleted") {// hien thi user da bi xoa
       filtered = filtered.filter((user) => user.isDeleted)
     }
 
@@ -155,8 +155,8 @@ function AdminUserPage() {
   }
 
   // Effects
-  useEffect(() => {
-    fetchUsers(pagination.currentPage - 1)
+  useEffect(() => { 
+    fetchUsers(pagination.currentPage - 1)// trang hien tai trong store bat dau tu 1
   }, [pagination.currentPage, pagination.limit, statusFilter])
 
   useEffect(() => {
@@ -199,7 +199,7 @@ function AdminUserPage() {
   }
 
   // Filter handlers
-  const handleSearchChange = (event) => {
+  const handleSearchChange = (event) => { 
     setSearchTerm(event.target.value)
   }
 

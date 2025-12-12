@@ -50,7 +50,7 @@ import useMembershipStore from "~/stores/useMembershipStore"
 import ConfirmDialog from "~/components/ConfirmDialog"
 import { toast } from "react-toastify"
 
-export default function AdminMembershipPage() {
+export default function AdminMembershipPage() { // Trang quản lý gói tập
   // store
   const { listMembership, updatePackage, setPackages, removePackage } = useMembershipStore()
 
@@ -64,7 +64,7 @@ export default function AdminMembershipPage() {
 
   useEffect(() => {
     const getList = async () => {
-      const data = await getListMembershipAPI()
+      const data = await getListMembershipAPI() // call API lấy danh sách gói tập
       setPackages(data.memberships)
     }
     getList()
@@ -84,12 +84,12 @@ export default function AdminMembershipPage() {
     setIsModalOpen(true)
   }
 
-  const handleCloseModal = () => {
+  const handleCloseModal = () => { //` Đóng modal
     setIsModalOpen(false)
     setEditingPackage(null) // Reset edit package
   }
 
-  const handleUpdateSuccess = (id, dataUpdated) => {
+  const handleUpdateSuccess = (id, dataUpdated) => { // Xử lý sau khi update thành công
     // Cập nhật selectedPackage trực tiếp từ object mới
     setSelectedPackage(dataUpdated)
 
@@ -97,16 +97,16 @@ export default function AdminMembershipPage() {
     updatePackage(id, dataUpdated)
   }
 
-  const [openDialogConfirm, setOpenDialogConfirm] = useState(false)
+  const [openDialogConfirm, setOpenDialogConfirm] = useState(false) // state dialog confirm xóa
   const [deleting, setDeleting] = useState(false)
 
-  const handleOpenDialogConfirm = () => setOpenDialogConfirm(true)
+  const handleOpenDialogConfirm = () => setOpenDialogConfirm(true) //` Mở dialog confirm xóa
 
   const handleCloseDialogConfirm = () => {
     if (!deleting) setOpenDialogConfirm(false)
   }
 
-  const handleClickDelete = async () => {
+  const handleClickDelete = async () => { //` Xử lý xóa gói tập
     try {
       setDeleting(true)
       console.log("🚀 ~ handleClickDelete ~ id:", selectedPackage._id)

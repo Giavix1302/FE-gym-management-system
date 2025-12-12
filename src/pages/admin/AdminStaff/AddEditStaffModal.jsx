@@ -52,11 +52,11 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
     gender: "",
 
     // Staff info
-    locationId: "",
-    citizenId: "",
-    positionName: "",
-    hourlyRate: "",
-    hoursWorked: "",
+    locationId: "",   // Cơ sở làm việc
+    citizenId: "", // CCCD
+    positionName: "", // chức vụ
+    hourlyRate: "", // in VND
+    hoursWorked: "", // in hours
   })
 
   const [errors, setErrors] = useState({})
@@ -236,14 +236,14 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSave = async () => {
+  const handleSave = async () => { // Xử lý lưu (tạo hoặc cập nhật)
     if (!validateForm()) return
 
     setIsLoading(true)
     try {
       if (isEditMode) {
         // Handle update
-        const userInfo = {
+        const userInfo = { // Thông tin user
           fullName: formData.fullName.trim(),
           email: formData.email.trim(),
           phone: formatPhoneNumber(formData.phone.trim()),
@@ -254,23 +254,23 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
         }
 
         // Only include password if provided
-        if (formData.password.trim()) {
-          userInfo.password = formData.password
+        if (formData.password.trim()) { // nếu có mật khẩu mới
+          userInfo.password = formData.password // cập nhật mật khẩu
         }
 
-        const staffInfo = {
-          locationId: formData.locationId,
+        const staffInfo = { // Thông tin nhân viên
+          locationId: formData.locationId, 
           citizenId: formData.citizenId,
           positionName: formData.positionName.toLowerCase(), // Convert to lowercase
           hourlyRate: parseFloat(formData.hourlyRate),
           hoursWorked: formData.hoursWorked ? parseFloat(formData.hoursWorked) : 0,
         }
 
-        const updateData = formatUpdateStaffData(userInfo, staffInfo)
+        const updateData = formatUpdateStaffData(userInfo, staffInfo)// Định dạng dữ liệu cập nhật
         await onStaffUpdate(editStaff._id, updateData)
       } else {
         // Handle create
-        const staffData = {
+        const staffData = {// Dữ liệu nhân viên mới
           phone: formData.phone.trim(),
           fullName: formData.fullName.trim(),
           email: formData.email.trim(),
@@ -286,7 +286,7 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
           hoursWorked: formData.hoursWorked ? parseFloat(formData.hoursWorked) : 0,
         }
 
-        await onStaffCreate(staffData)
+        await onStaffCreate(staffData) // Gọi hàm tạo nhân viên
       }
     } catch (error) {
       console.error("Error saving staff:", error)
@@ -295,7 +295,7 @@ export default function AddEditStaffModal({ open, onClose, editStaff = null, onS
     }
   }
 
-  const handleClose = () => {
+  const handleClose = () => { // Xử lý đóng modal
     handleReset()
     onClose()
   }

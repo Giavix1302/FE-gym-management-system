@@ -84,35 +84,35 @@ import { toast } from "react-toastify"
 import BookingHistoryModal from "./BookingHistoryModal"
 import { checkRefund, convertISOToVNTime, getHoursBetween } from "~/utils/common"
 
-function UserBookingPage() {
+function UserBookingPage() { // trang dat lich cho user
   // store
-  const { user } = useUserStore()
-  const { listTrainerInfo, setListTrainerInfo } = useListTrainerInfoForUser()
-  console.log("🚀 ~ UserBookingPage ~ listTrainerInfo:", listTrainerInfo)
-  const { locations } = useLocationStore()
+  const { user } = useUserStore() // lay thong tin user tu store
+  const { listTrainerInfo, setListTrainerInfo } = useListTrainerInfoForUser() // lay danh sach trainer tu store
+  console.log("🚀 ~ UserBookingPage ~ listTrainerInfo:", listTrainerInfo) 
+  const { locations } = useLocationStore() // lay danh sach location tu store
 
   // Main states
-  const [activeTab, setActiveTab] = useState(0)
-  const [selectedDate, setSelectedDate] = useState(() => {
-    const today = new Date()
+  const [activeTab, setActiveTab] = useState(0) // tab hien tai: 0 - Dat lich, 1 - Lich su dat lich
+  const [selectedDate, setSelectedDate] = useState(() => { // ngay duoc chon de dat lich
+    const today = new Date() // lay ngay hien tai
     today.setDate(today.getDate() + 1) // Default to tomorrow
     return today.toISOString().split("T")[0]
   })
-  const [specialization, setSpecialization] = useState("all")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [specialization, setSpecialization] = useState("all") // loc theo chuyen mon
+  const [searchTerm, setSearchTerm] = useState("") // tu khoa tim kiem
   const [trainers, setTrainers] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
 
   // Booking cart states
-  const [bookingCart, setBookingCart] = useState([])
-  const [selectedLocation, setSelectedLocation] = useState("")
-  const [bookingNote, setBookingNote] = useState("")
+  const [bookingCart, setBookingCart] = useState([]) // gio dat lich
+  const [selectedLocation, setSelectedLocation] = useState("") // dia diem duoc chon
+  const [bookingNote, setBookingNote] = useState("") // ghi chu dat lich
 
   // Existing bookings - now using real API data
-  const [existingBookings, setExistingBookings] = useState([])
+  const [existingBookings, setExistingBookings] = useState([]) // danh sach booking da dat
 
   // Booking history states
-  const [bookingHistory, setBookingHistory] = useState([])
+  const [bookingHistory, setBookingHistory] = useState([]) // lich su dat lich
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyFilter, setHistoryFilter] = useState("all") // all, reviewed, not_reviewed
   const [sortOrder, setSortOrder] = useState("desc") // asc, desc
@@ -123,35 +123,34 @@ function UserBookingPage() {
   })
 
   // Dialog states
-  const [openCartDialog, setOpenCartDialog] = useState(false)
-  const [openDetailDialog, setOpenDetailDialog] = useState(false)
-  const [openCancelDialog, setOpenCancelDialog] = useState(false)
-  const [selectedBooking, setSelectedBooking] = useState(null)
-  const [cancelReason, setCancelReason] = useState("")
+  const [openCartDialog, setOpenCartDialog] = useState(false) // dialog gio dat lich
+  const [openDetailDialog, setOpenDetailDialog] = useState(false) // dialog chi tiet booking
+  const [openCancelDialog, setOpenCancelDialog] = useState(false) // dialog huy booking
+  const [selectedBooking, setSelectedBooking] = useState(null) // booking duoc chon de xem chi tiet hoac huy
+  const [cancelReason, setCancelReason] = useState("") // ly do huy booking
 
   // Review dialog states
-  const [openReviewDialog, setOpenReviewDialog] = useState(false)
-  const [selectedSession, setSelectedSession] = useState(null)
-  const [reviewRating, setReviewRating] = useState(5)
-  const [reviewComment, setReviewComment] = useState("")
-  const [reviewLoading, setReviewLoading] = useState(false)
-
+  const [openReviewDialog, setOpenReviewDialog] = useState(false) // dialog danh gia
+  const [selectedSession, setSelectedSession] = useState(null) // session duoc chon de danh gia
+  const [reviewRating, setReviewRating] = useState(5) // diem danh gia
+  const [reviewComment, setReviewComment] = useState("") // binh luan danh gia
+  const [reviewLoading, setReviewLoading] = useState(false) // trang thai dang tai danh gia
   // Payment modal states
-  const [openPaymentModal, setOpenPaymentModal] = useState(false)
-  const [showPayButton, setShowPayButton] = useState(false)
+  const [openPaymentModal, setOpenPaymentModal] = useState(false) // modal chon phuong thuc thanh toan
+  const [showPayButton, setShowPayButton] = useState(false) // hien thi nut thanh toan
 
   // PT Detail Modal states
-  const [openPTDetailDialog, setOpenPTDetailDialog] = useState(false)
-  const [selectedTrainer, setSelectedTrainer] = useState(null)
+  const [openPTDetailDialog, setOpenPTDetailDialog] = useState(false) // dialog chi tiet PT
+  const [selectedTrainer, setSelectedTrainer] = useState(null) // trainer duoc chon de xem chi tiet
 
   // UI states
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false)  // trang thai dang xu ly`
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" })
 
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"))
 
   // Transform API data to component format
-  const transformTrainerData = (apiTrainers) => {
+  const transformTrainerData = (apiTrainers) => { // chuyen doi du lieu trainer tu API sang dinh dang component can
     if (!apiTrainers || !Array.isArray(apiTrainers)) return []
 
     return apiTrainers.map((trainer) => {
@@ -179,7 +178,7 @@ function UserBookingPage() {
   }
 
   // Transform real API booking data to component format
-  const transformBookingData = (apiBookings) => {
+  const transformBookingData = (apiBookings) => { // chuyen doi du lieu booking tu API sang dinh dang component can
     if (!apiBookings || !Array.isArray(apiBookings)) return []
 
     return apiBookings.map((booking) => {
@@ -227,7 +226,7 @@ function UserBookingPage() {
   }
 
   // Function to get booking history - replace with actual API call
-  const fetchBookingHistory = async () => {
+  const fetchBookingHistory = async () => { // lay lich su dat lich tu API
     setHistoryLoading(true)
     try {
       // This would be replaced with actual API call
@@ -247,7 +246,7 @@ function UserBookingPage() {
   }
 
   // Transform schedule data to match expected format
-  const transformScheduleData = (apiTrainers, selectedDate) => {
+  const transformScheduleData = (apiTrainers, selectedDate) => { // chuyen doi du lieu lich lam viec tu API sang dinh dang component can
     if (!apiTrainers || !Array.isArray(apiTrainers)) return []
 
     const schedules = []

@@ -35,17 +35,17 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 import dayjs from "dayjs"
 import { getMembershipOverviewAPI, getMembershipAnalyticsAPI, formatAnalyticsParams } from "~/apis/membership"
 
-function AdminReportMembershipPage() {
+function AdminReportMembershipPage() { //`` trang bao cao thong ke membership cho admin 
   // State for data
-  const [overviewData, setOverviewData] = useState(null)
-  console.log("🚀 ~ AdminReportMembershipPage ~ overviewData:", overviewData)
-  const [chartsData, setChartsData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [chartsLoading, setChartsLoading] = useState(false)
+  const [overviewData, setOverviewData] = useState(null) // data tong quan
+  console.log("🚀 ~ AdminReportMembershipPage ~ overviewData:", overviewData)  
+  const [chartsData, setChartsData] = useState(null)// data bieu do
+  const [loading, setLoading] = useState(true) // state dang tai
+  const [chartsLoading, setChartsLoading] = useState(false) // state dang tai bieu do
   const [error, setError] = useState(null)
 
   // State for filters
-  const [startDate, setStartDate] = useState(dayjs().subtract(6, "month"))
+  const [startDate, setStartDate] = useState(dayjs().subtract(6, "month")) // ngay bat dau
   const [endDate, setEndDate] = useState(dayjs())
   const [timeRange, setTimeRange] = useState("6months")
   const [groupBy, setGroupBy] = useState("month")

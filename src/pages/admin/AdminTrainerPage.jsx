@@ -67,21 +67,22 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 // PT Detail Modal Component
-function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
-  const [tabValue, setTabValue] = useState(0)
-  const [isUpdating, setIsUpdating] = useState(false)
+function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) { // onTrainerUpdate de cap nhat trang thai PT o component cha
 
-  if (!trainer) return null
+  const [tabValue, setTabValue] = useState(0) // tab hien thi
+  const [isUpdating, setIsUpdating] = useState(false) // trang thai dang cap nhat
 
-  const trainerBookings = trainer.booked || []
-  const trainerReviews = trainer.review || []
-  const trainerSchedules = trainer.schedule || []
+  if (!trainer) return null // neu khong co trainer thi khong hien thi gi
 
-  const handleTabChange = (event, newValue) => {
+  const trainerBookings = trainer.booked || [] // lay danh sach booking cua PT
+  const trainerReviews = trainer.review || [] // lay danh sach review cua PT
+  const trainerSchedules = trainer.schedule || [] // lay danh sach lich lam viec cua PT
+ 
+  const handleTabChange = (event, newValue) => { // thay doi tab
     setTabValue(newValue)
   }
 
-  const handleApprovalUpdate = async (approvalStatus) => {
+  const handleApprovalUpdate = async (approvalStatus) => { // cap nhat trang thai duyet PT
     try {
       setIsUpdating(true)
       const response = await updateIsApprovedAPI(trainer.trainerId, { isApproved: approvalStatus })
@@ -106,23 +107,23 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
       setIsUpdating(false)
     }
   }
-
-  const handleApprove = () => {
+ 
+  const handleApprove = () => { // duyet PT
     handleApprovalUpdate("approved")
   }
 
-  const handleReject = () => {
+  const handleReject = () => { // tu choi PT
     handleApprovalUpdate("rejected")
   }
 
-  const formatCurrencyVND = (amount) => {
+  const formatCurrencyVND = (amount) => { // dinh dang tien VND
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(amount)
   }
 
-  const formatDate = (timestamp) => {
+  const formatDate = (timestamp) => { // dinh dang ngay thang
     if (!timestamp) return "N/A"
     return new Date(timestamp).toLocaleDateString("vi-VN", {
       day: "2-digit",
@@ -133,7 +134,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
     })
   }
 
-  const getApprovalColor = (status) => {
+  const getApprovalColor = (status) => { // mau sac trang thai duyet
     switch (status) {
       case "approved":
         return "success"
@@ -146,7 +147,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
     }
   }
 
-  const getApprovalText = (status) => {
+  const getApprovalText = (status) => { // van ban trang thai duyet
     switch (status) {
       case "approved":
         return "Đã duyệt"
@@ -159,7 +160,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
     }
   }
 
-  const getBookingStatusColor = (status) => {
+  const getBookingStatusColor = (status) => { // mau sac trang thai booking
     switch (status) {
       case "booked":
       case "booking":
@@ -175,7 +176,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
     }
   }
 
-  const getBookingStatusText = (status) => {
+  const getBookingStatusText = (status) => { // van ban trang thai booking
     switch (status) {
       case "booked":
       case "booking":
@@ -643,11 +644,7 @@ function PTDetailModal({ open, onClose, trainer, onTrainerUpdate }) {
             </Button>
           </>
         )}
-        {trainer.trainerInfo.isApproved === "approved" && (
-          <Button variant="contained" startIcon={<EditIcon />} sx={{ minWidth: 100 }}>
-            Chỉnh sửa
-          </Button>
-        )}
+        
         <Button onClick={onClose} variant="outlined" color="inherit" sx={{ minWidth: 100 }}>
           Đóng
         </Button>
@@ -780,12 +777,7 @@ export default function PTManagementPage() {
               </Typography>
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>
-              <Button variant="outlined" startIcon={<ImportIcon />} sx={{ textTransform: "none" }}>
-                Import
-              </Button>
-              <Button variant="outlined" startIcon={<ExportIcon />} sx={{ textTransform: "none" }}>
-                Export
-              </Button>
+              
             </Box>
           </Box>
         </CardContent>
@@ -830,9 +822,7 @@ export default function PTManagementPage() {
             </FormControl>
 
             <Box sx={{ ml: "auto" }}>
-              <Button variant="contained" startIcon={<AddIcon />} sx={{ textTransform: "none", fontWeight: "bold" }}>
-                Thêm PT
-              </Button>
+             
             </Box>
           </Box>
         </CardContent>
